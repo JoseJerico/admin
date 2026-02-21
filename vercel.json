@@ -1,4 +1,3 @@
 {
- "buildCommand": "parcel build",
- "outputDirectory": "dist"
+
 }
