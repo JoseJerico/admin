@@ -1,9 +1,3 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "outputDirectory": "dist",
-  "env": {
-    "SUPABASE_URL": "https://qwqzejzwdzqapjkqadjt.supabase.co",
-    "SUPABASE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cXplanp3ZHpxYXBqa3FhZGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzA1MDksImV4cCI6MjA4NTc0NjUwOX0.JV36saRgJtP-zKwI86RzjWQRmuwVo9wAqNpyoVSJm3A"
-  }
+
 }
