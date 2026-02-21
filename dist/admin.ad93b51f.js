@@ -25081,7 +25081,7 @@ $RefreshReg$(_c, "App");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi","./App.css":"6n0o6","./RoleSelector":"7E7Rx","./Admin/AdminApp":"f7syB","./User/UserApp":"8xUpE","./Technician/TechnicianApp":"5gMz9"}],"jnFvT":[function(require,module,exports,__globalThis) {
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","./App.css":"6n0o6","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi","./RoleSelector":"7E7Rx","./Admin/AdminApp":"f7syB","./User/UserApp":"8xUpE","./Technician/TechnicianApp":"5gMz9"}],"6n0o6":[function() {},{}],"jnFvT":[function(require,module,exports,__globalThis) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -27389,7 +27389,7 @@ function $da9882e673ac146b$var$ErrorOverlay() {
     return null;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"6n0o6":[function() {},{}],"7E7Rx":[function(require,module,exports,__globalThis) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"7E7Rx":[function(require,module,exports,__globalThis) {
 var $parcel$ReactRefreshHelpers$cf11 = require("@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
 $parcel$ReactRefreshHelpers$cf11.init();
 var prevRefreshReg = globalThis.$RefreshReg$;
