@@ -21,12 +21,13 @@ const SERVICES = [
 ]
 
 export default function UserApp({ user, onLogout }) {
-  const [screen, setScreen] = useState('home') // home, products, services, measure, booking, cart
+  const [screen, setScreen] = useState('home') // home, products, services, measure, booking, cart, profile
   const [cart, setCart] = useState([])
   const [showCamera, setShowCamera] = useState(false)
   const [roomMeasurements, setRoomMeasurements] = useState(null)
   const [recommendedProduct, setRecommendedProduct] = useState(null)
   const [selectedItems, setSelectedItems] = useState({})
+  const [showProfile, setShowProfile] = useState(false)
 
   function addToCart(item) {
     setCart([...cart, { ...item, cartId: Date.now() }])
@@ -80,8 +81,10 @@ export default function UserApp({ user, onLogout }) {
         <div className="header-top">
           <h1>❄️ AirCon Hub</h1>
           <div className="header-actions">
-            <span className="user-info">👤 {user?.name || 'Guest'}</span>
-            <button className="btn-cart">
+            <button onClick={() => setShowProfile(true)} className="user-info" title="View profile">
+              👤 {user?.name || 'Guest'}
+            </button>
+            <button onClick={() => setScreen('cart')} className="btn-cart" title="View cart">
               🛒 {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
             </button>
             <button onClick={onLogout} className="btn-logout-user">🚪 Logout</button>
@@ -300,7 +303,7 @@ export default function UserApp({ user, onLogout }) {
                 </div>
               </div>
 
-              <button className="btn-checkout">
+              <button onClick={() => setScreen('booking')} className="btn-checkout">
                 📅 Schedule Service
               </button>
             </>
@@ -308,13 +311,103 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
+      {/* Profile Modal */}
+      {showProfile && (
+        <div className="profile-modal-overlay" onClick={() => setShowProfile(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>👤 My Profile</h2>
+              <button onClick={() => setShowProfile(false)} className="btn-close-modal">✕</button>
+            </div>
+            <div className="profile-content">
+              <div className="profile-item">
+                <span className="label">Name:</span>
+                <span>{user?.name || 'Guest'}</span>
+              </div>
+              <div className="profile-item">
+                <span className="label">Email:</span>
+                <span>{user?.email || 'N/A'}</span>
+              </div>
+              <div className="profile-item">
+                <span className="label">Role:</span>
+                <span>Customer</span>
+              </div>
+              <div className="profile-item">
+                <span className="label">Member Since:</span>
+                <span>{new Date().toLocaleDateString()}</span>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowProfile(false)} className="btn-close">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Screen */}
+      {screen === 'booking' && (
+        <main className="user-main">
+          <div className="screen-header">
+            <h2>📅 Schedule Service</h2>
+            <p>Book your appointment</p>
+          </div>
+
+          <div className="booking-form">
+            <div className="form-group">
+              <label>Preferred Date</label>
+              <input type="date" className="form-input" />
+            </div>
+
+            <div className="form-group">
+              <label>Preferred Time</label>
+              <select className="form-input">
+                <option>9:00 AM</option>
+                <option>10:00 AM</option>
+                <option>11:00 AM</option>
+                <option>1:00 PM</option>
+                <option>2:00 PM</option>
+                <option>3:00 PM</option>
+                <option>4:00 PM</option>
+                <option>5:00 PM</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Additional Notes</label>
+              <textarea className="form-input" rows="4" placeholder="Any special requirements or notes..."></textarea>
+            </div>
+
+            <div className="booking-summary">
+              <h3>Order Summary</h3>
+              <div className="summary-items">
+                {cart.map((item, idx) => (
+                  <div key={idx} className="summary-item">
+                    <span>{item.name}</span>
+                    <span>₱{item.price.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="summary-total">
+                <span>Total:</span>
+                <span>₱{(calculateTotal() + 500).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="booking-actions">
+              <button onClick={() => setScreen('cart')} className="btn-back-booking">← Back</button>
+              <button onClick={() => { setCart([]); setScreen('home'); }} className="btn-confirm-booking">✓ Confirm Booking</button>
+            </div>
+          </div>
+        </main>
+      )}
+
       {/* Bottom Navigation */}
-      {screen === 'home' && (
+      {(screen === 'home' || screen === 'products' || screen === 'services' || screen === 'cart' || screen === 'measure') && (
         <nav className="bottom-nav">
-          <button className="nav-item active" onClick={() => setScreen('home')}>🏠 Home</button>
-          <button className="nav-item" onClick={() => setScreen('products')}>❄️ Products</button>
-          <button className="nav-item" onClick={() => setScreen('services')}>🔧 Services</button>
-          <button className="nav-item" onClick={() => setScreen('cart')}>🛒 Cart ({cart.length})</button>
+          <button className={`nav-item ${screen === 'home' ? 'active' : ''}`} onClick={() => setScreen('home')}>🏠 Home</button>
+          <button className={`nav-item ${screen === 'products' ? 'active' : ''}`} onClick={() => setScreen('products')}>❄️ Products</button>
+          <button className={`nav-item ${screen === 'services' ? 'active' : ''}`} onClick={() => setScreen('services')}>🔧 Services</button>
+          <button className={`nav-item ${screen === 'cart' ? 'active' : ''}`} onClick={() => setScreen('cart')}>🛒 Cart ({cart.length})</button>
         </nav>
       )}
     </div>

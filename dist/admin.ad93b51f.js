@@ -44470,13 +44470,14 @@ const SERVICES = [
 ];
 function UserApp({ user, onLogout }) {
     _s();
-    const [screen, setScreen] = (0, _react.useState)('home') // home, products, services, measure, booking, cart
+    const [screen, setScreen] = (0, _react.useState)('home') // home, products, services, measure, booking, cart, profile
     ;
     const [cart, setCart] = (0, _react.useState)([]);
     const [showCamera, setShowCamera] = (0, _react.useState)(false);
     const [roomMeasurements, setRoomMeasurements] = (0, _react.useState)(null);
     const [recommendedProduct, setRecommendedProduct] = (0, _react.useState)(null);
     const [selectedItems, setSelectedItems] = (0, _react.useState)({});
+    const [showProfile, setShowProfile] = (0, _react.useState)(false);
     function addToCart(item) {
         setCart([
             ...cart,
@@ -44517,7 +44518,7 @@ function UserApp({ user, onLogout }) {
                 mode: "measure"
             }, void 0, false, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 64,
+                lineNumber: 65,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44526,13 +44527,13 @@ function UserApp({ user, onLogout }) {
                 children: "\u2715"
             }, void 0, false, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 69,
+                lineNumber: 70,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/User/UserApp.jsx",
-        lineNumber: 63,
+        lineNumber: 64,
         columnNumber: 7
     }, this);
     return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -44548,25 +44549,29 @@ function UserApp({ user, onLogout }) {
                                 children: "\u2744\uFE0F AirCon Hub"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 81,
+                                lineNumber: 82,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
                                 className: "header-actions",
                                 children: [
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                        onClick: ()=>setShowProfile(true),
                                         className: "user-info",
+                                        title: "View profile",
                                         children: [
                                             "\uD83D\uDC64 ",
                                             user?.name || 'Guest'
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 83,
+                                        lineNumber: 84,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                        onClick: ()=>setScreen('cart'),
                                         className: "btn-cart",
+                                        title: "View cart",
                                         children: [
                                             "\uD83D\uDED2 ",
                                             cart.length > 0 && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -44574,13 +44579,13 @@ function UserApp({ user, onLogout }) {
                                                 children: cart.length
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 85,
+                                                lineNumber: 88,
                                                 columnNumber: 38
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 84,
+                                        lineNumber: 87,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44589,19 +44594,19 @@ function UserApp({ user, onLogout }) {
                                         children: "\uD83D\uDEAA Logout"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 87,
+                                        lineNumber: 90,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 82,
+                                lineNumber: 83,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 80,
+                        lineNumber: 81,
                         columnNumber: 9
                     }, this),
                     screen !== 'home' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44610,13 +44615,13 @@ function UserApp({ user, onLogout }) {
                         children: "\u2190 Back"
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 91,
+                        lineNumber: 94,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 79,
+                lineNumber: 80,
                 columnNumber: 7
             }, this),
             screen === 'home' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -44631,25 +44636,25 @@ function UserApp({ user, onLogout }) {
                                     children: "Smart Cooling Solutions"
                                 }, void 0, false, {
                                     fileName: "src/User/UserApp.jsx",
-                                    lineNumber: 100,
+                                    lineNumber: 103,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                     children: "Professional AC installation, maintenance & repair services"
                                 }, void 0, false, {
                                     fileName: "src/User/UserApp.jsx",
-                                    lineNumber: 101,
+                                    lineNumber: 104,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "src/User/UserApp.jsx",
-                            lineNumber: 99,
+                            lineNumber: 102,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 98,
+                        lineNumber: 101,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -44664,27 +44669,27 @@ function UserApp({ user, onLogout }) {
                                         children: "\uD83D\uDCD0"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 110,
+                                        lineNumber: 113,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
                                         children: "Measure Room"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 111,
+                                        lineNumber: 114,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                         children: "Get AC recommendation"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 112,
+                                        lineNumber: 115,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 106,
+                                lineNumber: 109,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44696,27 +44701,27 @@ function UserApp({ user, onLogout }) {
                                         children: "\u2744\uFE0F"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 119,
+                                        lineNumber: 122,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
                                         children: "Browse ACs"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 120,
+                                        lineNumber: 123,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                         children: "View our products"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 121,
+                                        lineNumber: 124,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 115,
+                                lineNumber: 118,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44728,33 +44733,33 @@ function UserApp({ user, onLogout }) {
                                         children: "\uD83D\uDD27"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 128,
+                                        lineNumber: 131,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
                                         children: "Services"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 129,
+                                        lineNumber: 132,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                         children: "Installation & repair"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 130,
+                                        lineNumber: 133,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 124,
+                                lineNumber: 127,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 105,
+                        lineNumber: 108,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("section", {
@@ -44764,7 +44769,7 @@ function UserApp({ user, onLogout }) {
                                 children: "Featured Products"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 135,
+                                lineNumber: 138,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -44777,14 +44782,14 @@ function UserApp({ user, onLogout }) {
                                                 children: product.image
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 139,
+                                                lineNumber: 142,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h4", {
                                                 children: product.name
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 140,
+                                                lineNumber: 143,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44792,7 +44797,7 @@ function UserApp({ user, onLogout }) {
                                                 children: product.capacity
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 141,
+                                                lineNumber: 144,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44803,7 +44808,7 @@ function UserApp({ user, onLogout }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 142,
+                                                lineNumber: 145,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44815,30 +44820,30 @@ function UserApp({ user, onLogout }) {
                                                 children: "Add to Cart"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 143,
+                                                lineNumber: 146,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, product.id, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 138,
+                                        lineNumber: 141,
                                         columnNumber: 17
                                     }, this))
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 136,
+                                lineNumber: 139,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 134,
+                        lineNumber: 137,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 97,
+                lineNumber: 100,
                 columnNumber: 9
             }, this),
             screen === 'products' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -44851,20 +44856,20 @@ function UserApp({ user, onLogout }) {
                                 children: "Air Conditioning Units"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 157,
+                                lineNumber: 160,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                 children: "Select the perfect AC for your space"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 158,
+                                lineNumber: 161,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 156,
+                        lineNumber: 159,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -44877,14 +44882,14 @@ function UserApp({ user, onLogout }) {
                                         children: product.image
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 164,
+                                        lineNumber: 167,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h4", {
                                         children: product.name
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 165,
+                                        lineNumber: 168,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44892,7 +44897,7 @@ function UserApp({ user, onLogout }) {
                                         children: product.capacity
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 166,
+                                        lineNumber: 169,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44903,7 +44908,7 @@ function UserApp({ user, onLogout }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 167,
+                                        lineNumber: 170,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44914,7 +44919,7 @@ function UserApp({ user, onLogout }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 168,
+                                        lineNumber: 171,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -44923,24 +44928,24 @@ function UserApp({ user, onLogout }) {
                                         children: "Add to Cart"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 169,
+                                        lineNumber: 172,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, product.id, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 163,
+                                lineNumber: 166,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 161,
+                        lineNumber: 164,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 155,
+                lineNumber: 158,
                 columnNumber: 9
             }, this),
             screen === 'services' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -44953,20 +44958,20 @@ function UserApp({ user, onLogout }) {
                                 children: "Our Services"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 182,
+                                lineNumber: 185,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                 children: "Professional installation and maintenance"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 183,
+                                lineNumber: 186,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 181,
+                        lineNumber: 184,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -44979,14 +44984,14 @@ function UserApp({ user, onLogout }) {
                                         children: service.icon
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 189,
+                                        lineNumber: 192,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h4", {
                                         children: service.name
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 190,
+                                        lineNumber: 193,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44997,7 +45002,7 @@ function UserApp({ user, onLogout }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 191,
+                                        lineNumber: 194,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45008,7 +45013,7 @@ function UserApp({ user, onLogout }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 192,
+                                        lineNumber: 195,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -45017,24 +45022,24 @@ function UserApp({ user, onLogout }) {
                                         children: "Add to Cart"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 193,
+                                        lineNumber: 196,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, service.id, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 188,
+                                lineNumber: 191,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 186,
+                        lineNumber: 189,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 180,
+                lineNumber: 183,
                 columnNumber: 9
             }, this),
             screen === 'measure' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -45046,12 +45051,12 @@ function UserApp({ user, onLogout }) {
                             children: "\uD83D\uDCCF Room Analysis"
                         }, void 0, false, {
                             fileName: "src/User/UserApp.jsx",
-                            lineNumber: 206,
+                            lineNumber: 209,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 205,
+                        lineNumber: 208,
                         columnNumber: 11
                     }, this),
                     roomMeasurements && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45064,7 +45069,7 @@ function UserApp({ user, onLogout }) {
                                         children: "Room Dimensions"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 212,
+                                        lineNumber: 215,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45080,13 +45085,13 @@ function UserApp({ user, onLogout }) {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "src/User/UserApp.jsx",
-                                                        lineNumber: 214,
+                                                        lineNumber: 217,
                                                         columnNumber: 29
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 214,
+                                                lineNumber: 217,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45099,13 +45104,13 @@ function UserApp({ user, onLogout }) {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "src/User/UserApp.jsx",
-                                                        lineNumber: 215,
+                                                        lineNumber: 218,
                                                         columnNumber: 30
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 215,
+                                                lineNumber: 218,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45118,25 +45123,25 @@ function UserApp({ user, onLogout }) {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "src/User/UserApp.jsx",
-                                                        lineNumber: 216,
+                                                        lineNumber: 219,
                                                         columnNumber: 28
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 216,
+                                                lineNumber: 219,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 213,
+                                        lineNumber: 216,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 211,
+                                lineNumber: 214,
                                 columnNumber: 15
                             }, this),
                             recommendedProduct && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45146,7 +45151,7 @@ function UserApp({ user, onLogout }) {
                                         children: "\uD83C\uDFAF Recommended for You"
                                     }, void 0, false, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 222,
+                                        lineNumber: 225,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45157,14 +45162,14 @@ function UserApp({ user, onLogout }) {
                                                 children: recommendedProduct.image
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 224,
+                                                lineNumber: 227,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h4", {
                                                 children: recommendedProduct.name
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 225,
+                                                lineNumber: 228,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45172,7 +45177,7 @@ function UserApp({ user, onLogout }) {
                                                 children: recommendedProduct.capacity
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 226,
+                                                lineNumber: 229,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45183,7 +45188,7 @@ function UserApp({ user, onLogout }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 227,
+                                                lineNumber: 230,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45194,7 +45199,7 @@ function UserApp({ user, onLogout }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 228,
+                                                lineNumber: 231,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -45206,19 +45211,19 @@ function UserApp({ user, onLogout }) {
                                                 children: "\u2713 Add to Cart"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 229,
+                                                lineNumber: 232,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 223,
+                                        lineNumber: 226,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 221,
+                                lineNumber: 224,
                                 columnNumber: 17
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45232,24 +45237,24 @@ function UserApp({ user, onLogout }) {
                                     children: "\uD83D\uDCD0 Measure Again"
                                 }, void 0, false, {
                                     fileName: "src/User/UserApp.jsx",
-                                    lineNumber: 243,
+                                    lineNumber: 246,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 242,
+                                lineNumber: 245,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 210,
+                        lineNumber: 213,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 204,
+                lineNumber: 207,
                 columnNumber: 9
             }, this),
             screen === 'cart' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -45261,12 +45266,12 @@ function UserApp({ user, onLogout }) {
                             children: "\uD83D\uDED2 Shopping Cart"
                         }, void 0, false, {
                             fileName: "src/User/UserApp.jsx",
-                            lineNumber: 256,
+                            lineNumber: 259,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 255,
+                        lineNumber: 258,
                         columnNumber: 11
                     }, this),
                     cart.length === 0 ? /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45277,14 +45282,14 @@ function UserApp({ user, onLogout }) {
                                 children: "\uD83D\uDED2"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 261,
+                                lineNumber: 264,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                 children: "Your cart is empty"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 262,
+                                lineNumber: 265,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -45293,13 +45298,13 @@ function UserApp({ user, onLogout }) {
                                 children: "Continue Shopping"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 263,
+                                lineNumber: 266,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 260,
+                        lineNumber: 263,
                         columnNumber: 13
                     }, this) : /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _jsxDevRuntime.Fragment), {
                         children: [
@@ -45313,7 +45318,7 @@ function UserApp({ user, onLogout }) {
                                                 children: item.image || item.icon || "\uD83D\uDCE6"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 272,
+                                                lineNumber: 275,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45323,7 +45328,7 @@ function UserApp({ user, onLogout }) {
                                                         children: item.name
                                                     }, void 0, false, {
                                                         fileName: "src/User/UserApp.jsx",
-                                                        lineNumber: 274,
+                                                        lineNumber: 277,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -45334,13 +45339,13 @@ function UserApp({ user, onLogout }) {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "src/User/UserApp.jsx",
-                                                        lineNumber: 275,
+                                                        lineNumber: 278,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 273,
+                                                lineNumber: 276,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -45350,18 +45355,18 @@ function UserApp({ user, onLogout }) {
                                                 children: "\u2715"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 277,
+                                                lineNumber: 280,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, item.cartId, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 271,
+                                        lineNumber: 274,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 269,
+                                lineNumber: 272,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45374,7 +45379,7 @@ function UserApp({ user, onLogout }) {
                                                 children: "Subtotal"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 290,
+                                                lineNumber: 293,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -45384,13 +45389,13 @@ function UserApp({ user, onLogout }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 291,
+                                                lineNumber: 294,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 289,
+                                        lineNumber: 292,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45400,20 +45405,20 @@ function UserApp({ user, onLogout }) {
                                                 children: "Delivery"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 294,
+                                                lineNumber: 297,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
                                                 children: "\u20B1500"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 295,
+                                                lineNumber: 298,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 293,
+                                        lineNumber: 296,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -45423,7 +45428,7 @@ function UserApp({ user, onLogout }) {
                                                 children: "Total"
                                             }, void 0, false, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 298,
+                                                lineNumber: 301,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -45433,27 +45438,28 @@ function UserApp({ user, onLogout }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/User/UserApp.jsx",
-                                                lineNumber: 299,
+                                                lineNumber: 302,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/User/UserApp.jsx",
-                                        lineNumber: 297,
+                                        lineNumber: 300,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 288,
+                                lineNumber: 291,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                onClick: ()=>setScreen('booking'),
                                 className: "btn-checkout",
                                 children: "\uD83D\uDCC5 Schedule Service"
                             }, void 0, false, {
                                 fileName: "src/User/UserApp.jsx",
-                                lineNumber: 303,
+                                lineNumber: 306,
                                 columnNumber: 15
                             }, this)
                         ]
@@ -45461,41 +45467,481 @@ function UserApp({ user, onLogout }) {
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 254,
+                lineNumber: 257,
                 columnNumber: 9
             }, this),
-            screen === 'home' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("nav", {
+            showProfile && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                className: "profile-modal-overlay",
+                onClick: ()=>setShowProfile(false),
+                children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                    className: "profile-modal",
+                    onClick: (e)=>e.stopPropagation(),
+                    children: [
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                            className: "modal-header",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h2", {
+                                    children: "\uD83D\uDC64 My Profile"
+                                }, void 0, false, {
+                                    fileName: "src/User/UserApp.jsx",
+                                    lineNumber: 319,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                    onClick: ()=>setShowProfile(false),
+                                    className: "btn-close-modal",
+                                    children: "\u2715"
+                                }, void 0, false, {
+                                    fileName: "src/User/UserApp.jsx",
+                                    lineNumber: 320,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "src/User/UserApp.jsx",
+                            lineNumber: 318,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                            className: "profile-content",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                    className: "profile-item",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            className: "label",
+                                            children: "Name:"
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 324,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            children: user?.name || 'Guest'
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 325,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/User/UserApp.jsx",
+                                    lineNumber: 323,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                    className: "profile-item",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            className: "label",
+                                            children: "Email:"
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 328,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            children: user?.email || 'N/A'
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 329,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/User/UserApp.jsx",
+                                    lineNumber: 327,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                    className: "profile-item",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            className: "label",
+                                            children: "Role:"
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 332,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            children: "Customer"
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 333,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/User/UserApp.jsx",
+                                    lineNumber: 331,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                    className: "profile-item",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            className: "label",
+                                            children: "Member Since:"
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 336,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            children: new Date().toLocaleDateString()
+                                        }, void 0, false, {
+                                            fileName: "src/User/UserApp.jsx",
+                                            lineNumber: 337,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/User/UserApp.jsx",
+                                    lineNumber: 335,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "src/User/UserApp.jsx",
+                            lineNumber: 322,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                            className: "modal-actions",
+                            children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                onClick: ()=>setShowProfile(false),
+                                className: "btn-close",
+                                children: "Close"
+                            }, void 0, false, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 341,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "src/User/UserApp.jsx",
+                            lineNumber: 340,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "src/User/UserApp.jsx",
+                    lineNumber: 317,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "src/User/UserApp.jsx",
+                lineNumber: 316,
+                columnNumber: 9
+            }, this),
+            screen === 'booking' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
+                className: "user-main",
+                children: [
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "screen-header",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h2", {
+                                children: "\uD83D\uDCC5 Schedule Service"
+                            }, void 0, false, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 351,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
+                                children: "Book your appointment"
+                            }, void 0, false, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 352,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/User/UserApp.jsx",
+                        lineNumber: 350,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "booking-form",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "form-group",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("label", {
+                                        children: "Preferred Date"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 357,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("input", {
+                                        type: "date",
+                                        className: "form-input"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 358,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 356,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "form-group",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("label", {
+                                        children: "Preferred Time"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 362,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("select", {
+                                        className: "form-input",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "9:00 AM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 364,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "10:00 AM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 365,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "11:00 AM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 366,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "1:00 PM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 367,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "2:00 PM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 368,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "3:00 PM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 369,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "4:00 PM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 370,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
+                                                children: "5:00 PM"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 371,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 363,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 361,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "form-group",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("label", {
+                                        children: "Additional Notes"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 376,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("textarea", {
+                                        className: "form-input",
+                                        rows: "4",
+                                        placeholder: "Any special requirements or notes..."
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 377,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 375,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "booking-summary",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                        children: "Order Summary"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 381,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "summary-items",
+                                        children: cart.map((item, idx)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                                className: "summary-item",
+                                                children: [
+                                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                        children: item.name
+                                                    }, void 0, false, {
+                                                        fileName: "src/User/UserApp.jsx",
+                                                        lineNumber: 385,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                        children: [
+                                                            "\u20B1",
+                                                            item.price.toLocaleString()
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "src/User/UserApp.jsx",
+                                                        lineNumber: 386,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, idx, true, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 384,
+                                                columnNumber: 19
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 382,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "summary-total",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                children: "Total:"
+                                            }, void 0, false, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 391,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                children: [
+                                                    "\u20B1",
+                                                    (calculateTotal() + 500).toLocaleString()
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "src/User/UserApp.jsx",
+                                                lineNumber: 392,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 390,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 380,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "booking-actions",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                        onClick: ()=>setScreen('cart'),
+                                        className: "btn-back-booking",
+                                        children: "\u2190 Back"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 397,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                        onClick: ()=>{
+                                            setCart([]);
+                                            setScreen('home');
+                                        },
+                                        className: "btn-confirm-booking",
+                                        children: "\u2713 Confirm Booking"
+                                    }, void 0, false, {
+                                        fileName: "src/User/UserApp.jsx",
+                                        lineNumber: 398,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/User/UserApp.jsx",
+                                lineNumber: 396,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/User/UserApp.jsx",
+                        lineNumber: 355,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "src/User/UserApp.jsx",
+                lineNumber: 349,
+                columnNumber: 9
+            }, this),
+            (screen === 'home' || screen === 'products' || screen === 'services' || screen === 'cart' || screen === 'measure') && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("nav", {
                 className: "bottom-nav",
                 children: [
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item active",
+                        className: `nav-item ${screen === 'home' ? 'active' : ''}`,
                         onClick: ()=>setScreen('home'),
                         children: "\uD83C\uDFE0 Home"
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 314,
+                        lineNumber: 407,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item",
+                        className: `nav-item ${screen === 'products' ? 'active' : ''}`,
                         onClick: ()=>setScreen('products'),
                         children: "\u2744\uFE0F Products"
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 315,
+                        lineNumber: 408,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item",
+                        className: `nav-item ${screen === 'services' ? 'active' : ''}`,
                         onClick: ()=>setScreen('services'),
                         children: "\uD83D\uDD27 Services"
                     }, void 0, false, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 316,
+                        lineNumber: 409,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item",
+                        className: `nav-item ${screen === 'cart' ? 'active' : ''}`,
                         onClick: ()=>setScreen('cart'),
                         children: [
                             "\uD83D\uDED2 Cart (",
@@ -45504,23 +45950,23 @@ function UserApp({ user, onLogout }) {
                         ]
                     }, void 0, true, {
                         fileName: "src/User/UserApp.jsx",
-                        lineNumber: 317,
+                        lineNumber: 410,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/User/UserApp.jsx",
-                lineNumber: 313,
+                lineNumber: 406,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/User/UserApp.jsx",
-        lineNumber: 77,
+        lineNumber: 78,
         columnNumber: 5
     }, this);
 }
-_s(UserApp, "B9bE75MAA8cLqLPqNeBCbEzJ3zs=");
+_s(UserApp, "+dVDMovKzcePfjfkdO90xgEWhqU=");
 _c = UserApp;
 var _c;
 $RefreshReg$(_c, "UserApp");
@@ -45999,7 +46445,7 @@ const SAMPLE_APPOINTMENTS = [
 ];
 function TechnicianApp({ user, onLogout }) {
     _s();
-    const [screen, setScreen] = (0, _react.useState)('appointments') // appointments, details, camera, photos
+    const [screen, setScreen] = (0, _react.useState)('appointments') // appointments, details, camera, photos, updates
     ;
     const [appointments, setAppointments] = (0, _react.useState)(SAMPLE_APPOINTMENTS);
     const [selectedAppointment, setSelectedAppointment] = (0, _react.useState)(null);
@@ -46008,6 +46454,7 @@ function TechnicianApp({ user, onLogout }) {
     const [notes, setNotes] = (0, _react.useState)('');
     const [cameraMode, setCameraMode] = (0, _react.useState)('before') // before, during, after
     ;
+    const [activeFilter, setActiveFilter] = (0, _react.useState)('all');
     function handleAppointmentClick(appointment) {
         setSelectedAppointment(appointment);
         setScreen('details');
@@ -46046,6 +46493,10 @@ function TechnicianApp({ user, onLogout }) {
             setScreen('appointments');
         }
     }
+    function getFilteredAppointments() {
+        if (activeFilter === 'all') return appointments;
+        return appointments.filter((apt)=>apt.status === activeFilter);
+    }
     function getStatusColor(status) {
         switch(status){
             case 'scheduled':
@@ -46067,7 +46518,7 @@ function TechnicianApp({ user, onLogout }) {
                 mode: "photo"
             }, void 0, false, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 110,
+                lineNumber: 116,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -46077,13 +46528,13 @@ function TechnicianApp({ user, onLogout }) {
                 children: "\u2715"
             }, void 0, false, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 115,
+                lineNumber: 121,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/Technician/TechnicianApp.jsx",
-        lineNumber: 109,
+        lineNumber: 115,
         columnNumber: 7
     }, this);
     return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46096,7 +46547,7 @@ function TechnicianApp({ user, onLogout }) {
                         children: "\uD83D\uDD27 Technician Portal"
                     }, void 0, false, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 130,
+                        lineNumber: 136,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46110,7 +46561,7 @@ function TechnicianApp({ user, onLogout }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 132,
+                                lineNumber: 138,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -46119,19 +46570,19 @@ function TechnicianApp({ user, onLogout }) {
                                 children: "\uD83D\uDEAA Logout"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 133,
+                                lineNumber: 139,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 131,
+                        lineNumber: 137,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 129,
+                lineNumber: 135,
                 columnNumber: 7
             }, this),
             screen === 'appointments' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -46144,7 +46595,7 @@ function TechnicianApp({ user, onLogout }) {
                                 children: "\uD83D\uDCCB Assigned Jobs"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 141,
+                                lineNumber: 147,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -46154,59 +46605,63 @@ function TechnicianApp({ user, onLogout }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 142,
+                                lineNumber: 148,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 140,
+                        lineNumber: 146,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
                         className: "status-filter",
                         children: [
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                className: "filter-btn active",
+                                className: `filter-btn ${activeFilter === 'all' ? 'active' : ''}`,
+                                onClick: ()=>setActiveFilter('all'),
                                 children: "All"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 146,
+                                lineNumber: 152,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                className: "filter-btn",
+                                className: `filter-btn ${activeFilter === 'scheduled' ? 'active' : ''}`,
+                                onClick: ()=>setActiveFilter('scheduled'),
                                 children: "Scheduled"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 147,
+                                lineNumber: 158,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                className: "filter-btn",
+                                className: `filter-btn ${activeFilter === 'in-progress' ? 'active' : ''}`,
+                                onClick: ()=>setActiveFilter('in-progress'),
                                 children: "In Progress"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 148,
+                                lineNumber: 164,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                className: "filter-btn",
+                                className: `filter-btn ${activeFilter === 'completed' ? 'active' : ''}`,
+                                onClick: ()=>setActiveFilter('completed'),
                                 children: "Completed"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 149,
+                                lineNumber: 170,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 145,
+                        lineNumber: 151,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
                         className: "appointments-list",
-                        children: appointments.map((apt)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        children: getFilteredAppointments().map((apt)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
                                 className: `appointment-card status-${apt.status}`,
                                 onClick: ()=>handleAppointmentClick(apt),
                                 children: [
@@ -46217,7 +46672,7 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: apt.service
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 160,
+                                                lineNumber: 186,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -46228,13 +46683,13 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: apt.status
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 161,
+                                                lineNumber: 187,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 159,
+                                        lineNumber: 185,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46248,20 +46703,20 @@ function TechnicianApp({ user, onLogout }) {
                                                         children: "\uD83D\uDC64 Customer:"
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 171,
+                                                        lineNumber: 197,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
                                                         children: apt.customerName
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 172,
+                                                        lineNumber: 198,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 170,
+                                                lineNumber: 196,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46272,7 +46727,7 @@ function TechnicianApp({ user, onLogout }) {
                                                         children: "\uD83D\uDCC5 Date/Time:"
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 175,
+                                                        lineNumber: 201,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -46283,13 +46738,13 @@ function TechnicianApp({ user, onLogout }) {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 176,
+                                                        lineNumber: 202,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 174,
+                                                lineNumber: 200,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46300,20 +46755,20 @@ function TechnicianApp({ user, onLogout }) {
                                                         children: "\uD83D\uDCCD Location:"
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 179,
+                                                        lineNumber: 205,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
                                                         children: apt.address
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 180,
+                                                        lineNumber: 206,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 178,
+                                                lineNumber: 204,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46324,26 +46779,26 @@ function TechnicianApp({ user, onLogout }) {
                                                         children: "\u2744\uFE0F Unit:"
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 183,
+                                                        lineNumber: 209,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
                                                         children: apt.unit
                                                     }, void 0, false, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 184,
+                                                        lineNumber: 210,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 182,
+                                                lineNumber: 208,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 169,
+                                        lineNumber: 195,
                                         columnNumber: 17
                                     }, this),
                                     apt.status !== 'completed' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -46355,24 +46810,24 @@ function TechnicianApp({ user, onLogout }) {
                                         children: "\uD83D\uDE80 Start Work"
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 189,
+                                        lineNumber: 215,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, apt.id, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 154,
+                                lineNumber: 180,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 152,
+                        lineNumber: 178,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 139,
+                lineNumber: 145,
                 columnNumber: 9
             }, this),
             screen === 'details' && selectedAppointment && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -46384,7 +46839,7 @@ function TechnicianApp({ user, onLogout }) {
                         children: "\u2190 Back"
                     }, void 0, false, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 208,
+                        lineNumber: 234,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46397,7 +46852,7 @@ function TechnicianApp({ user, onLogout }) {
                                         children: selectedAppointment.service
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 212,
+                                        lineNumber: 238,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -46405,13 +46860,13 @@ function TechnicianApp({ user, onLogout }) {
                                         children: selectedAppointment.address
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 213,
+                                        lineNumber: 239,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 211,
+                                lineNumber: 237,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46421,7 +46876,7 @@ function TechnicianApp({ user, onLogout }) {
                                         children: "\uD83D\uDC64 Customer Information"
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 217,
+                                        lineNumber: 243,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46432,20 +46887,20 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: "Name:"
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 219,
+                                                lineNumber: 245,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
                                                 children: selectedAppointment.customerName
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 220,
+                                                lineNumber: 246,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 218,
+                                        lineNumber: 244,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46456,141 +46911,13 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: "Phone:"
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 223,
+                                                lineNumber: 249,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("a", {
                                                 href: `tel:${selectedAppointment.phone}`,
                                                 className: "link",
                                                 children: selectedAppointment.phone
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 224,
-                                                columnNumber: 17
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 222,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                        className: "detail-item",
-                                        children: [
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                className: "label",
-                                                children: "Address:"
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 229,
-                                                columnNumber: 17
-                                            }, this),
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                children: selectedAppointment.address
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 230,
-                                                columnNumber: 17
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 228,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 216,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "detail-card",
-                                children: [
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
-                                        children: "\u23F0 Schedule"
-                                    }, void 0, false, {
-                                        fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 235,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                        className: "detail-item",
-                                        children: [
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                className: "label",
-                                                children: "Date:"
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 237,
-                                                columnNumber: 17
-                                            }, this),
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                children: selectedAppointment.date
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 238,
-                                                columnNumber: 17
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 236,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                        className: "detail-item",
-                                        children: [
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                className: "label",
-                                                children: "Time:"
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 241,
-                                                columnNumber: 17
-                                            }, this),
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                children: selectedAppointment.time
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 242,
-                                                columnNumber: 17
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 240,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 234,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "detail-card",
-                                children: [
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
-                                        children: "\u2744\uFE0F AC Unit"
-                                    }, void 0, false, {
-                                        fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 247,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                        className: "detail-item",
-                                        children: [
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                className: "label",
-                                                children: "Model:"
-                                            }, void 0, false, {
-                                                fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 249,
-                                                columnNumber: 17
-                                            }, this),
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                                children: selectedAppointment.unit
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
                                                 lineNumber: 250,
@@ -46607,10 +46934,138 @@ function TechnicianApp({ user, onLogout }) {
                                         children: [
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
                                                 className: "label",
+                                                children: "Address:"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 255,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                children: selectedAppointment.address
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 256,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 254,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/Technician/TechnicianApp.jsx",
+                                lineNumber: 242,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "detail-card",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                        children: "\u23F0 Schedule"
+                                    }, void 0, false, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 261,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "detail-item",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "label",
+                                                children: "Date:"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 263,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                children: selectedAppointment.date
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 264,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 262,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "detail-item",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "label",
+                                                children: "Time:"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 267,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                children: selectedAppointment.time
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 268,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 266,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/Technician/TechnicianApp.jsx",
+                                lineNumber: 260,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "detail-card",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                        children: "\u2744\uFE0F AC Unit"
+                                    }, void 0, false, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 273,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "detail-item",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "label",
+                                                children: "Model:"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 275,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                children: selectedAppointment.unit
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 276,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 274,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "detail-item",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "label",
                                                 children: "Notes:"
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 253,
+                                                lineNumber: 279,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -46618,19 +47073,19 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: selectedAppointment.notes
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 254,
+                                                lineNumber: 280,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 252,
+                                        lineNumber: 278,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 246,
+                                lineNumber: 272,
                                 columnNumber: 13
                             }, this),
                             selectedAppointment.status !== 'completed' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46641,12 +47096,12 @@ function TechnicianApp({ user, onLogout }) {
                                     children: "\uD83D\uDCF8 Take Work Photos & Notes"
                                 }, void 0, false, {
                                     fileName: "src/Technician/TechnicianApp.jsx",
-                                    lineNumber: 260,
+                                    lineNumber: 286,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 259,
+                                lineNumber: 285,
                                 columnNumber: 15
                             }, this),
                             selectedAppointment.status === 'completed' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46654,19 +47109,19 @@ function TechnicianApp({ user, onLogout }) {
                                 children: "\u2713 Job Completed"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 270,
+                                lineNumber: 296,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 210,
+                        lineNumber: 236,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 207,
+                lineNumber: 233,
                 columnNumber: 9
             }, this),
             screen === 'photos' && selectedAppointment && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
@@ -46678,7 +47133,7 @@ function TechnicianApp({ user, onLogout }) {
                         children: "\u2190 Back"
                     }, void 0, false, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 279,
+                        lineNumber: 305,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46688,7 +47143,7 @@ function TechnicianApp({ user, onLogout }) {
                                 children: "\uD83D\uDCF8 Work Documentation"
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 282,
+                                lineNumber: 308,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -46700,7 +47155,7 @@ function TechnicianApp({ user, onLogout }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 283,
+                                lineNumber: 309,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46710,7 +47165,7 @@ function TechnicianApp({ user, onLogout }) {
                                         children: "Photos"
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 286,
+                                        lineNumber: 312,
                                         columnNumber: 15
                                     }, this),
                                     workPhotos.length === 0 ? /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46720,7 +47175,7 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: "\uD83D\uDCF7 No photos yet"
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 289,
+                                                lineNumber: 315,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -46729,13 +47184,13 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: "\uD83D\uDCF8 Add Photo"
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 290,
+                                                lineNumber: 316,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 288,
+                                        lineNumber: 314,
                                         columnNumber: 17
                                     }, this) : /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _jsxDevRuntime.Fragment), {
                                         children: [
@@ -46749,7 +47204,7 @@ function TechnicianApp({ user, onLogout }) {
                                                                 alt: `Work ${photo.type}`
                                                             }, void 0, false, {
                                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                                lineNumber: 299,
+                                                                lineNumber: 325,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46760,7 +47215,7 @@ function TechnicianApp({ user, onLogout }) {
                                                                         children: photo.type
                                                                     }, void 0, false, {
                                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                                        lineNumber: 301,
+                                                                        lineNumber: 327,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
@@ -46768,24 +47223,24 @@ function TechnicianApp({ user, onLogout }) {
                                                                         children: photo.timestamp
                                                                     }, void 0, false, {
                                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                                        lineNumber: 302,
+                                                                        lineNumber: 328,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                                lineNumber: 300,
+                                                                lineNumber: 326,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, photo.id, true, {
                                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                                        lineNumber: 298,
+                                                        lineNumber: 324,
                                                         columnNumber: 23
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 296,
+                                                lineNumber: 322,
                                                 columnNumber: 19
                                             }, this),
                                             workPhotos.length < 3 && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -46794,7 +47249,7 @@ function TechnicianApp({ user, onLogout }) {
                                                 children: "\u2795 Add More Photos"
                                             }, void 0, false, {
                                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                                lineNumber: 308,
+                                                lineNumber: 334,
                                                 columnNumber: 21
                                             }, this)
                                         ]
@@ -46802,7 +47257,7 @@ function TechnicianApp({ user, onLogout }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 285,
+                                lineNumber: 311,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46812,7 +47267,7 @@ function TechnicianApp({ user, onLogout }) {
                                         children: "\uD83D\uDCDD Work Notes"
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 317,
+                                        lineNumber: 343,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("textarea", {
@@ -46822,13 +47277,13 @@ function TechnicianApp({ user, onLogout }) {
                                         className: "notes-input"
                                     }, void 0, false, {
                                         fileName: "src/Technician/TechnicianApp.jsx",
-                                        lineNumber: 318,
+                                        lineNumber: 344,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 316,
+                                lineNumber: 342,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -46840,31 +47295,236 @@ function TechnicianApp({ user, onLogout }) {
                                     children: "\u2713 Complete Job"
                                 }, void 0, false, {
                                     fileName: "src/Technician/TechnicianApp.jsx",
-                                    lineNumber: 327,
+                                    lineNumber: 353,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "src/Technician/TechnicianApp.jsx",
-                                lineNumber: 326,
+                                lineNumber: 352,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 281,
+                        lineNumber: 307,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 278,
+                lineNumber: 304,
                 columnNumber: 9
             }, this),
-            screen === 'appointments' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("nav", {
+            screen === 'updates' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("main", {
+                className: "tech-main",
+                children: [
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                        onClick: ()=>setScreen('appointments'),
+                        className: "btn-back",
+                        children: "\u2190 Back"
+                    }, void 0, false, {
+                        fileName: "src/Technician/TechnicianApp.jsx",
+                        lineNumber: 368,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "screen-header",
+                        children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h2", {
+                            children: "\uD83D\uDCE2 Updates & Announcements"
+                        }, void 0, false, {
+                            fileName: "src/Technician/TechnicianApp.jsx",
+                            lineNumber: 370,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "src/Technician/TechnicianApp.jsx",
+                        lineNumber: 369,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "updates-list",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "update-card",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "update-header",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                                children: "New Service Guidelines"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 376,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "update-date",
+                                                children: "Today"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 377,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 375,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
+                                        children: "Please follow the new safety protocols when visiting customer sites. Check your email for detailed guidelines."
+                                    }, void 0, false, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 379,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/Technician/TechnicianApp.jsx",
+                                lineNumber: 374,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "update-card",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "update-header",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                                children: "Equipment Request: Safety Gear"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 384,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "update-date",
+                                                children: "Yesterday"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 385,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 383,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
+                                        children: "Please submit your requests for additional safety equipment by end of week. Contact admin for more info."
+                                    }, void 0, false, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 387,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/Technician/TechnicianApp.jsx",
+                                lineNumber: 382,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "update-card",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "update-header",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                                children: "Training Session Scheduled"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 392,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "update-date",
+                                                children: "2 days ago"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 393,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 391,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
+                                        children: "Mandatory training on new AC models will be held next Monday at 2:00 PM. Please confirm your attendance."
+                                    }, void 0, false, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 395,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/Technician/TechnicianApp.jsx",
+                                lineNumber: 390,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "update-card",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                        className: "update-header",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
+                                                children: "Performance Bonus Announcement"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 400,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                                className: "update-date",
+                                                children: "1 week ago"
+                                            }, void 0, false, {
+                                                fileName: "src/Technician/TechnicianApp.jsx",
+                                                lineNumber: 401,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 399,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
+                                        children: "Great work this month! Technicians with 95%+ customer satisfaction will receive a bonus. Thank you for your dedication!"
+                                    }, void 0, false, {
+                                        fileName: "src/Technician/TechnicianApp.jsx",
+                                        lineNumber: 403,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "src/Technician/TechnicianApp.jsx",
+                                lineNumber: 398,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Technician/TechnicianApp.jsx",
+                        lineNumber: 373,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "src/Technician/TechnicianApp.jsx",
+                lineNumber: 367,
+                columnNumber: 9
+            }, this),
+            (screen === 'appointments' || screen === 'updates') && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("nav", {
                 className: "bottom-nav-tech",
                 children: [
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item active",
+                        className: `nav-item ${screen === 'appointments' ? 'active' : ''}`,
+                        onClick: ()=>{
+                            setScreen('appointments');
+                            setActiveFilter('all');
+                        },
                         children: [
                             "\uD83D\uDCCB Jobs (",
                             appointments.filter((a)=>a.status !== 'completed').length,
@@ -46872,11 +47532,15 @@ function TechnicianApp({ user, onLogout }) {
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 342,
+                        lineNumber: 412,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item",
+                        className: `nav-item ${screen === 'appointments' && activeFilter === 'completed' ? 'active' : ''}`,
+                        onClick: ()=>{
+                            setScreen('appointments');
+                            setActiveFilter('completed');
+                        },
                         children: [
                             "\u2713 Completed (",
                             appointments.filter((a)=>a.status === 'completed').length,
@@ -46884,31 +47548,32 @@ function TechnicianApp({ user, onLogout }) {
                         ]
                     }, void 0, true, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 345,
+                        lineNumber: 421,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        className: "nav-item",
-                        children: "\u2699\uFE0F Settings"
+                        className: `nav-item ${screen === 'updates' ? 'active' : ''}`,
+                        onClick: ()=>setScreen('updates'),
+                        children: "\uD83D\uDCE2 Updates"
                     }, void 0, false, {
                         fileName: "src/Technician/TechnicianApp.jsx",
-                        lineNumber: 348,
+                        lineNumber: 430,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Technician/TechnicianApp.jsx",
-                lineNumber: 341,
+                lineNumber: 411,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/Technician/TechnicianApp.jsx",
-        lineNumber: 127,
+        lineNumber: 133,
         columnNumber: 5
     }, this);
 }
-_s(TechnicianApp, "uxuzA58BroqmGtJ0GyvtYIupxek=");
+_s(TechnicianApp, "CerlhCYqDJJgUGey2u881x6oZ7c=");
 _c = TechnicianApp;
 var _c;
 $RefreshReg$(_c, "TechnicianApp");

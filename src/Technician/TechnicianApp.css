@@ -524,6 +524,55 @@
   border-top: 3px solid #3b82f6;
 }
 
+/* Updates Screen */
+.updates-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 100px;
+}
+
+.update-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #3b82f6;
+}
+
+.update-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.update-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2937;
+  flex: 1;
+}
+
+.update-date {
+  background: #e0e7ff;
+  color: #3b82f6;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.update-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .APT-header {

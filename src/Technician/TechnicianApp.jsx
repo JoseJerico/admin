@@ -42,13 +42,14 @@ const SAMPLE_APPOINTMENTS = [
 ]
 
 export default function TechnicianApp({ user, onLogout }) {
-  const [screen, setScreen] = useState('appointments') // appointments, details, camera, photos
+  const [screen, setScreen] = useState('appointments') // appointments, details, camera, photos, updates
   const [appointments, setAppointments] = useState(SAMPLE_APPOINTMENTS)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [showCamera, setShowCamera] = useState(false)
   const [workPhotos, setWorkPhotos] = useState([])
   const [notes, setNotes] = useState('')
   const [cameraMode, setCameraMode] = useState('before') // before, during, after
+  const [activeFilter, setActiveFilter] = useState('all')
 
   function handleAppointmentClick(appointment) {
     setSelectedAppointment(appointment)
@@ -93,6 +94,11 @@ export default function TechnicianApp({ user, onLogout }) {
       setNotes('')
       setScreen('appointments')
     }
+  }
+
+  function getFilteredAppointments() {
+    if (activeFilter === 'all') return appointments
+    return appointments.filter(apt => apt.status === activeFilter)
   }
 
   function getStatusColor(status) {
@@ -143,14 +149,34 @@ export default function TechnicianApp({ user, onLogout }) {
           </div>
 
           <div className="status-filter">
-            <button className="filter-btn active">All</button>
-            <button className="filter-btn">Scheduled</button>
-            <button className="filter-btn">In Progress</button>
-            <button className="filter-btn">Completed</button>
+            <button 
+              className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('all')}
+            >
+              All
+            </button>
+            <button 
+              className={`filter-btn ${activeFilter === 'scheduled' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('scheduled')}
+            >
+              Scheduled
+            </button>
+            <button 
+              className={`filter-btn ${activeFilter === 'in-progress' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('in-progress')}
+            >
+              In Progress
+            </button>
+            <button 
+              className={`filter-btn ${activeFilter === 'completed' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('completed')}
+            >
+              Completed
+            </button>
           </div>
 
           <div className="appointments-list">
-            {appointments.map(apt => (
+            {getFilteredAppointments().map(apt => (
               <div 
                 key={apt.id} 
                 className={`appointment-card status-${apt.status}`}
@@ -336,16 +362,77 @@ export default function TechnicianApp({ user, onLogout }) {
         </main>
       )}
 
+      {/* Updates Screen */}
+      {screen === 'updates' && (
+        <main className="tech-main">
+          <button onClick={() => setScreen('appointments')} className="btn-back">← Back</button>
+          <div className="screen-header">
+            <h2>📢 Updates & Announcements</h2>
+          </div>
+
+          <div className="updates-list">
+            <div className="update-card">
+              <div className="update-header">
+                <h3>New Service Guidelines</h3>
+                <span className="update-date">Today</span>
+              </div>
+              <p>Please follow the new safety protocols when visiting customer sites. Check your email for detailed guidelines.</p>
+            </div>
+
+            <div className="update-card">
+              <div className="update-header">
+                <h3>Equipment Request: Safety Gear</h3>
+                <span className="update-date">Yesterday</span>
+              </div>
+              <p>Please submit your requests for additional safety equipment by end of week. Contact admin for more info.</p>
+            </div>
+
+            <div className="update-card">
+              <div className="update-header">
+                <h3>Training Session Scheduled</h3>
+                <span className="update-date">2 days ago</span>
+              </div>
+              <p>Mandatory training on new AC models will be held next Monday at 2:00 PM. Please confirm your attendance.</p>
+            </div>
+
+            <div className="update-card">
+              <div className="update-header">
+                <h3>Performance Bonus Announcement</h3>
+                <span className="update-date">1 week ago</span>
+              </div>
+              <p>Great work this month! Technicians with 95%+ customer satisfaction will receive a bonus. Thank you for your dedication!</p>
+            </div>
+          </div>
+        </main>
+      )}
+
       {/* Bottom Navigation */}
-      {screen === 'appointments' && (
+      {(screen === 'appointments' || screen === 'updates') && (
         <nav className="bottom-nav-tech">
-          <button className="nav-item active">
+          <button 
+            className={`nav-item ${screen === 'appointments' ? 'active' : ''}`}
+            onClick={() => {
+              setScreen('appointments')
+              setActiveFilter('all')
+            }}
+          >
             📋 Jobs ({appointments.filter(a => a.status !== 'completed').length})
           </button>
-          <button className="nav-item">
+          <button 
+            className={`nav-item ${screen === 'appointments' && activeFilter === 'completed' ? 'active' : ''}`}
+            onClick={() => {
+              setScreen('appointments')
+              setActiveFilter('completed')
+            }}
+          >
             ✓ Completed ({appointments.filter(a => a.status === 'completed').length})
           </button>
-          <button className="nav-item">⚙️ Settings</button>
+          <button 
+            className={`nav-item ${screen === 'updates' ? 'active' : ''}`}
+            onClick={() => setScreen('updates')}
+          >
+            📢 Updates
+          </button>
         </nav>
       )}
     </div>

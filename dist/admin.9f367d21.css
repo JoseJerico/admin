@@ -2332,6 +2332,202 @@ html, body, #root {
   }
 }
 
+.profile-modal-overlay {
+  z-index: 1000;
+  background: #00000080;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  display: flex;
+  position: fixed;
+  inset: 0;
+}
+
+.profile-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px #0003;
+}
+
+.modal-header {
+  border-bottom: 1px solid #e5e7eb;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  display: flex;
+}
+
+.modal-header h2 {
+  color: #1f2937;
+  margin: 0;
+  font-size: 18px;
+}
+
+.btn-close-modal {
+  cursor: pointer;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  font-size: 24px;
+}
+
+.profile-content {
+  padding: 16px;
+}
+
+.profile-item {
+  border-bottom: 1px solid #f3f4f6;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  display: flex;
+}
+
+.profile-item:last-child {
+  border-bottom: none;
+}
+
+.profile-item .label {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.profile-item span:last-child {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.modal-actions {
+  border-top: 1px solid #e5e7eb;
+  gap: 8px;
+  padding: 16px;
+  display: flex;
+}
+
+.btn-close {
+  color: #fff;
+  cursor: pointer;
+  background: #10b981;
+  border: none;
+  border-radius: 8px;
+  flex: 1;
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+.btn-close:active {
+  background: #059669;
+}
+
+.booking-form {
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  display: flex;
+}
+
+.form-group {
+  flex-direction: column;
+  gap: 8px;
+  display: flex;
+}
+
+.form-group label {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.form-input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 0 3px #667eea1a;
+}
+
+.booking-summary {
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.booking-summary h3 {
+  color: #374151;
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.summary-items {
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  display: flex;
+}
+
+.summary-item {
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  display: flex;
+}
+
+.summary-total {
+  color: #1f2937;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+}
+
+.booking-actions {
+  gap: 12px;
+  display: flex;
+}
+
+.btn-back-booking, .btn-confirm-booking {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all .2s;
+}
+
+.btn-back-booking {
+  color: #374151;
+  background: #e5e7eb;
+}
+
+.btn-back-booking:active {
+  background: #d1d5db;
+}
+
+.btn-confirm-booking {
+  color: #fff;
+  background: #10b981;
+}
+
+.btn-confirm-booking:active {
+  background: #059669;
+}
+
 .tech-app {
   background: #f5f7fa;
   flex-direction: column;
@@ -2840,6 +3036,53 @@ html, body, #root {
 .nav-item.active {
   color: #3b82f6;
   border-top: 3px solid #3b82f6;
+}
+
+.updates-list {
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 100px;
+  display: flex;
+}
+
+.update-card {
+  background: #fff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px #0000001a;
+}
+
+.update-header {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+  display: flex;
+}
+
+.update-header h3 {
+  color: #1f2937;
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+}
+
+.update-date {
+  color: #3b82f6;
+  white-space: nowrap;
+  background: #e0e7ff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.update-card p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 @media (width <= 600px) {
