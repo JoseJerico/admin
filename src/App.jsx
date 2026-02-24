@@ -4,6 +4,16 @@ import AdminApp from './Admin/AdminApp'
 import UserApp from './User/UserApp'
 import TechnicianApp from './Technician/TechnicianApp'
 import './App.css'
+import { supabase } from './supabaseClient';
+
+async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) console.error(error);
+  else console.log('Signed in:', data);
+}
 
 export default function App() {
   const [user, setUser] = useState(null)
