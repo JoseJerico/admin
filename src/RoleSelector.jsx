@@ -12,7 +12,7 @@ export default function RoleSelector({ onRoleSelect }) {
   const [adminPin, setAdminPin] = useState('')
   const [pinError, setPinError] = useState('')
 
-  const ADMIN_PIN = '1234' // Security PIN for admin access
+  const ADMIN_PIN = '8888' // Security PIN for admin access
   const roles = [
     {
       id: 'user',
