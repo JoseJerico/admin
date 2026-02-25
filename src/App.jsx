@@ -4,7 +4,7 @@ import AdminApp from './Admin/AdminApp'
 import UserApp from './User/UserApp'
 import TechnicianApp from './Technician/TechnicianApp'
 import './App.css'
-import { supabase } from './supabaseClient';
+import { supabase } from './supabase';
 
 async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import './Login.css'
-import { supabase } from './supabaseClient';
+import { supabase } from './supabase';
 
 async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({
