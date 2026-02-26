@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase, authService } from './services/supabaseClient'
+import { supabase, authService } from './services/supabase'
 import RoleSelector from './RoleSelector'
 import AdminApp from './Admin/AdminApp'
 import UserApp from './User/UserApp'
