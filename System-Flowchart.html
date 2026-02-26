@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Role PWA System Flowchart</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+        .info h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info li {
+            margin: 8px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Multi-Role PWA System Flowchart</h1>
+        
+        <div class="mermaid">
+graph TD
+    A["🚀 Application Starts"] --> B["Register Service Worker<br/>PWA Setup"]
+    B --> C{"Existing<br/>Session?"}
+    
+    C -->|No| D["📱 Login Screen"]
+    D --> E["Enter Email & Password"]
+    E --> F["Authenticate with Supabase"]
+    F --> G{"Login<br/>Successful?"}
+    
+    G -->|No| D
+    G -->|Yes| H["Set User Data"]
+    
+    C -->|Yes| H
+    H --> I["Role Selector"]
+    I --> J["Select Access Level"]
+    
+    J --> K{"Admin<br/>Access?"}
+    K -->|Yes| L["Enter Admin PIN"]
+    L --> M{"PIN<br/>Correct?"}
+    M -->|No| L
+    M -->|Yes| N["Admin Role Unlocked"]
+    N --> O["Select Admin Role"]
+    
+    K -->|No| P["Select User or<br/>Technician Role"]
+    O --> Q{"Role<br/>Selected"}
+    P --> Q
+    
+    Q -->|Admin| R["🔑 Admin App"]
+    Q -->|Technician| S["🔧 Technician App"]
+    Q -->|User| T["👤 User App"]
+    
+    R --> R1["Manage Schedules"]
+    R --> R2["Manage Technicians"]
+    R --> R3["View Reports"]
+    
+    S --> S1["View Assigned Jobs"]
+    S --> S2["Update Job Status"]
+    S --> S3["Camera Integration"]
+    
+    T --> T1["Browse Services"]
+    T --> T2["Book Appointments"]
+    T --> T3["Edit Appointments"]
+    T --> T4["Install PWA"]
+    
+    R1 --> U{"User<br/>Action"}
+    R2 --> U
+    R3 --> U
+    S1 --> U
+    S2 --> U
+    S3 --> U
+    T1 --> U
+    T2 --> U
+    T3 --> U
+    T4 --> U
+    
+    U -->|Logout| V["Clear Local Storage<br/>End Session"]
+    U -->|Continue| U
+    
+    V --> D
+    
+    style A fill:#667eea,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#3b82f6,stroke:#333,stroke-width:2px,color:#fff
+    style I fill:#f59e0b,stroke:#333,stroke-width:2px,color:#fff
+    style R fill:#667eea,stroke:#333,stroke-width:2px,color:#fff
+    style S fill:#3b82f6,stroke:#333,stroke-width:2px,color:#fff
+    style T fill:#10b981,stroke:#333,stroke-width:2px,color:#fff
+    style V fill:#ef4444,stroke:#333,stroke-width:2px,color:#fff
+        </div>
+
+        <div class="info">
+            <h3>System Overview</h3>
+            <ul>
+                <li><strong>Authentication:</strong> Supabase email/password login</li>
+                <li><strong>Session Persistence:</strong> LocalStorage for user and role data</li>
+                <li><strong>Admin Security:</strong> PIN protected (1234)</li>
+                <li><strong>Three User Roles:</strong>
+                    <ul>
+                        <li>👤 Customer - Browse & book services</li>
+                        <li>🔧 Technician - View & update jobs</li>
+                        <li>👨‍💼 Admin - Manage system</li>
+                    </ul>
+                </li>
+                <li><strong>PWA Features:</strong> Service worker for offline support</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>

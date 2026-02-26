@@ -395,19 +395,19 @@ export default function UserApp({ user, onLogout }) {
 
             <div className="booking-actions">
               <button onClick={() => setScreen('cart')} className="btn-back-booking">← Back</button>
-              <button onClick={() => { setCart([]); setScreen('home'); }} className="btn-confirm-booking">✓ Confirm Booking</button>
+              <button className="btn-confirm-booking">✓ Confirm Booking</button>
             </div>
           </div>
         </main>
       )}
 
       {/* Bottom Navigation */}
-      {(screen === 'home' || screen === 'products' || screen === 'services' || screen === 'cart' || screen === 'measure') && (
+      {screen === 'home' && (
         <nav className="bottom-nav">
-          <button className={`nav-item ${screen === 'home' ? 'active' : ''}`} onClick={() => setScreen('home')}>🏠 Home</button>
-          <button className={`nav-item ${screen === 'products' ? 'active' : ''}`} onClick={() => setScreen('products')}>❄️ Products</button>
-          <button className={`nav-item ${screen === 'services' ? 'active' : ''}`} onClick={() => setScreen('services')}>🔧 Services</button>
-          <button className={`nav-item ${screen === 'cart' ? 'active' : ''}`} onClick={() => setScreen('cart')}>🛒 Cart ({cart.length})</button>
+          <button className="nav-item active" onClick={() => setScreen('home')}>🏠 Home</button>
+          <button className="nav-item" onClick={() => setScreen('products')}>❄️ Products</button>
+          <button className="nav-item" onClick={() => setScreen('services')}>🔧 Services</button>
+          <button className="nav-item" onClick={() => setScreen('cart')}>🛒 Cart ({cart.length})</button>
         </nav>
       )}
     </div>
