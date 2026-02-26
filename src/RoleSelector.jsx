@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import './RoleSelector.css'
+import { supabase } from './supabase'
+
 
 export default function RoleSelector({ onRoleSelect }) {
   const [selectedRole, setSelectedRole] = useState(null)
@@ -12,7 +14,7 @@ export default function RoleSelector({ onRoleSelect }) {
   const [adminPin, setAdminPin] = useState('')
   const [pinError, setPinError] = useState('')
 
-  const ADMIN_PIN = '1234' // Security PIN for admin access
+  const ADMIN_PIN = '8888' // Security PIN for admin access
   const roles = [
     {
       id: 'user',
@@ -71,6 +73,70 @@ export default function RoleSelector({ onRoleSelect }) {
     setShowAdminPin(false)
     setPinError('')
     setAdminPin('')
+  }
+  
+
+   async function handleLogin() {
+    if (!email || !password) {
+      alert('Please enter email and password')
+      return
+    }
+
+    if (!selectedRole) return
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    onRoleSelect(selectedRole, {
+      id: data.user.id,
+      email: data.user.email
+    })
+  }
+
+  async function handleRegister() {
+    if (!email || !password || !confirmPassword) {
+      alert('Please fill in all fields')
+      return
+    }
+
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      alert('Passwords do not match')
+      return
+    }
+
+    if (!email.includes('@')) {
+      alert('Please enter a valid email')
+      return
+    }
+
+    if (!selectedRole) return
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password
+    })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    onRoleSelect(selectedRole, {
+      id: data.user.id,
+      email: data.user.email
+    })
   }
 
   function handleLogin() {
