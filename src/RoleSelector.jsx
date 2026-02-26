@@ -215,7 +215,7 @@ export default function RoleSelector({ onRoleSelect }) {
                   <label>Confirm Password</label>
                   <input
                     type="password"
-                    value={confirmPassword}
+                    value={confirmPassword} 
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                   />
