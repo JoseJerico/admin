@@ -1,33 +1,51 @@
 import React, { useState, useEffect } from 'react'
 import Camera from '../shared/Camera'
 import './UserApp.css'
-
-const SAMPLE_PRODUCTS = [
-  { id: 1, name: '1 Ton Window AC', price: 15000, capacity: '8000-10000 BTU', area: '120-150 sq ft', image: '❄️' },
-  { id: 2, name: '1.5 Ton Split AC', price: 28000, capacity: '12000-15000 BTU', area: '150-200 sq ft', image: '❄️' },
-  { id: 3, name: '2 Ton Split AC', price: 35000, capacity: '18000 BTU', area: '200-250 sq ft', image: '❄️' },
-  { id: 4, name: '2.5 Ton Split AC', price: 42000, capacity: '24000 BTU', area: '250-300 sq ft', image: '❄️' },
-  { id: 5, name: '3 Ton Split AC', price: 52000, capacity: '30000 BTU', area: '300-400 sq ft', image: '❄️' },
-  { id: 6, name: '5 Ton Central AC', price: 95000, capacity: '50000 BTU', area: '500+ sq ft', image: '❄️' },
-]
-
-const SERVICES = [
-  { id: 1, name: 'AC Installation', price: 5000, icon: '🔧', duration: '2-3 hours' },
-  { id: 2, name: 'AC Maintenance', price: 2000, icon: '🧹', duration: '1 hour' },
-  { id: 3, name: 'AC Repair', price: 3000, icon: '🔨', duration: 'Varies' },
-  { id: 4, name: 'Annual Service', price: 4500, icon: '📋', duration: '1.5 hours' },
-  { id: 5, name: 'Refrigerant Refill', price: 1500, icon: '💨', duration: '30 mins' },
-  { id: 6, name: 'Ductwork Cleaning', price: 2500, icon: '🌪️', duration: '1-2 hours' },
-]
+import { supabase } from '../supabase'
 
 export default function UserApp({ user, onLogout }) {
-  const [screen, setScreen] = useState('home') // home, products, services, measure, booking, cart, profile
+  const [screen, setScreen] = useState('home')
   const [cart, setCart] = useState([])
   const [showCamera, setShowCamera] = useState(false)
   const [roomMeasurements, setRoomMeasurements] = useState(null)
   const [recommendedProduct, setRecommendedProduct] = useState(null)
-  const [selectedItems, setSelectedItems] = useState({})
   const [showProfile, setShowProfile] = useState(false)
+
+  const [products, setProducts] = useState([])
+  const [services, setServices] = useState([])
+
+  useEffect(() => {
+    fetchProducts()
+    fetchServices()
+  }, [])
+
+  async function fetchProducts() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id')
+
+    if (error) {
+      console.error('Products error:', error)
+      return
+    }
+
+    setProducts(data || [])
+  }
+
+  async function fetchServices() {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .order('id')
+
+    if (error) {
+      console.error('Services error:', error)
+      return
+    }
+
+    setServices(data || [])
+  }
 
   function addToCart(item) {
     setCart([...cart, { ...item, cartId: Date.now() }])
@@ -38,13 +56,17 @@ export default function UserApp({ user, onLogout }) {
   }
 
   function getRecommendation(area) {
+    if (!products.length) return null
+
     const areaNum = parseFloat(area)
-    if (areaNum <= 150) return SAMPLE_PRODUCTS[0]
-    if (areaNum <= 200) return SAMPLE_PRODUCTS[1]
-    if (areaNum <= 250) return SAMPLE_PRODUCTS[2]
-    if (areaNum <= 300) return SAMPLE_PRODUCTS[3]
-    if (areaNum <= 400) return SAMPLE_PRODUCTS[4]
-    return SAMPLE_PRODUCTS[5]
+
+    if (areaNum <= 150) return products[0]
+    if (areaNum <= 200) return products[1] || products[0]
+    if (areaNum <= 250) return products[2] || products[products.length - 1]
+    if (areaNum <= 300) return products[3] || products[products.length - 1]
+    if (areaNum <= 400) return products[4] || products[products.length - 1]
+
+    return products[products.length - 1]
   }
 
   function handleCameraCapture(data) {
@@ -59,12 +81,37 @@ export default function UserApp({ user, onLogout }) {
     return cart.reduce((sum, item) => sum + (item.price || 0), 0)
   }
 
+  async function handleConfirmBooking() {
+    if (!user?.id) {
+      alert('User not logged in')
+      return
+    }
+
+    const { error } = await supabase
+      .from('bookings')
+      .insert({
+        user_id: user.id,
+        total_amount: calculateTotal() + 500,
+        items: cart
+      })
+
+    if (error) {
+      console.error(error)
+      alert('Failed to save booking')
+      return
+    }
+
+    setCart([])
+    setScreen('home')
+    alert('Booking saved!')
+  }
+
   if (showCamera) {
     return (
       <div className="user-app">
-        <Camera 
-          onCapture={handleCameraCapture} 
-          title="📐 Measure Your Room" 
+        <Camera
+          onCapture={handleCameraCapture}
+          title="📐 Measure Your Room"
           mode="measure"
         />
         <button onClick={() => setShowCamera(false)} className="btn-close-camera">
@@ -106,7 +153,7 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="quick-actions">
-            <button 
+            <button
               onClick={() => setShowCamera(true)}
               className="action-card measure"
             >
@@ -115,7 +162,7 @@ export default function UserApp({ user, onLogout }) {
               <p>Get AC recommendation</p>
             </button>
 
-            <button 
+            <button
               onClick={() => setScreen('products')}
               className="action-card products"
             >
@@ -124,7 +171,7 @@ export default function UserApp({ user, onLogout }) {
               <p>View our products</p>
             </button>
 
-            <button 
+            <button
               onClick={() => setScreen('services')}
               className="action-card services"
             >
@@ -137,13 +184,16 @@ export default function UserApp({ user, onLogout }) {
           <section className="featured">
             <h3>Featured Products</h3>
             <div className="products-grid">
-              {SAMPLE_PRODUCTS.slice(0, 3).map(product => (
+              {products.slice(0, 3).map(product => (
                 <div key={product.id} className="product-card">
-                  <div className="product-image">{product.image}</div>
+                  <div className="product-image">{product.image || '❄️'}</div>
                   <h4>{product.name}</h4>
                   <p className="capacity">{product.capacity}</p>
                   <p className="price">₱{product.price.toLocaleString()}</p>
-                  <button onClick={() => { addToCart(product); setScreen('cart') }} className="btn-add">
+                  <button
+                    onClick={() => { addToCart(product); setScreen('cart') }}
+                    className="btn-add"
+                  >
                     Add to Cart
                   </button>
                 </div>
@@ -162,14 +212,17 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="products-grid full">
-            {SAMPLE_PRODUCTS.map(product => (
+            {products.map(product => (
               <div key={product.id} className="product-card">
-                <div className="product-image">{product.image}</div>
+                <div className="product-image">{product.image || '❄️'}</div>
                 <h4>{product.name}</h4>
                 <p className="capacity">{product.capacity}</p>
                 <p className="area">Coverage: {product.area}</p>
                 <p className="price">₱{product.price.toLocaleString()}</p>
-                <button onClick={() => addToCart(product)} className="btn-add-small">
+                <button
+                  onClick={() => addToCart(product)}
+                  className="btn-add-small"
+                >
                   Add to Cart
                 </button>
               </div>
@@ -187,13 +240,16 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="services-grid">
-            {SERVICES.map(service => (
+            {services.map(service => (
               <div key={service.id} className="service-card">
-                <div className="service-icon-large">{service.icon}</div>
+                <div className="service-icon-large">{service.icon || '🔧'}</div>
                 <h4>{service.name}</h4>
                 <p className="duration">⏱️ {service.duration}</p>
                 <p className="service-price">₱{service.price.toLocaleString()}</p>
-                <button onClick={() => addToCart(service)} className="btn-add-service-card">
+                <button
+                  onClick={() => addToCart(service)}
+                  className="btn-add-service-card"
+                >
                   Add to Cart
                 </button>
               </div>
@@ -224,12 +280,12 @@ export default function UserApp({ user, onLogout }) {
                 <div className="recommendation">
                   <h3>🎯 Recommended for You</h3>
                   <div className="recommended-card">
-                    <div className="rec-image">{recommendedProduct.image}</div>
+                    <div className="rec-image">{recommendedProduct.image || '❄️'}</div>
                     <h4>{recommendedProduct.name}</h4>
                     <p className="capacity">{recommendedProduct.capacity}</p>
                     <p className="coverage">Coverage: {recommendedProduct.area}</p>
                     <p className="rec-price">₱{recommendedProduct.price.toLocaleString()}</p>
-                    <button 
+                    <button
                       onClick={() => {
                         addToCart(recommendedProduct)
                         setScreen('cart')
@@ -277,7 +333,7 @@ export default function UserApp({ user, onLogout }) {
                       <h4>{item.name}</h4>
                       <p className="item-price">₱{item.price.toLocaleString()}</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => removeFromCart(item.cartId)}
                       className="btn-remove"
                       title="Remove from cart"
@@ -303,7 +359,10 @@ export default function UserApp({ user, onLogout }) {
                 </div>
               </div>
 
-              <button onClick={() => setScreen('booking')} className="btn-checkout">
+              <button
+                onClick={() => setScreen('booking')}
+                className="btn-checkout"
+              >
                 📅 Schedule Service
               </button>
             </>
@@ -395,7 +454,9 @@ export default function UserApp({ user, onLogout }) {
 
             <div className="booking-actions">
               <button onClick={() => setScreen('cart')} className="btn-back-booking">← Back</button>
-              <button onClick={() => { setCart([]); setScreen('home'); }} className="btn-confirm-booking">✓ Confirm Booking</button>
+              <button onClick={handleConfirmBooking} className="btn-confirm-booking">
+                ✓ Confirm Booking
+              </button>
             </div>
           </div>
         </main>
