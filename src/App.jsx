@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { supabase, authService } from './services/supabase'
+import { supabase, authService } from './supabase';
 import RoleSelector from './RoleSelector'
 import AdminApp from './Admin/AdminApp'
 import UserApp from './User/UserApp'
 import TechnicianApp from './Technician/TechnicianApp'
 import Login from './Login'
 import './App.css'
-import { supabase } from './supabase';
+
 
 async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({

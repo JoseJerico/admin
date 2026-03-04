@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { authService } from './services/supabaseClient'
+import { authService } from './supabase.js'
 import './Login.css'
 import { supabase } from './supabase';
 
