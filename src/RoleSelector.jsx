@@ -16,51 +16,49 @@ export default function RoleSelector({ onRoleSelect }) {
   const ADMIN_PIN = '8888'
 
   const roles = [
-    { id: 'user', name: 'Customer', icon: '👤', description: 'Browse & book services', color: '#10b981' },
-    { id: 'technician', name: 'Technician', icon: '🔧', description: 'View jobs & work updates', color: '#3b82f6' }
+    { id: 'Customer', name: 'Customer', icon: '👤', description: 'Browse & book services', color: '#10b981' },
+    { id: 'Technician', name: 'Technician', icon: '🔧', description: 'View jobs & work updates', color: '#3b82f6' }
   ]
 
   if (adminAccessGranted) {
-    roles.unshift({ id: 'admin', name: 'Admin', icon: '👨‍💼', description: 'Manage schedules and technicians', color: '#667eea' })
+    roles.unshift({ id: 'Admin', name: 'Admin', icon: '👨‍💼', description: 'Manage schedules and technicians', color: '#667eea' })
   }
 
-    async function handleLogin() {
-      if (!email || !password) {
-        alert('Please enter email and password')
-        return
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        alert(`Login failed: ${error.message}`)
-        return
-      }
-
-      // Fetch profile with role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          full_name,
-          role_id,
-          roles (
-            name
-          )
-        `)
-        .eq('id', data.user.id)
-        .maybeSingle()
-
-      if (profileError || !profile) {
-        alert(`Profile fetch failed: ${profileError?.message || 'No profile found for this user'}`)
-        return
-      }
-
-      onRoleSelect(profile.roles?.name || selectedRole, {
-        email,
-        name: profile.full_name || email.split('@')[0]
-      })
+  async function handleLogin() {
+    if (!email || !password) {
+      alert('Please enter email and password')
+      return
     }
 
-    async function handleRegister() {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      alert(`Login failed: ${error.message}`)
+      return
+    }
+
+    // Fetch profile with role join
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select(`
+        full_name,
+        role_id,
+        roles!inner(name)
+      `)
+      .eq('id', data.user.id)
+      .maybeSingle()
+
+    if (profileError || !profile) {
+      alert(`Profile fetch failed: ${profileError?.message || 'No profile found for this user'}`)
+      return
+    }
+
+    onRoleSelect(profile.roles?.name || selectedRole, {
+      email,
+      name: profile.full_name || email.split('@')[0]
+    })
+  }
+
+  async function handleRegister() {
     if (!email || !password || !confirmPassword) {
       alert('Please fill in all fields')
       return
@@ -96,7 +94,7 @@ export default function RoleSelector({ onRoleSelect }) {
     }
 
     // 3. Insert into profiles
-    const { data: profileInsert, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .insert([{
         id: userId,
@@ -104,30 +102,24 @@ export default function RoleSelector({ onRoleSelect }) {
         full_name: email.split('@')[0],
         username: email.split('@')[0]
       }])
-      .select()
 
     if (profileError) {
-      console.error("Profile insert failed:", profileError)
       alert(`Profile insert failed: ${profileError.message}`)
       return
     }
 
-    console.log("Profile inserted:", profileInsert)
-
-    // 4. Insert into user_details (extra info)
+    // 4. Insert into user_details (let Postgres generate id)
     const { error: detailsError } = await supabase
       .from('user_details')
       .insert([{
-        id: userId,
         first_name: email.split('@')[0],
         email,
         role: selectedRole,
-        is_verified: false,
-        created_at: new Date().toISOString()
+        role_id: roleData.id,
+        is_verified: false
       }])
 
     if (detailsError) {
-      console.error("User details insert failed:", detailsError)
       alert(`User details insert failed: ${detailsError.message}`)
       return
     }
@@ -174,19 +166,19 @@ export default function RoleSelector({ onRoleSelect }) {
           <div className="login-box" style={{ borderTopColor: role.color }}>
             <div className="login-header">
               <div className="login-icon">{role.icon}</div>
-              <h1>{isRegistering && selectedRole !== 'technician' ? 'Sign Up' : 'Login'} as {role.name}</h1>
+              <h1>{isRegistering ? 'Sign Up' : 'Login'} as {role.name}</h1>
             </div>
 
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                isRegistering && selectedRole !== 'technician' ? handleRegister() : handleLogin()
+                isRegistering ? handleRegister() : handleLogin()
               }}
               className="login-form"
             >
               <div className="form-group">
                 <label>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`${role.id}@aircon.com`} />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`${role.id.toLowerCase()}@aircon.com`} />
               </div>
 
               <div className="form-group">
@@ -194,7 +186,7 @@ export default function RoleSelector({ onRoleSelect }) {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
 
-              {isRegistering && selectedRole !== 'technician' && (
+              {isRegistering && (
                 <div className="form-group">
                   <label>Confirm Password</label>
                   <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
@@ -202,20 +194,18 @@ export default function RoleSelector({ onRoleSelect }) {
               )}
 
               <button type="submit" className="btn-login-role">
-                {isRegistering && selectedRole !== 'technician' ? 'Sign Up' : 'Login'}
+                {isRegistering ? 'Sign Up' : 'Login'}
               </button>
             </form>
 
-            {selectedRole !== 'technician' && (
-              <div className="login-toggle-section">
-                <p className="toggle-text">
-                  {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
-                  <button type="button" onClick={() => { setIsRegistering(!isRegistering); setConfirmPassword('') }} className="toggle-btn">
-                    {isRegistering ? 'Login' : 'Sign Up'}
-                  </button>
-                </p>
-              </div>
-            )}
+            <div className="login-toggle-section">
+              <p className="toggle-text">
+                {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
+                <button type="button" onClick={() => { setIsRegistering(!isRegistering); setConfirmPassword('') }} className="toggle-btn">
+                  {isRegistering ? 'Login' : 'Sign Up'}
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>
