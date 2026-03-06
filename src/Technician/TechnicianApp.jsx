@@ -1,67 +1,85 @@
 import React, { useState, useEffect } from 'react'
 import Camera from '../shared/Camera'
+import { supabase } from '../supabase'
 import './TechnicianApp.css'
 
-const SAMPLE_APPOINTMENTS = [
-  {
-    id: 1,
-    customerName: 'Juan Dela Cruz',
-    address: '123 Main St, Manila',
-    phone: '09171234567',
-    service: 'AC Installation',
-    status: 'scheduled',
-    date: '2026-02-21',
-    time: '10:00 AM',
-    unit: '2 Ton Split AC',
-    notes: 'Customer has existing wiring',
-  },
-  {
-    id: 2,
-    customerName: 'Maria Garcia',
-    address: '456 Oak Ave, Makati',
-    phone: '09209876543',
-    service: 'AC Maintenance',
-    status: 'scheduled',
-    date: '2026-02-21',
-    time: '2:00 PM',
-    unit: '1.5 Ton Split AC',
-    notes: 'Regular maintenance',
-  },
-  {
-    id: 3,
-    customerName: 'Roberto Santos',
-    address: '789 Pine Rd, Quezon City',
-    phone: '09161111111',
-    service: 'AC Repair',
-    status: 'in-progress',
-    date: '2026-02-21',
-    time: '1:30 PM',
-    unit: '3 Ton Split AC',
-    notes: 'Not cooling properly',
-  },
-]
-
 export default function TechnicianApp({ user, onLogout }) {
-  const [screen, setScreen] = useState('appointments') // appointments, details, camera, photos, updates
-  const [appointments, setAppointments] = useState(SAMPLE_APPOINTMENTS)
+  const [screen, setScreen] = useState('appointments')
+  const [appointments, setAppointments] = useState([])
   const [selectedAppointment, setSelectedAppointment] = useState(null)
+
   const [showCamera, setShowCamera] = useState(false)
   const [workPhotos, setWorkPhotos] = useState([])
   const [notes, setNotes] = useState('')
-  const [cameraMode, setCameraMode] = useState('before') // before, during, after
+  const [cameraMode, setCameraMode] = useState('before')
   const [activeFilter, setActiveFilter] = useState('all')
 
-  function handleAppointmentClick(appointment) {
-    setSelectedAppointment(appointment)
+  useEffect(() => {
+    if (user?.id) {
+      loadJobs()
+    }
+  }, [user])
+
+  async function loadJobs() {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select(`
+        id,
+        status,
+        notes,
+        work_photos,
+        schedules (
+          id,
+          customer_name,
+          address,
+          phone,
+          service,
+          requested_date,
+          requested_time,
+          unit,
+          notes
+        )
+      `)
+      .eq('technician_id', user.id)
+      .order('id', { ascending: false })
+
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    const mapped = data.map(j => ({
+      job_id: j.id,
+      status: j.status,
+      notes: j.notes,
+      work_photos: j.work_photos || [],
+      schedule: j.schedules
+    }))
+
+    setAppointments(mapped)
+  }
+
+  function handleAppointmentClick(apt) {
+    setSelectedAppointment(apt)
+    setWorkPhotos(apt.work_photos || [])
+    setNotes(apt.notes || '')
     setScreen('details')
   }
 
-  function startWork(appointment) {
-    setSelectedAppointment(appointment)
-    setWorkPhotos([])
-    setNotes('')
+  async function startWork(apt) {
+    await supabase
+      .from('jobs')
+      .update({ status: 'in_progress' })
+      .eq('id', apt.job_id)
+
+    setSelectedAppointment({
+      ...apt,
+      status: 'in_progress'
+    })
+
     setCameraMode('before')
     setShowCamera(true)
+    loadJobs()
   }
 
   function handlePhotoCapture(data) {
@@ -69,42 +87,51 @@ export default function TechnicianApp({ user, onLogout }) {
       id: Date.now(),
       type: cameraMode,
       url: data.photo,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toISOString()
     }
-    setWorkPhotos([...workPhotos, photo])
-    
-    if (cameraMode === 'before') {
-      setCameraMode('during')
-    } else if (cameraMode === 'during') {
-      setCameraMode('after')
-    } else {
-      setShowCamera(false)
-    }
+
+    const updated = [...workPhotos, photo]
+    setWorkPhotos(updated)
+
+    if (cameraMode === 'before') setCameraMode('during')
+    else if (cameraMode === 'during') setCameraMode('after')
+    else setShowCamera(false)
   }
 
-  function completeJob() {
-    if (selectedAppointment) {
-      setAppointments(appointments.map(apt => 
-        apt.id === selectedAppointment.id 
-          ? { ...apt, status: 'completed' }
-          : apt
-      ))
-      setSelectedAppointment(null)
-      setWorkPhotos([])
-      setNotes('')
-      setScreen('appointments')
+  async function completeJob() {
+    if (!selectedAppointment) return
+
+    const { error } = await supabase
+      .from('jobs')
+      .update({
+        status: 'completed',
+        notes,
+        work_photos: workPhotos
+      })
+      .eq('id', selectedAppointment.job_id)
+
+    if (error) {
+      console.error(error)
+      alert('Failed to complete job')
+      return
     }
+
+    setSelectedAppointment(null)
+    setWorkPhotos([])
+    setNotes('')
+    setScreen('appointments')
+    loadJobs()
   }
 
   function getFilteredAppointments() {
     if (activeFilter === 'all') return appointments
-    return appointments.filter(apt => apt.status === activeFilter)
+    return appointments.filter(a => a.status === activeFilter)
   }
 
   function getStatusColor(status) {
-    switch(status) {
-      case 'scheduled': return '#f59e0b'
-      case 'in-progress': return '#3b82f6'
+    switch (status) {
+      case 'assigned': return '#f59e0b'
+      case 'in_progress': return '#3b82f6'
       case 'completed': return '#10b981'
       default: return '#6b7280'
     }
@@ -113,15 +140,14 @@ export default function TechnicianApp({ user, onLogout }) {
   if (showCamera) {
     return (
       <div className="tech-app">
-        <Camera 
-          onCapture={handlePhotoCapture} 
-          title={`📸 ${cameraMode.charAt(0).toUpperCase() + cameraMode.slice(1)} Work Photo`} 
+        <Camera
+          onCapture={handlePhotoCapture}
+          title={`📸 ${cameraMode.toUpperCase()} PHOTO`}
           mode="photo"
         />
-        <button 
-          onClick={() => setShowCamera(false)} 
+        <button
+          onClick={() => setShowCamera(false)}
           className="btn-close-camera"
-          title="Close camera"
         >
           ✕
         </button>
@@ -131,60 +157,43 @@ export default function TechnicianApp({ user, onLogout }) {
 
   return (
     <div className="tech-app">
-      {/* Header */}
       <header className="tech-header">
         <h1>🔧 Technician Portal</h1>
         <div className="tech-info">
-          <span className="tech-name">👤 {user?.name || 'Tech User'}</span>
+          <span className="tech-name">👤 {user?.name}</span>
           <button onClick={onLogout} className="btn-logout-tech">🚪 Logout</button>
         </div>
       </header>
 
-      {/* Appointments List */}
       {screen === 'appointments' && (
         <main className="tech-main">
           <div className="screen-header">
             <h2>📋 Assigned Jobs</h2>
-            <p>{appointments.length} appointments</p>
+            <p>{appointments.length} jobs</p>
           </div>
 
           <div className="status-filter">
-            <button 
-              className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('all')}
-            >
-              All
-            </button>
-            <button 
-              className={`filter-btn ${activeFilter === 'scheduled' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('scheduled')}
-            >
-              Scheduled
-            </button>
-            <button 
-              className={`filter-btn ${activeFilter === 'in-progress' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('in-progress')}
-            >
-              In Progress
-            </button>
-            <button 
-              className={`filter-btn ${activeFilter === 'completed' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('completed')}
-            >
-              Completed
-            </button>
+            {['all', 'assigned', 'in_progress', 'completed'].map(s => (
+              <button
+                key={s}
+                className={`filter-btn ${activeFilter === s ? 'active' : ''}`}
+                onClick={() => setActiveFilter(s)}
+              >
+                {s.replace('_', ' ')}
+              </button>
+            ))}
           </div>
 
           <div className="appointments-list">
             {getFilteredAppointments().map(apt => (
-              <div 
-                key={apt.id} 
-                className={`appointment-card status-${apt.status}`}
+              <div
+                key={apt.job_id}
+                className="appointment-card"
                 onClick={() => handleAppointmentClick(apt)}
               >
                 <div className="apt-header">
-                  <h3>{apt.service}</h3>
-                  <span 
+                  <h3>{apt.schedule?.service}</h3>
+                  <span
                     className="status-badge"
                     style={{ backgroundColor: getStatusColor(apt.status) }}
                   >
@@ -194,25 +203,21 @@ export default function TechnicianApp({ user, onLogout }) {
 
                 <div className="apt-details">
                   <div className="detail-row">
-                    <span className="label">👤 Customer:</span>
-                    <span>{apt.customerName}</span>
+                    👤 {apt.schedule?.customer_name}
                   </div>
                   <div className="detail-row">
-                    <span className="label">📅 Date/Time:</span>
-                    <span>{apt.date} @ {apt.time}</span>
+                    📅 {apt.schedule?.requested_date} @ {apt.schedule?.requested_time}
                   </div>
                   <div className="detail-row">
-                    <span className="label">📍 Location:</span>
-                    <span>{apt.address}</span>
+                    📍 {apt.schedule?.address}
                   </div>
                   <div className="detail-row">
-                    <span className="label">❄️ Unit:</span>
-                    <span>{apt.unit}</span>
+                    ❄️ {apt.schedule?.unit}
                   </div>
                 </div>
 
                 {apt.status !== 'completed' && (
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation()
                       startWork(apt)
@@ -228,131 +233,73 @@ export default function TechnicianApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Appointment Details */}
       {screen === 'details' && selectedAppointment && (
         <main className="tech-main">
           <button onClick={() => setScreen('appointments')} className="btn-back">← Back</button>
 
           <div className="apt-full-details">
-            <div className="detail-section">
-              <h2>{selectedAppointment.service}</h2>
-              <p className="detail-address">{selectedAppointment.address}</p>
-            </div>
+            <h2>{selectedAppointment.schedule?.service}</h2>
+            <p>{selectedAppointment.schedule?.address}</p>
 
             <div className="detail-card">
-              <h3>👤 Customer Information</h3>
-              <div className="detail-item">
-                <span className="label">Name:</span>
-                <span>{selectedAppointment.customerName}</span>
-              </div>
-              <div className="detail-item">
-                <span className="label">Phone:</span>
-                <a href={`tel:${selectedAppointment.phone}`} className="link">
-                  {selectedAppointment.phone}
-                </a>
-              </div>
-              <div className="detail-item">
-                <span className="label">Address:</span>
-                <span>{selectedAppointment.address}</span>
-              </div>
-            </div>
-
-            <div className="detail-card">
-              <h3>⏰ Schedule</h3>
-              <div className="detail-item">
-                <span className="label">Date:</span>
-                <span>{selectedAppointment.date}</span>
-              </div>
-              <div className="detail-item">
-                <span className="label">Time:</span>
-                <span>{selectedAppointment.time}</span>
-              </div>
-            </div>
-
-            <div className="detail-card">
-              <h3>❄️ AC Unit</h3>
-              <div className="detail-item">
-                <span className="label">Model:</span>
-                <span>{selectedAppointment.unit}</span>
-              </div>
-              <div className="detail-item">
-                <span className="label">Notes:</span>
-                <span className="notes">{selectedAppointment.notes}</span>
-              </div>
+              <p><b>Customer:</b> {selectedAppointment.schedule?.customer_name}</p>
+              <p><b>Phone:</b> {selectedAppointment.schedule?.phone}</p>
+              <p><b>Date:</b> {selectedAppointment.schedule?.requested_date}</p>
+              <p><b>Time:</b> {selectedAppointment.schedule?.requested_time}</p>
+              <p><b>Unit:</b> {selectedAppointment.schedule?.unit}</p>
+              <p><b>Notes:</b> {selectedAppointment.schedule?.notes}</p>
             </div>
 
             {selectedAppointment.status !== 'completed' && (
-              <div className="actions">
-                <button 
-                  onClick={() => startWork(selectedAppointment)}
-                  className="btn-start-work-full"
-                >
-                  📸 Take Work Photos & Notes
-                </button>
-              </div>
-            )}
-
-            {selectedAppointment.status === 'completed' && (
-              <div className="completed-badge">✓ Job Completed</div>
+              <button
+                onClick={() => {
+                  setScreen('photos')
+                }}
+                className="btn-start-work-full"
+              >
+                📸 Work Photos & Notes
+              </button>
             )}
           </div>
         </main>
       )}
 
-      {/* Work Photos & Notes */}
       {screen === 'photos' && selectedAppointment && (
         <main className="tech-main">
           <button onClick={() => setScreen('details')} className="btn-back">← Back</button>
 
           <div className="work-log">
             <h2>📸 Work Documentation</h2>
-            <p className="job-title">{selectedAppointment.service} - {selectedAppointment.customerName}</p>
 
-            <div className="photos-section">
-              <h3>Photos</h3>
-              {workPhotos.length === 0 ? (
-                <div className="no-photos">
-                  <p>📷 No photos yet</p>
-                  <button onClick={() => setShowCamera(true)} className="btn-add-photo">
-                    📸 Add Photo
-                  </button>
+            <div className="photos-grid">
+              {workPhotos.map(p => (
+                <div key={p.id} className="photo-item">
+                  <img src={p.url} alt="" />
+                  <div className="photo-label">{p.type}</div>
                 </div>
-              ) : (
-                <>
-                  <div className="photos-grid">
-                    {workPhotos.map(photo => (
-                      <div key={photo.id} className="photo-item">
-                        <img src={photo.url} alt={`Work ${photo.type}`} />
-                        <div className="photo-label">
-                          <span className="photo-type">{photo.type}</span>
-                          <span className="photo-time">{photo.timestamp}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {workPhotos.length < 3 && (
-                    <button onClick={() => setShowCamera(true)} className="btn-add-more-photos">
-                      ➕ Add More Photos
-                    </button>
-                  )}
-                </>
-              )}
+              ))}
             </div>
 
+            <button
+              onClick={() => setShowCamera(true)}
+              className="btn-add-photo"
+            >
+              ➕ Add Photo
+            </button>
+
             <div className="notes-section">
-              <h3>📝 Work Notes</h3>
+              <h3>📝 Notes</h3>
               <textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Document what was done, any issues found, parts replaced, etc."
+                onChange={e => setNotes(e.target.value)}
                 className="notes-input"
               />
             </div>
 
             <div className="actions">
-              <button 
+              <button
                 onClick={completeJob}
-                disabled={workPhotos.length === 0 || !notes.trim()}
+                disabled={!notes.trim() || workPhotos.length === 0}
                 className="btn-complete-job"
               >
                 ✓ Complete Job
@@ -360,80 +307,6 @@ export default function TechnicianApp({ user, onLogout }) {
             </div>
           </div>
         </main>
-      )}
-
-      {/* Updates Screen */}
-      {screen === 'updates' && (
-        <main className="tech-main">
-          <button onClick={() => setScreen('appointments')} className="btn-back">← Back</button>
-          <div className="screen-header">
-            <h2>📢 Updates & Announcements</h2>
-          </div>
-
-          <div className="updates-list">
-            <div className="update-card">
-              <div className="update-header">
-                <h3>New Service Guidelines</h3>
-                <span className="update-date">Today</span>
-              </div>
-              <p>Please follow the new safety protocols when visiting customer sites. Check your email for detailed guidelines.</p>
-            </div>
-
-            <div className="update-card">
-              <div className="update-header">
-                <h3>Equipment Request: Safety Gear</h3>
-                <span className="update-date">Yesterday</span>
-              </div>
-              <p>Please submit your requests for additional safety equipment by end of week. Contact admin for more info.</p>
-            </div>
-
-            <div className="update-card">
-              <div className="update-header">
-                <h3>Training Session Scheduled</h3>
-                <span className="update-date">2 days ago</span>
-              </div>
-              <p>Mandatory training on new AC models will be held next Monday at 2:00 PM. Please confirm your attendance.</p>
-            </div>
-
-            <div className="update-card">
-              <div className="update-header">
-                <h3>Performance Bonus Announcement</h3>
-                <span className="update-date">1 week ago</span>
-              </div>
-              <p>Great work this month! Technicians with 95%+ customer satisfaction will receive a bonus. Thank you for your dedication!</p>
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* Bottom Navigation */}
-      {(screen === 'appointments' || screen === 'updates') && (
-        <nav className="bottom-nav-tech">
-          <button 
-            className={`nav-item ${screen === 'appointments' ? 'active' : ''}`}
-            onClick={() => {
-              setScreen('appointments')
-              setActiveFilter('all')
-            }}
-          >
-            📋 Jobs ({appointments.filter(a => a.status !== 'completed').length})
-          </button>
-          <button 
-            className={`nav-item ${screen === 'appointments' && activeFilter === 'completed' ? 'active' : ''}`}
-            onClick={() => {
-              setScreen('appointments')
-              setActiveFilter('completed')
-            }}
-          >
-            ✓ Completed ({appointments.filter(a => a.status === 'completed').length})
-          </button>
-          <button 
-            className={`nav-item ${screen === 'updates' ? 'active' : ''}`}
-            onClick={() => setScreen('updates')}
-          >
-            📢 Updates
-          </button>
-        </nav>
       )}
     </div>
   )

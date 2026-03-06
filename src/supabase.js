@@ -1,4 +1,3 @@
-// src/supabase.js
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.PARCEL_SUPABASE_URL
