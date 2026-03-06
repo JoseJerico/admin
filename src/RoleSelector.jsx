@@ -15,6 +15,7 @@ export default function RoleSelector({ onRoleSelect }) {
 
   const ADMIN_PIN = '8888'
 
+  // Use consistent casing for roles
   const roles = [
     { id: 'Customer', name: 'Customer', icon: '👤', description: 'Browse & book services', color: '#10b981' },
     { id: 'Technician', name: 'Technician', icon: '🔧', description: 'View jobs & work updates', color: '#3b82f6' }
@@ -81,7 +82,7 @@ export default function RoleSelector({ onRoleSelect }) {
 
     const userId = authData.user.id
 
-    // 2. Get role_id from roles table
+    // 2. Get role_id from roles table (must match seeded names exactly)
     const { data: roleData, error: roleError } = await supabase
       .from('roles')
       .select('id')
@@ -89,7 +90,7 @@ export default function RoleSelector({ onRoleSelect }) {
       .maybeSingle()
 
     if (roleError || !roleData) {
-      alert(`Role lookup failed: ${roleError?.message || 'Role not found. Please seed roles table.'}`)
+      alert(`Role lookup failed: ${roleError?.message || 'Role not found. Please seed roles table with Customer, Technician, Admin.'}`)
       return
     }
 
@@ -108,10 +109,11 @@ export default function RoleSelector({ onRoleSelect }) {
       return
     }
 
-    // 4. Insert into user_details (let Postgres generate id)
+    // 4. Insert into user_details (link via user_id)
     const { error: detailsError } = await supabase
       .from('user_details')
       .insert([{
+        user_id: userId,
         first_name: email.split('@')[0],
         email,
         role: selectedRole,
