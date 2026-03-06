@@ -24,34 +24,43 @@ export default function RoleSelector({ onRoleSelect }) {
     roles.unshift({ id: 'admin', name: 'Admin', icon: '👨‍💼', description: 'Manage schedules and technicians', color: '#667eea' })
   }
 
-  async function handleLogin() {
-    if (!email || !password) {
-      alert('Please enter email and password')
-      return
+    async function handleLogin() {
+      if (!email || !password) {
+        alert('Please enter email and password')
+        return
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        alert(`Login failed: ${error.message}`)
+        return
+      }
+
+      // Fetch profile with role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          full_name,
+          role_id,
+          roles (
+            name
+          )
+        `)
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (profileError || !profile) {
+        alert(`Profile fetch failed: ${profileError?.message || 'No profile found for this user'}`)
+        return
+      }
+
+      onRoleSelect(profile.roles?.name || selectedRole, {
+        email,
+        name: profile.full_name || email.split('@')[0]
+      })
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      alert(`Login failed: ${error.message}`)
-      return
-    }
-
-    // Fetch profile with role
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('full_name, role_id, roles(name)')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profileError) {
-      alert(`Profile fetch failed: ${profileError.message}`)
-      return
-    }
-
-    onRoleSelect(profile.roles.name, { email, name: profile.full_name || email.split('@')[0] })
-  }
-
-  async function handleRegister() {
+    async function handleRegister() {
     if (!email || !password || !confirmPassword) {
       alert('Please fill in all fields')
       return
@@ -79,15 +88,15 @@ export default function RoleSelector({ onRoleSelect }) {
       .from('roles')
       .select('id')
       .eq('name', selectedRole)
-      .single()
+      .maybeSingle()
 
-    if (roleError) {
-      alert(`Role lookup failed: ${roleError.message}`)
+    if (roleError || !roleData) {
+      alert(`Role lookup failed: ${roleError?.message || 'Role not found. Please seed roles table.'}`)
       return
     }
 
     // 3. Insert into profiles
-    const { error: profileError } = await supabase
+    const { data: profileInsert, error: profileError } = await supabase
       .from('profiles')
       .insert([{
         id: userId,
@@ -95,12 +104,35 @@ export default function RoleSelector({ onRoleSelect }) {
         full_name: email.split('@')[0],
         username: email.split('@')[0]
       }])
+      .select()
 
     if (profileError) {
+      console.error("Profile insert failed:", profileError)
       alert(`Profile insert failed: ${profileError.message}`)
       return
     }
 
+    console.log("Profile inserted:", profileInsert)
+
+    // 4. Insert into user_details (extra info)
+    const { error: detailsError } = await supabase
+      .from('user_details')
+      .insert([{
+        id: userId,
+        first_name: email.split('@')[0],
+        email,
+        role: selectedRole,
+        is_verified: false,
+        created_at: new Date().toISOString()
+      }])
+
+    if (detailsError) {
+      console.error("User details insert failed:", detailsError)
+      alert(`User details insert failed: ${detailsError.message}`)
+      return
+    }
+
+    // 5. Continue to role selection
     onRoleSelect(selectedRole, { email, name: email.split('@')[0] })
   }
 
@@ -215,7 +247,6 @@ export default function RoleSelector({ onRoleSelect }) {
             </div>
           </div>
         )}
-
         <div className="selector-content">
           <h2>Who are you?</h2>
           <p className="selector-subtitle">Choose your role to continue</p>
