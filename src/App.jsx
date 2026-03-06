@@ -4,7 +4,6 @@ import RoleSelector from './RoleSelector'
 import AdminApp from './Admin/AdminApp'
 import UserApp from './User/UserApp'
 import TechnicianApp from './Technician/TechnicianApp'
-import Login from './Login'
 import './App.css'
 
 
@@ -74,6 +73,19 @@ export default function App() {
     return () => {
       subscription?.unsubscribe()
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user)
+        } else {
+          setUser(null)
+          setRole(null)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleLogin = (userData) => {
@@ -101,36 +113,15 @@ export default function App() {
     setRole(null)
     localStorage.removeItem('appRole')
     localStorage.removeItem('appUser')
-    setAuthState('login')
   }
 
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
-        background: '#f5f7fa',
-        fontSize: '24px'
-      }}>
-        Loading...
-      </div>
-    )
-  }
-
-  // Show login screen
-  if (authState === 'login') {
-    return <Login onLogin={handleLogin} />
-  }
-
-  // Show role selector
-  if (authState === 'role-select') {
+  // No role selected - show role selector
+  if (!role || !user) {
     return <RoleSelector onRoleSelect={handleRoleSelect} />
   }
 
   // Route to appropriate app based on role
-  if (role === 'admin' && user) {
+  if (role === 'admin') {
     return <AdminApp user={user} onLogout={handleLogout} />
   }
 
