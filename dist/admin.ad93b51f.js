@@ -207,11 +207,11 @@
       });
     }
   }
-})({"hiyDA":[function(require,module,exports,__globalThis) {
+})({"6vvr9":[function(require,module,exports,__globalThis) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
-var HMR_SERVER_PORT = 1234;
+var HMR_SERVER_PORT = 58502;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "439701173a9199ea";
 var HMR_USE_SSE = false;
@@ -27411,6 +27411,7 @@ parcelHelpers.export(exports, "default", ()=>RoleSelector);
 var _jsxDevRuntime = require("react/jsx-dev-runtime");
 var _react = require("react");
 var _reactDefault = parcelHelpers.interopDefault(_react);
+var _supabase = require("./supabase");
 var _roleSelectorCss = require("./RoleSelector.css");
 var _s = $RefreshSig$();
 function RoleSelector({ onRoleSelect }) {
@@ -27424,8 +27425,7 @@ function RoleSelector({ onRoleSelect }) {
     const [showAdminPin, setShowAdminPin] = (0, _react.useState)(false);
     const [adminPin, setAdminPin] = (0, _react.useState)('');
     const [pinError, setPinError] = (0, _react.useState)('');
-    const ADMIN_PIN = '1234' // Security PIN for admin access
-    ;
+    const ADMIN_PIN = '8888';
     const roles = [
         {
             id: 'user',
@@ -27442,7 +27442,6 @@ function RoleSelector({ onRoleSelect }) {
             color: '#3b82f6'
         }
     ];
-    // Insert admin role only if access is granted
     if (adminAccessGranted) roles.unshift({
         id: 'admin',
         name: 'Admin',
@@ -27450,8 +27449,95 @@ function RoleSelector({ onRoleSelect }) {
         description: 'Manage schedules and technicians',
         color: '#667eea'
     });
-    function handleRoleSelect(roleId) {
-        setSelectedRole(roleId);
+    async function handleLogin() {
+        if (!email || !password) {
+            alert('Please enter email and password');
+            return;
+        }
+        const { data, error } = await (0, _supabase.supabase).auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) {
+            alert(`Login failed: ${error.message}`);
+            return;
+        }
+        // Fetch profile with role
+        const { data: profile, error: profileError } = await (0, _supabase.supabase).from('profiles').select('full_name, role_id, roles(name)').eq('id', data.user.id).maybeSingle();
+        if (profileError) {
+            alert(`Profile fetch failed: ${profileError.message}`);
+            return;
+        }
+        onRoleSelect(profile.roles.name, {
+            email,
+            name: profile.full_name || email.split('@')[0]
+        });
+    }
+    async function handleRegister() {
+        if (!email || !password || !confirmPassword) {
+            alert('Please fill in all fields');
+            return;
+        }
+        if (password.length < 6) {
+            alert('Password must be at least 6 characters');
+            return;
+        }
+        if (password !== confirmPassword) {
+            alert('Passwords do not match');
+            return;
+        }
+        // 1. Sign up in Supabase Auth
+        const { data: authData, error: authError } = await (0, _supabase.supabase).auth.signUp({
+            email,
+            password
+        });
+        if (authError) {
+            alert(`Signup failed: ${authError.message}`);
+            return;
+        }
+        const userId = authData.user.id;
+        // 2. Get role_id from roles table
+        const { data: roleData, error: roleError } = await (0, _supabase.supabase).from('roles').select('id').eq('name', selectedRole).maybeSingle();
+        if (roleError || !roleData) {
+            alert(`Role lookup failed: ${roleError?.message || 'Role not found. Please seed roles table.'}`);
+            return;
+        }
+        // 3. Insert into profiles
+        const { data: profileInsert, error: profileError } = await (0, _supabase.supabase).from('profiles').insert([
+            {
+                id: userId,
+                role_id: roleData.id,
+                full_name: email.split('@')[0],
+                username: email.split('@')[0]
+            }
+        ]).select();
+        if (profileError) {
+            console.error("Profile insert failed:", profileError);
+            alert(`Profile insert failed: ${profileError.message}`);
+            return;
+        }
+        console.log("Profile inserted:", profileInsert);
+        // 4. Insert into user_details (extra info)
+        const { error: detailsError } = await (0, _supabase.supabase).from('user_details').insert([
+            {
+                id: userId,
+                first_name: email.split('@')[0],
+                email,
+                role: selectedRole,
+                is_verified: false,
+                created_at: new Date().toISOString()
+            }
+        ]);
+        if (detailsError) {
+            console.error("User details insert failed:", detailsError);
+            alert(`User details insert failed: ${detailsError.message}`);
+            return;
+        }
+        // 5. Continue to role selection
+        onRoleSelect(selectedRole, {
+            email,
+            name: email.split('@')[0]
+        });
     }
     function handleAdminPinSubmit() {
         if (!adminPin) {
@@ -27478,38 +27564,6 @@ function RoleSelector({ onRoleSelect }) {
         setPinError('');
         setAdminPin('');
     }
-    function handleLogin() {
-        if (!email || !password) {
-            alert('Please enter email and password');
-            return;
-        }
-        if (selectedRole) onRoleSelect(selectedRole, {
-            email,
-            name: email.split('@')[0]
-        });
-    }
-    function handleRegister() {
-        if (!email || !password || !confirmPassword) {
-            alert('Please fill in all fields');
-            return;
-        }
-        if (password.length < 6) {
-            alert('Password must be at least 6 characters');
-            return;
-        }
-        if (password !== confirmPassword) {
-            alert('Passwords do not match');
-            return;
-        }
-        if (!email.includes('@')) {
-            alert('Please enter a valid email');
-            return;
-        }
-        if (selectedRole) onRoleSelect(selectedRole, {
-            email,
-            name: email.split('@')[0]
-        });
-    }
     if (selectedRole) {
         const role = roles.find((r)=>r.id === selectedRole);
         return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27523,7 +27577,7 @@ function RoleSelector({ onRoleSelect }) {
                         children: "\u2190 Back"
                     }, void 0, false, {
                         fileName: "src/RoleSelector.jsx",
-                        lineNumber: 113,
+                        lineNumber: 163,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27540,7 +27594,7 @@ function RoleSelector({ onRoleSelect }) {
                                         children: role.icon
                                     }, void 0, false, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 122,
+                                        lineNumber: 167,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h1", {
@@ -27551,13 +27605,13 @@ function RoleSelector({ onRoleSelect }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 123,
+                                        lineNumber: 168,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 121,
+                                lineNumber: 166,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("form", {
@@ -27574,7 +27628,7 @@ function RoleSelector({ onRoleSelect }) {
                                                 children: "Email"
                                             }, void 0, false, {
                                                 fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 128,
+                                                lineNumber: 179,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("input", {
@@ -27584,13 +27638,13 @@ function RoleSelector({ onRoleSelect }) {
                                                 placeholder: `${role.id}@aircon.com`
                                             }, void 0, false, {
                                                 fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 129,
+                                                lineNumber: 180,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 127,
+                                        lineNumber: 178,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27600,7 +27654,7 @@ function RoleSelector({ onRoleSelect }) {
                                                 children: "Password"
                                             }, void 0, false, {
                                                 fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 138,
+                                                lineNumber: 184,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("input", {
@@ -27610,13 +27664,13 @@ function RoleSelector({ onRoleSelect }) {
                                                 placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                                             }, void 0, false, {
                                                 fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 139,
+                                                lineNumber: 185,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 137,
+                                        lineNumber: 183,
                                         columnNumber: 15
                                     }, this),
                                     isRegistering && selectedRole !== 'technician' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27626,7 +27680,7 @@ function RoleSelector({ onRoleSelect }) {
                                                 children: "Confirm Password"
                                             }, void 0, false, {
                                                 fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 149,
+                                                lineNumber: 190,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("input", {
@@ -27636,13 +27690,13 @@ function RoleSelector({ onRoleSelect }) {
                                                 placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                                             }, void 0, false, {
                                                 fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 150,
+                                                lineNumber: 191,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 148,
+                                        lineNumber: 189,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -27651,78 +27705,60 @@ function RoleSelector({ onRoleSelect }) {
                                         children: isRegistering && selectedRole !== 'technician' ? 'Sign Up' : 'Login'
                                     }, void 0, false, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 159,
+                                        lineNumber: 195,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 126,
+                                lineNumber: 171,
                                 columnNumber: 13
                             }, this),
                             selectedRole !== 'technician' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
                                 className: "login-toggle-section",
-                                children: [
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
-                                        className: "toggle-text",
-                                        children: [
-                                            isRegistering ? 'Already have an account? ' : "Don't have an account? ",
-                                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                                type: "button",
-                                                onClick: ()=>{
-                                                    setIsRegistering(!isRegistering);
-                                                    setConfirmPassword('');
-                                                },
-                                                className: "toggle-btn",
-                                                children: isRegistering ? 'Login' : 'Sign Up'
-                                            }, void 0, false, {
-                                                fileName: "src/RoleSelector.jsx",
-                                                lineNumber: 168,
-                                                columnNumber: 19
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 166,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
-                                        className: "demo-note",
-                                        children: "Demo: Use any email & password (min 6 chars)"
-                                    }, void 0, false, {
-                                        fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 179,
-                                        columnNumber: 17
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "src/RoleSelector.jsx",
-                                lineNumber: 165,
-                                columnNumber: 15
-                            }, this),
-                            selectedRole === 'technician' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
-                                className: "demo-note",
-                                children: "Demo: Use any email & password (min 6 chars)"
+                                children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
+                                    className: "toggle-text",
+                                    children: [
+                                        isRegistering ? 'Already have an account? ' : "Don't have an account? ",
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                            type: "button",
+                                            onClick: ()=>{
+                                                setIsRegistering(!isRegistering);
+                                                setConfirmPassword('');
+                                            },
+                                            className: "toggle-btn",
+                                            children: isRegistering ? 'Login' : 'Sign Up'
+                                        }, void 0, false, {
+                                            fileName: "src/RoleSelector.jsx",
+                                            lineNumber: 204,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/RoleSelector.jsx",
+                                    lineNumber: 202,
+                                    columnNumber: 17
+                                }, this)
                             }, void 0, false, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 184,
+                                lineNumber: 201,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/RoleSelector.jsx",
-                        lineNumber: 120,
+                        lineNumber: 165,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/RoleSelector.jsx",
-                lineNumber: 112,
+                lineNumber: 162,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "src/RoleSelector.jsx",
-            lineNumber: 111,
+            lineNumber: 161,
             columnNumber: 7
         }, this);
     }
@@ -27739,27 +27775,27 @@ function RoleSelector({ onRoleSelect }) {
                             children: "\u2744\uFE0F"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 196,
+                            lineNumber: 220,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h1", {
                             children: "RoomChill Advisor"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 197,
+                            lineNumber: 221,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                             children: "Smart Cooling Solutions"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 198,
+                            lineNumber: 222,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "src/RoleSelector.jsx",
-                    lineNumber: 195,
+                    lineNumber: 219,
                     columnNumber: 9
                 }, this),
                 showAdminPin && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27771,14 +27807,14 @@ function RoleSelector({ onRoleSelect }) {
                                 children: "\uD83D\uDD10 Admin Access"
                             }, void 0, false, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 205,
+                                lineNumber: 228,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                 children: "Enter PIN to access admin portal"
                             }, void 0, false, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 206,
+                                lineNumber: 229,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27800,7 +27836,7 @@ function RoleSelector({ onRoleSelect }) {
                                         autoFocus: true
                                     }, void 0, false, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 209,
+                                        lineNumber: 231,
                                         columnNumber: 17
                                     }, this),
                                     pinError && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -27808,13 +27844,13 @@ function RoleSelector({ onRoleSelect }) {
                                         children: pinError
                                     }, void 0, false, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 224,
+                                        lineNumber: 232,
                                         columnNumber: 30
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 208,
+                                lineNumber: 230,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27826,7 +27862,7 @@ function RoleSelector({ onRoleSelect }) {
                                         children: "Verify"
                                     }, void 0, false, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 228,
+                                        lineNumber: 235,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -27835,24 +27871,24 @@ function RoleSelector({ onRoleSelect }) {
                                         children: "Cancel"
                                     }, void 0, false, {
                                         fileName: "src/RoleSelector.jsx",
-                                        lineNumber: 231,
+                                        lineNumber: 236,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/RoleSelector.jsx",
-                                lineNumber: 227,
+                                lineNumber: 234,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/RoleSelector.jsx",
-                        lineNumber: 204,
+                        lineNumber: 227,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "src/RoleSelector.jsx",
-                    lineNumber: 203,
+                    lineNumber: 226,
                     columnNumber: 11
                 }, this),
                 /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27862,7 +27898,7 @@ function RoleSelector({ onRoleSelect }) {
                             children: "Who are you?"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 240,
+                            lineNumber: 243,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -27870,13 +27906,13 @@ function RoleSelector({ onRoleSelect }) {
                             children: "Choose your role to continue"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 241,
+                            lineNumber: 244,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
                             className: "role-cards",
                             children: roles.map((role)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                    onClick: ()=>handleRoleSelect(role.id),
+                                    onClick: ()=>setSelectedRole(role.id),
                                     className: "role-card",
                                     style: {
                                         '--role-color': role.color
@@ -27887,38 +27923,38 @@ function RoleSelector({ onRoleSelect }) {
                                             children: role.icon
                                         }, void 0, false, {
                                             fileName: "src/RoleSelector.jsx",
-                                            lineNumber: 251,
+                                            lineNumber: 248,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h3", {
                                             children: role.name
                                         }, void 0, false, {
                                             fileName: "src/RoleSelector.jsx",
-                                            lineNumber: 252,
+                                            lineNumber: 249,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
                                             children: role.description
                                         }, void 0, false, {
                                             fileName: "src/RoleSelector.jsx",
-                                            lineNumber: 253,
+                                            lineNumber: 250,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, role.id, true, {
                                     fileName: "src/RoleSelector.jsx",
-                                    lineNumber: 245,
+                                    lineNumber: 247,
                                     columnNumber: 15
                                 }, this))
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 243,
+                            lineNumber: 245,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "src/RoleSelector.jsx",
-                    lineNumber: 239,
+                    lineNumber: 242,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -27928,7 +27964,7 @@ function RoleSelector({ onRoleSelect }) {
                             children: "\uD83D\uDD12 Secure Portal \u2022 PWA Ready \u2022 Mobile Optimized"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 260,
+                            lineNumber: 258,
                             columnNumber: 11
                         }, this),
                         !adminAccessGranted && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -27938,24 +27974,24 @@ function RoleSelector({ onRoleSelect }) {
                             children: "\uD83D\uDD11 Admin Access"
                         }, void 0, false, {
                             fileName: "src/RoleSelector.jsx",
-                            lineNumber: 262,
+                            lineNumber: 260,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "src/RoleSelector.jsx",
-                    lineNumber: 259,
+                    lineNumber: 257,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "src/RoleSelector.jsx",
-            lineNumber: 194,
+            lineNumber: 218,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "src/RoleSelector.jsx",
-        lineNumber: 193,
+        lineNumber: 217,
         columnNumber: 5
     }, this);
 }
@@ -27969,536 +28005,18 @@ $RefreshReg$(_c, "RoleSelector");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","./RoleSelector.css":"6y8bh","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"6y8bh":[function() {},{}],"f7syB":[function(require,module,exports,__globalThis) {
-var $parcel$ReactRefreshHelpers$87fc = require("@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
-$parcel$ReactRefreshHelpers$87fc.init();
-var prevRefreshReg = globalThis.$RefreshReg$;
-var prevRefreshSig = globalThis.$RefreshSig$;
-$parcel$ReactRefreshHelpers$87fc.prelude(module);
-
-try {
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","./RoleSelector.css":"6y8bh","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi","./supabase":"baEbC"}],"6y8bh":[function() {},{}],"baEbC":[function(require,module,exports,__globalThis) {
+// src/supabase.js
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "default", ()=>AdminApp);
-var _jsxDevRuntime = require("react/jsx-dev-runtime");
-var _react = require("react");
-var _reactDefault = parcelHelpers.interopDefault(_react);
+parcelHelpers.export(exports, "supabase", ()=>supabase);
 var _supabaseJs = require("@supabase/supabase-js");
-var _login = require("../Login");
-var _loginDefault = parcelHelpers.interopDefault(_login);
-var _editAppointment = require("../EditAppointment");
-var _editAppointmentDefault = parcelHelpers.interopDefault(_editAppointment);
-var _installPrompt = require("../InstallPrompt");
-var _installPromptDefault = parcelHelpers.interopDefault(_installPrompt);
-var _adminAppCss = require("./AdminApp.css");
-var _s = $RefreshSig$();
-const SUPABASE_URL = 'https://qwqzejzwdzqapjkqadjt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cXplanp3ZHpxYXBqa3FhZGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzA1MDksImV4cCI6MjA4NTc0NjUwOX0.JV36saRgJtP-zKwI86RzjWQRmuwVo9wAqNpyoVSJm3A';
-const supabase = (0, _supabaseJs.createClient)(SUPABASE_URL, SUPABASE_KEY);
-function AdminApp({ user, onLogout }) {
-    _s();
-    const [schedules, setSchedules] = (0, _react.useState)([]);
-    const [loading, setLoading] = (0, _react.useState)(false);
-    const [filter, setFilter] = (0, _react.useState)('all');
-    const [editingAppointment, setEditingAppointment] = (0, _react.useState)(null);
-    (0, _react.useEffect)(()=>{
-        load();
-    }, []);
-    async function load() {
-        setLoading(true);
-        const { data, error } = await supabase.from('schedules').select('*').order('created_at', {
-            ascending: false
-        });
-        if (!error) setSchedules(data || []);
-        setLoading(false);
-    }
-    async function approve(id) {
-        await supabase.from('schedules').update({
-            status: 'approved'
-        }).eq('id', id);
-        load();
-    }
-    async function reject(id) {
-        await supabase.from('schedules').update({
-            status: 'rejected'
-        }).eq('id', id);
-        load();
-    }
-    async function assignTech(id) {
-        const techId = prompt('Technician user_id to assign:');
-        if (!techId) return;
-        await supabase.from('jobs').insert([
-            {
-                schedule_id: id,
-                technician_id: techId,
-                status: 'assigned'
-            }
-        ]);
-        await supabase.from('schedules').update({
-            status: 'assigned'
-        }).eq('id', id);
-        load();
-    }
-    async function handleEditAppointment(updatedData) {
-        if (!editingAppointment) return;
-        try {
-            const { error } = await supabase.from('schedules').update({
-                customer_name: updatedData.customer_name,
-                requested_date: updatedData.requested_date,
-                status: updatedData.status,
-                notes: updatedData.notes
-            }).eq('id', editingAppointment.id);
-            if (!error) {
-                setEditingAppointment(null);
-                load();
-            }
-        } catch (error) {
-            console.error('Error updating appointment:', error);
-        }
-    }
-    return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-        className: "app",
-        children: [
-            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("header", {
-                className: "header",
-                children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                    className: "header-content",
-                    children: [
-                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h1", {
-                            children: "\uD83D\uDD27 Aircon Admin Dashboard"
-                        }, void 0, false, {
-                            fileName: "src/Admin/AdminApp.jsx",
-                            lineNumber: 71,
-                            columnNumber: 11
-                        }, this),
-                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                            className: "header-actions",
-                            children: [
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                    className: "user-info",
-                                    children: [
-                                        "\uD83D\uDC64 ",
-                                        user.name
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 73,
-                                    columnNumber: 13
-                                }, this),
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                    onClick: load,
-                                    disabled: loading,
-                                    className: "btn-refresh",
-                                    children: loading ? 'Loading...' : 'Refresh'
-                                }, void 0, false, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 74,
-                                    columnNumber: 13
-                                }, this),
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                    onClick: onLogout,
-                                    className: "btn-logout",
-                                    children: "Logout"
-                                }, void 0, false, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 77,
-                                    columnNumber: 13
-                                }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "src/Admin/AdminApp.jsx",
-                            lineNumber: 72,
-                            columnNumber: 11
-                        }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "src/Admin/AdminApp.jsx",
-                    lineNumber: 70,
-                    columnNumber: 9
-                }, this)
-            }, void 0, false, {
-                fileName: "src/Admin/AdminApp.jsx",
-                lineNumber: 69,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                className: "stats-grid",
-                children: [
-                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                        className: "stat-card",
-                        children: [
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-value",
-                                children: schedules.length
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 86,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-label",
-                                children: "Total Schedules"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 87,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Admin/AdminApp.jsx",
-                        lineNumber: 85,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                        className: "stat-card pending",
-                        children: [
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-value",
-                                children: schedules.filter((s)=>s.status === 'pending').length
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 90,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-label",
-                                children: "Pending"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 91,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Admin/AdminApp.jsx",
-                        lineNumber: 89,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                        className: "stat-card approved",
-                        children: [
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-value",
-                                children: schedules.filter((s)=>s.status === 'approved').length
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 94,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-label",
-                                children: "Approved"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 95,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Admin/AdminApp.jsx",
-                        lineNumber: 93,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                        className: "stat-card assigned",
-                        children: [
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-value",
-                                children: schedules.filter((s)=>s.status === 'assigned').length
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 98,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                                className: "stat-label",
-                                children: "Assigned"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 99,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Admin/AdminApp.jsx",
-                        lineNumber: 97,
-                        columnNumber: 9
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "src/Admin/AdminApp.jsx",
-                lineNumber: 84,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                className: "filter-tabs",
-                children: [
-                    'all',
-                    'pending',
-                    'approved',
-                    'assigned',
-                    'rejected'
-                ].map((status)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                        onClick: ()=>setFilter(status),
-                        className: `tab ${filter === status ? 'active' : ''}`,
-                        children: status.charAt(0).toUpperCase() + status.slice(1)
-                    }, status, false, {
-                        fileName: "src/Admin/AdminApp.jsx",
-                        lineNumber: 105,
-                        columnNumber: 11
-                    }, this))
-            }, void 0, false, {
-                fileName: "src/Admin/AdminApp.jsx",
-                lineNumber: 103,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                className: "schedules-container",
-                children: filter === 'all' ? schedules.length === 0 ? /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                    className: "empty-state",
-                    children: [
-                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                            className: "empty-icon",
-                            children: "\uD83D\uDCCB"
-                        }, void 0, false, {
-                            fileName: "src/Admin/AdminApp.jsx",
-                            lineNumber: 118,
-                            columnNumber: 44
-                        }, this),
-                        "No schedules found"
-                    ]
-                }, void 0, true, {
-                    fileName: "src/Admin/AdminApp.jsx",
-                    lineNumber: 118,
-                    columnNumber: 15
-                }, this) : renderTable(schedules) : schedules.filter((s)=>s.status === filter).length === 0 ? /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                    className: "empty-state",
-                    children: [
-                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
-                            className: "empty-icon",
-                            children: "\uD83D\uDCCB"
-                        }, void 0, false, {
-                            fileName: "src/Admin/AdminApp.jsx",
-                            lineNumber: 121,
-                            columnNumber: 44
-                        }, this),
-                        "No ",
-                        filter,
-                        " schedules"
-                    ]
-                }, void 0, true, {
-                    fileName: "src/Admin/AdminApp.jsx",
-                    lineNumber: 121,
-                    columnNumber: 15
-                }, this) : renderTable(schedules.filter((s)=>s.status === filter))
-            }, void 0, false, {
-                fileName: "src/Admin/AdminApp.jsx",
-                lineNumber: 115,
-                columnNumber: 7
-            }, this),
-            editingAppointment && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _editAppointmentDefault.default), {
-                appointment: editingAppointment,
-                onSave: handleEditAppointment,
-                onClose: ()=>setEditingAppointment(null)
-            }, void 0, false, {
-                fileName: "src/Admin/AdminApp.jsx",
-                lineNumber: 127,
-                columnNumber: 9
-            }, this),
-            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _installPromptDefault.default), {}, void 0, false, {
-                fileName: "src/Admin/AdminApp.jsx",
-                lineNumber: 134,
-                columnNumber: 7
-            }, this)
-        ]
-    }, void 0, true, {
-        fileName: "src/Admin/AdminApp.jsx",
-        lineNumber: 68,
-        columnNumber: 5
-    }, this);
-    function renderTable(data) {
-        return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("table", {
-            className: "schedules-table",
-            children: [
-                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("thead", {
-                    children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("tr", {
-                        children: [
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
-                                children: "ID"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 143,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
-                                children: "Customer"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 144,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
-                                children: "Requested Date"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 145,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
-                                children: "Status"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 146,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
-                                children: "Actions"
-                            }, void 0, false, {
-                                fileName: "src/Admin/AdminApp.jsx",
-                                lineNumber: 147,
-                                columnNumber: 13
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Admin/AdminApp.jsx",
-                        lineNumber: 142,
-                        columnNumber: 11
-                    }, this)
-                }, void 0, false, {
-                    fileName: "src/Admin/AdminApp.jsx",
-                    lineNumber: 141,
-                    columnNumber: 9
-                }, this),
-                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("tbody", {
-                    children: data.map((s)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("tr", {
-                            children: [
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
-                                    className: "id-cell",
-                                    children: [
-                                        "#",
-                                        s.id
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 153,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
-                                    children: s.customer_name || 'N/A'
-                                }, void 0, false, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 154,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
-                                    children: new Date(s.requested_date).toLocaleDateString()
-                                }, void 0, false, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 155,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
-                                    children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                        className: `status-badge status-${s.status}`,
-                                        children: s.status
-                                    }, void 0, false, {
-                                        fileName: "src/Admin/AdminApp.jsx",
-                                        lineNumber: 157,
-                                        columnNumber: 17
-                                    }, this)
-                                }, void 0, false, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 156,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
-                                    className: "actions-cell",
-                                    children: [
-                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                            onClick: ()=>setEditingAppointment(s),
-                                            className: "btn btn-edit",
-                                            title: "Edit appointment",
-                                            children: "\u270F\uFE0F Edit"
-                                        }, void 0, false, {
-                                            fileName: "src/Admin/AdminApp.jsx",
-                                            lineNumber: 162,
-                                            columnNumber: 17
-                                        }, this),
-                                        s.status === 'pending' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _jsxDevRuntime.Fragment), {
-                                            children: [
-                                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                                    onClick: ()=>approve(s.id),
-                                                    className: "btn btn-approve",
-                                                    children: "\u2713 Approve"
-                                                }, void 0, false, {
-                                                    fileName: "src/Admin/AdminApp.jsx",
-                                                    lineNumber: 171,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                                    onClick: ()=>reject(s.id),
-                                                    className: "btn btn-reject",
-                                                    children: "\u2717 Reject"
-                                                }, void 0, false, {
-                                                    fileName: "src/Admin/AdminApp.jsx",
-                                                    lineNumber: 177,
-                                                    columnNumber: 21
-                                                }, this)
-                                            ]
-                                        }, void 0, true),
-                                        s.status === 'approved' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
-                                            onClick: ()=>assignTech(s.id),
-                                            className: "btn btn-assign",
-                                            children: "\uD83D\uDC64 Assign"
-                                        }, void 0, false, {
-                                            fileName: "src/Admin/AdminApp.jsx",
-                                            lineNumber: 186,
-                                            columnNumber: 19
-                                        }, this),
-                                        s.status === 'assigned' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
-                                            className: "status-text",
-                                            children: "Assigned"
-                                        }, void 0, false, {
-                                            fileName: "src/Admin/AdminApp.jsx",
-                                            lineNumber: 194,
-                                            columnNumber: 19
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "src/Admin/AdminApp.jsx",
-                                    lineNumber: 161,
-                                    columnNumber: 15
-                                }, this)
-                            ]
-                        }, s.id, true, {
-                            fileName: "src/Admin/AdminApp.jsx",
-                            lineNumber: 152,
-                            columnNumber: 13
-                        }, this))
-                }, void 0, false, {
-                    fileName: "src/Admin/AdminApp.jsx",
-                    lineNumber: 150,
-                    columnNumber: 9
-                }, this)
-            ]
-        }, void 0, true, {
-            fileName: "src/Admin/AdminApp.jsx",
-            lineNumber: 140,
-            columnNumber: 7
-        }, this);
-    }
-}
-_s(AdminApp, "GrpOvPZ0tZfVZoNAoIbCAiVqi3c=");
-_c = AdminApp;
-var _c;
-$RefreshReg$(_c, "AdminApp");
+const supabaseUrl = "https://qwqzejzwdzqapjkqadjt.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cXplanp3ZHpxYXBqa3FhZGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzA1MDksImV4cCI6MjA4NTc0NjUwOX0.JV36saRgJtP-zKwI86RzjWQRmuwVo9wAqNpyoVSJm3A";
+if (!supabaseUrl || !supabaseAnonKey) console.error("Supabase environment variables are missing");
+const supabase = (0, _supabaseJs.createClient)(supabaseUrl, supabaseAnonKey);
 
-  $parcel$ReactRefreshHelpers$87fc.postlude(module);
-} finally {
-  globalThis.$RefreshReg$ = prevRefreshReg;
-  globalThis.$RefreshSig$ = prevRefreshSig;
-}
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@supabase/supabase-js":"6LYPf","../Login":"a6Rks","../EditAppointment":"5P7f0","../InstallPrompt":"hTzvZ","./AdminApp.css":"1jw53","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"6LYPf":[function(require,module,exports,__globalThis) {
+},{"@supabase/supabase-js":"6LYPf","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"6LYPf":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 //#endregion
@@ -43786,7 +43304,536 @@ var _goTrueClientDefault = parcelHelpers.interopDefault(_goTrueClient);
 const AuthClient = (0, _goTrueClientDefault.default);
 exports.default = AuthClient;
 
-},{"./GoTrueClient":"gnygt","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"a6Rks":[function(require,module,exports,__globalThis) {
+},{"./GoTrueClient":"gnygt","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"f7syB":[function(require,module,exports,__globalThis) {
+var $parcel$ReactRefreshHelpers$87fc = require("@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+$parcel$ReactRefreshHelpers$87fc.init();
+var prevRefreshReg = globalThis.$RefreshReg$;
+var prevRefreshSig = globalThis.$RefreshSig$;
+$parcel$ReactRefreshHelpers$87fc.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "default", ()=>AdminApp);
+var _jsxDevRuntime = require("react/jsx-dev-runtime");
+var _react = require("react");
+var _reactDefault = parcelHelpers.interopDefault(_react);
+var _supabaseJs = require("@supabase/supabase-js");
+var _login = require("../Login");
+var _loginDefault = parcelHelpers.interopDefault(_login);
+var _editAppointment = require("../EditAppointment");
+var _editAppointmentDefault = parcelHelpers.interopDefault(_editAppointment);
+var _installPrompt = require("../InstallPrompt");
+var _installPromptDefault = parcelHelpers.interopDefault(_installPrompt);
+var _adminAppCss = require("./AdminApp.css");
+var _s = $RefreshSig$();
+const SUPABASE_URL = 'https://qwqzejzwdzqapjkqadjt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cXplanp3ZHpxYXBqa3FhZGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzA1MDksImV4cCI6MjA4NTc0NjUwOX0.JV36saRgJtP-zKwI86RzjWQRmuwVo9wAqNpyoVSJm3A';
+const supabase = (0, _supabaseJs.createClient)(SUPABASE_URL, SUPABASE_KEY);
+function AdminApp({ user, onLogout }) {
+    _s();
+    const [schedules, setSchedules] = (0, _react.useState)([]);
+    const [loading, setLoading] = (0, _react.useState)(false);
+    const [filter, setFilter] = (0, _react.useState)('all');
+    const [editingAppointment, setEditingAppointment] = (0, _react.useState)(null);
+    (0, _react.useEffect)(()=>{
+        load();
+    }, []);
+    async function load() {
+        setLoading(true);
+        const { data, error } = await supabase.from('schedules').select('*').order('created_at', {
+            ascending: false
+        });
+        if (!error) setSchedules(data || []);
+        setLoading(false);
+    }
+    async function approve(id) {
+        await supabase.from('schedules').update({
+            status: 'approved'
+        }).eq('id', id);
+        load();
+    }
+    async function reject(id) {
+        await supabase.from('schedules').update({
+            status: 'rejected'
+        }).eq('id', id);
+        load();
+    }
+    async function assignTech(id) {
+        const techId = prompt('Technician user_id to assign:');
+        if (!techId) return;
+        await supabase.from('jobs').insert([
+            {
+                schedule_id: id,
+                technician_id: techId,
+                status: 'assigned'
+            }
+        ]);
+        await supabase.from('schedules').update({
+            status: 'assigned'
+        }).eq('id', id);
+        load();
+    }
+    async function handleEditAppointment(updatedData) {
+        if (!editingAppointment) return;
+        try {
+            const { error } = await supabase.from('schedules').update({
+                customer_name: updatedData.customer_name,
+                requested_date: updatedData.requested_date,
+                status: updatedData.status,
+                notes: updatedData.notes
+            }).eq('id', editingAppointment.id);
+            if (!error) {
+                setEditingAppointment(null);
+                load();
+            }
+        } catch (error) {
+            console.error('Error updating appointment:', error);
+        }
+    }
+    return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+        className: "app",
+        children: [
+            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("header", {
+                className: "header",
+                children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                    className: "header-content",
+                    children: [
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("h1", {
+                            children: "\uD83D\uDD27 Aircon Admin Dashboard"
+                        }, void 0, false, {
+                            fileName: "src/Admin/AdminApp.jsx",
+                            lineNumber: 71,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                            className: "header-actions",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                    className: "user-info",
+                                    children: [
+                                        "\uD83D\uDC64 ",
+                                        user.name
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 73,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                    onClick: load,
+                                    disabled: loading,
+                                    className: "btn-refresh",
+                                    children: loading ? 'Loading...' : 'Refresh'
+                                }, void 0, false, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 74,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                    onClick: onLogout,
+                                    className: "btn-logout",
+                                    children: "Logout"
+                                }, void 0, false, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 77,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "src/Admin/AdminApp.jsx",
+                            lineNumber: 72,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "src/Admin/AdminApp.jsx",
+                    lineNumber: 70,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
+                fileName: "src/Admin/AdminApp.jsx",
+                lineNumber: 69,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                className: "stats-grid",
+                children: [
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "stat-card",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-value",
+                                children: schedules.length
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 86,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-label",
+                                children: "Total Schedules"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 87,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Admin/AdminApp.jsx",
+                        lineNumber: 85,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "stat-card pending",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-value",
+                                children: schedules.filter((s)=>s.status === 'pending').length
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 90,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-label",
+                                children: "Pending"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 91,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Admin/AdminApp.jsx",
+                        lineNumber: 89,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "stat-card approved",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-value",
+                                children: schedules.filter((s)=>s.status === 'approved').length
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 94,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-label",
+                                children: "Approved"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 95,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Admin/AdminApp.jsx",
+                        lineNumber: 93,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                        className: "stat-card assigned",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-value",
+                                children: schedules.filter((s)=>s.status === 'assigned').length
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 98,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                                className: "stat-label",
+                                children: "Assigned"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 99,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Admin/AdminApp.jsx",
+                        lineNumber: 97,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "src/Admin/AdminApp.jsx",
+                lineNumber: 84,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                className: "filter-tabs",
+                children: [
+                    'all',
+                    'pending',
+                    'approved',
+                    'assigned',
+                    'rejected'
+                ].map((status)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                        onClick: ()=>setFilter(status),
+                        className: `tab ${filter === status ? 'active' : ''}`,
+                        children: status.charAt(0).toUpperCase() + status.slice(1)
+                    }, status, false, {
+                        fileName: "src/Admin/AdminApp.jsx",
+                        lineNumber: 105,
+                        columnNumber: 11
+                    }, this))
+            }, void 0, false, {
+                fileName: "src/Admin/AdminApp.jsx",
+                lineNumber: 103,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                className: "schedules-container",
+                children: filter === 'all' ? schedules.length === 0 ? /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                    className: "empty-state",
+                    children: [
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                            className: "empty-icon",
+                            children: "\uD83D\uDCCB"
+                        }, void 0, false, {
+                            fileName: "src/Admin/AdminApp.jsx",
+                            lineNumber: 118,
+                            columnNumber: 44
+                        }, this),
+                        "No schedules found"
+                    ]
+                }, void 0, true, {
+                    fileName: "src/Admin/AdminApp.jsx",
+                    lineNumber: 118,
+                    columnNumber: 15
+                }, this) : renderTable(schedules) : schedules.filter((s)=>s.status === filter).length === 0 ? /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                    className: "empty-state",
+                    children: [
+                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
+                            className: "empty-icon",
+                            children: "\uD83D\uDCCB"
+                        }, void 0, false, {
+                            fileName: "src/Admin/AdminApp.jsx",
+                            lineNumber: 121,
+                            columnNumber: 44
+                        }, this),
+                        "No ",
+                        filter,
+                        " schedules"
+                    ]
+                }, void 0, true, {
+                    fileName: "src/Admin/AdminApp.jsx",
+                    lineNumber: 121,
+                    columnNumber: 15
+                }, this) : renderTable(schedules.filter((s)=>s.status === filter))
+            }, void 0, false, {
+                fileName: "src/Admin/AdminApp.jsx",
+                lineNumber: 115,
+                columnNumber: 7
+            }, this),
+            editingAppointment && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _editAppointmentDefault.default), {
+                appointment: editingAppointment,
+                onSave: handleEditAppointment,
+                onClose: ()=>setEditingAppointment(null)
+            }, void 0, false, {
+                fileName: "src/Admin/AdminApp.jsx",
+                lineNumber: 127,
+                columnNumber: 9
+            }, this),
+            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _installPromptDefault.default), {}, void 0, false, {
+                fileName: "src/Admin/AdminApp.jsx",
+                lineNumber: 134,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "src/Admin/AdminApp.jsx",
+        lineNumber: 68,
+        columnNumber: 5
+    }, this);
+    function renderTable(data) {
+        return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("table", {
+            className: "schedules-table",
+            children: [
+                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("thead", {
+                    children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("tr", {
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
+                                children: "ID"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 143,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
+                                children: "Customer"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 144,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
+                                children: "Requested Date"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 145,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
+                                children: "Status"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 146,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("th", {
+                                children: "Actions"
+                            }, void 0, false, {
+                                fileName: "src/Admin/AdminApp.jsx",
+                                lineNumber: 147,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Admin/AdminApp.jsx",
+                        lineNumber: 142,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "src/Admin/AdminApp.jsx",
+                    lineNumber: 141,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("tbody", {
+                    children: data.map((s)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("tr", {
+                            children: [
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
+                                    className: "id-cell",
+                                    children: [
+                                        "#",
+                                        s.id
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 153,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
+                                    children: s.customer_name || 'N/A'
+                                }, void 0, false, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 154,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
+                                    children: new Date(s.requested_date).toLocaleDateString()
+                                }, void 0, false, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 155,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
+                                    children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                        className: `status-badge status-${s.status}`,
+                                        children: s.status
+                                    }, void 0, false, {
+                                        fileName: "src/Admin/AdminApp.jsx",
+                                        lineNumber: 157,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 156,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("td", {
+                                    className: "actions-cell",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                            onClick: ()=>setEditingAppointment(s),
+                                            className: "btn btn-edit",
+                                            title: "Edit appointment",
+                                            children: "\u270F\uFE0F Edit"
+                                        }, void 0, false, {
+                                            fileName: "src/Admin/AdminApp.jsx",
+                                            lineNumber: 162,
+                                            columnNumber: 17
+                                        }, this),
+                                        s.status === 'pending' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _jsxDevRuntime.Fragment), {
+                                            children: [
+                                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                                    onClick: ()=>approve(s.id),
+                                                    className: "btn btn-approve",
+                                                    children: "\u2713 Approve"
+                                                }, void 0, false, {
+                                                    fileName: "src/Admin/AdminApp.jsx",
+                                                    lineNumber: 171,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                                    onClick: ()=>reject(s.id),
+                                                    className: "btn btn-reject",
+                                                    children: "\u2717 Reject"
+                                                }, void 0, false, {
+                                                    fileName: "src/Admin/AdminApp.jsx",
+                                                    lineNumber: 177,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true),
+                                        s.status === 'approved' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
+                                            onClick: ()=>assignTech(s.id),
+                                            className: "btn btn-assign",
+                                            children: "\uD83D\uDC64 Assign"
+                                        }, void 0, false, {
+                                            fileName: "src/Admin/AdminApp.jsx",
+                                            lineNumber: 186,
+                                            columnNumber: 19
+                                        }, this),
+                                        s.status === 'assigned' && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("span", {
+                                            className: "status-text",
+                                            children: "Assigned"
+                                        }, void 0, false, {
+                                            fileName: "src/Admin/AdminApp.jsx",
+                                            lineNumber: 194,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "src/Admin/AdminApp.jsx",
+                                    lineNumber: 161,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, s.id, true, {
+                            fileName: "src/Admin/AdminApp.jsx",
+                            lineNumber: 152,
+                            columnNumber: 13
+                        }, this))
+                }, void 0, false, {
+                    fileName: "src/Admin/AdminApp.jsx",
+                    lineNumber: 150,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "src/Admin/AdminApp.jsx",
+            lineNumber: 140,
+            columnNumber: 7
+        }, this);
+    }
+}
+_s(AdminApp, "GrpOvPZ0tZfVZoNAoIbCAiVqi3c=");
+_c = AdminApp;
+var _c;
+$RefreshReg$(_c, "AdminApp");
+
+  $parcel$ReactRefreshHelpers$87fc.postlude(module);
+} finally {
+  globalThis.$RefreshReg$ = prevRefreshReg;
+  globalThis.$RefreshSig$ = prevRefreshSig;
+}
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@supabase/supabase-js":"6LYPf","../Login":"a6Rks","../EditAppointment":"5P7f0","../InstallPrompt":"hTzvZ","./AdminApp.css":"1jw53","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"a6Rks":[function(require,module,exports,__globalThis) {
 var $parcel$ReactRefreshHelpers$898c = require("@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
 $parcel$ReactRefreshHelpers$898c.init();
 var prevRefreshReg = globalThis.$RefreshReg$;
@@ -47654,20 +47701,9 @@ $RefreshReg$(_c, "TechnicianApp");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","../shared/Camera":"hCU7R","./TechnicianApp.css":"2NjVN","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"2NjVN":[function() {},{}],"baEbC":[function(require,module,exports,__globalThis) {
-// src/supabase.js
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "supabase", ()=>supabase);
-var _supabaseJs = require("@supabase/supabase-js");
-const supabaseUrl = "https://qwqzejzwdzqapjkqadjt.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cXplanp3ZHpxYXBqa3FhZGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzA1MDksImV4cCI6MjA4NTc0NjUwOX0.JV36saRgJtP-zKwI86RzjWQRmuwVo9wAqNpyoVSJm3A";
-if (!supabaseUrl || !supabaseAnonKey) console.error("Supabase environment variables are missing");
-const supabase = (0, _supabaseJs.createClient)(supabaseUrl, supabaseAnonKey);
-
-},{"@supabase/supabase-js":"6LYPf","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"iSs9O":[function(require,module,exports,__globalThis) {
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","../shared/Camera":"hCU7R","./TechnicianApp.css":"2NjVN","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"2NjVN":[function() {},{}],"iSs9O":[function(require,module,exports,__globalThis) {
 module.exports = module.bundle.resolve("sw.js");
 
-},{}]},["hiyDA","gYcKb"], "gYcKb", "parcelRequired271", {}, "./", "/", "http://localhost:1234")
+},{}]},["6vvr9","gYcKb"], "gYcKb", "parcelRequired271", {}, "./", "/", "http://localhost:58502")
 
 //# sourceMappingURL=admin.ad93b51f.js.map
