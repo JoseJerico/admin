@@ -25010,6 +25010,7 @@ var _userApp = require("./User/UserApp");
 var _userAppDefault = parcelHelpers.interopDefault(_userApp);
 var _technicianApp = require("./Technician/TechnicianApp");
 var _technicianAppDefault = parcelHelpers.interopDefault(_technicianApp);
+var _supabase = require("./supabase");
 var _appCss = require("./App.css");
 var _s = $RefreshSig$();
 function App() {
@@ -25023,6 +25024,14 @@ function App() {
             setUser(JSON.parse(savedUser));
             setRole(savedRole);
         }
+        const { data: { subscription } } = (0, _supabase.supabase).auth.onAuthStateChange(async (event, session)=>{
+            if (session?.user) setUser(session.user);
+            else {
+                setUser(null);
+                setRole(null);
+            }
+        });
+        return ()=>subscription.unsubscribe();
     }, []);
     function handleRoleSelect(selectedRole, userData) {
         setRole(selectedRole);
@@ -25035,22 +25044,21 @@ function App() {
         setRole(null);
         localStorage.removeItem('appRole');
         localStorage.removeItem('appUser');
+        (0, _supabase.supabase).auth.signOut();
     }
-    // No role selected - show role selector
     if (!role || !user) return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _roleSelectorDefault.default), {
         onRoleSelect: handleRoleSelect
     }, void 0, false, {
         fileName: "src/App.jsx",
-        lineNumber: 37,
+        lineNumber: 52,
         columnNumber: 12
     }, this);
-    // Route to appropriate app based on role
     if (role === 'admin') return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _adminAppDefault.default), {
         user: user,
         onLogout: handleLogout
     }, void 0, false, {
         fileName: "src/App.jsx",
-        lineNumber: 42,
+        lineNumber: 57,
         columnNumber: 12
     }, this);
     if (role === 'user') return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _userAppDefault.default), {
@@ -25058,7 +25066,7 @@ function App() {
         onLogout: handleLogout
     }, void 0, false, {
         fileName: "src/App.jsx",
-        lineNumber: 46,
+        lineNumber: 61,
         columnNumber: 12
     }, this);
     if (role === 'technician') return /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _technicianAppDefault.default), {
@@ -25066,7 +25074,7 @@ function App() {
         onLogout: handleLogout
     }, void 0, false, {
         fileName: "src/App.jsx",
-        lineNumber: 50,
+        lineNumber: 65,
         columnNumber: 12
     }, this);
     return null;
@@ -25081,7 +25089,7 @@ $RefreshReg$(_c, "App");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","./App.css":"6n0o6","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi","./RoleSelector":"7E7Rx","./Admin/AdminApp":"f7syB","./User/UserApp":"8xUpE","./Technician/TechnicianApp":"5gMz9"}],"6n0o6":[function() {},{}],"jnFvT":[function(require,module,exports,__globalThis) {
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","./App.css":"6n0o6","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi","./RoleSelector":"7E7Rx","./Admin/AdminApp":"f7syB","./User/UserApp":"8xUpE","./Technician/TechnicianApp":"5gMz9","./supabase":"baEbC"}],"6n0o6":[function() {},{}],"jnFvT":[function(require,module,exports,__globalThis) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -28510,7 +28518,7 @@ var _authJs = require("@supabase/auth-js");
 parcelHelpers.exportAll(_realtimeJs, exports);
 parcelHelpers.exportAll(_authJs, exports);
 //#region src/lib/version.ts
-const version = "2.97.0";
+const version = "2.98.0";
 //#endregion
 //#region src/lib/constants.ts
 let JS_ENV = "";
@@ -31531,6 +31539,36 @@ class RealtimeClient {
         // This ensures channel join messages include the correct access token
         const authPromise = this._authPromise || (this.accessToken && !this.accessTokenValue ? this.setAuth() : Promise.resolve());
         authPromise.then(()=>{
+            // When subscribe() is called before the accessToken callback has
+            // resolved (common on React Native / Expo where token storage is
+            // async), the phx_join payload captured at subscribe()-time will
+            // have no access_token.  By this point auth has settled and
+            // this.accessTokenValue holds the real JWT.
+            //
+            // The stale join messages sitting in sendBuffer captured the old
+            // (token-less) payload in a closure, so we cannot simply flush
+            // them.  Instead we:
+            //   1. Patch each channel's joinPush payload with the real token
+            //   2. Drop the stale buffered messages
+            //   3. Re-send the join for any channel still in "joining" state
+            //
+            // On browsers this is a harmless no-op: accessTokenValue was
+            // already set synchronously before subscribe() ran, so the join
+            // payload already had the correct token.
+            if (this.accessTokenValue) {
+                this.channels.forEach((channel)=>{
+                    channel.updateJoinPayload({
+                        access_token: this.accessTokenValue
+                    });
+                });
+                this.sendBuffer = [];
+                this.channels.forEach((channel)=>{
+                    if (channel._isJoining()) {
+                        channel.joinPush.sent = false;
+                        channel.joinPush.send();
+                    }
+                });
+            }
             this.flushSendBuffer();
         }).catch((e)=>{
             this.log('error', 'error waiting for auth on connect', e);
@@ -31942,7 +31980,7 @@ var CONNECTION_STATE;
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "version", ()=>version);
-const version = '2.97.0';
+const version = '2.98.0';
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"idzjS":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -34477,7 +34515,7 @@ var StorageFileApi = class extends BaseApiClient {
 };
 //#endregion
 //#region src/lib/version.ts
-const version = "2.97.0";
+const version = "2.98.0";
 //#endregion
 //#region src/lib/constants.ts
 const DEFAULT_HEADERS = {
@@ -38725,7 +38763,7 @@ const JWKS_TTL = 600000; // 10 minutes
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "version", ()=>version);
-const version = '2.97.0';
+const version = '2.98.0';
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"kMvBp":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -39629,7 +39667,7 @@ const DEFAULT_OPTIONS = {
     debug: false,
     hasCustomAuthorizationHeader: false,
     throwOnError: false,
-    lockAcquireTimeout: 10000,
+    lockAcquireTimeout: 5000,
     skipAutoInitialize: false
 };
 async function lockNoOp(name, acquireTimeout, fn) {
@@ -42636,10 +42674,13 @@ async function navigatorLock(name, acquireTimeout, fn) {
         if (internals.debug) console.log('@supabase/gotrue-js: navigatorLock acquire timed out', name);
     }, acquireTimeout);
     // MDN article: https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request
-    // Wrapping with await Promise.resolve() is done as some libraries like zone.js
-    // patch the Promise object to track execution context. We use await instead of
-    // .then() to avoid Firefox content script security errors where accessing .then()
-    // on cross-context promises is forbidden.
+    // Wrapping navigator.locks.request() with a plain Promise is done as some
+    // libraries like zone.js patch the Promise object to track the execution
+    // context. However, it appears that most browsers use an internal promise
+    // implementation when using the navigator.locks.request() API causing them
+    // to lose context and emit confusing log messages or break certain features.
+    // This wrapping is believed to help zone.js track the execution context
+    // better.
     await Promise.resolve();
     try {
         return await globalThis.navigator.locks.request(name, acquireTimeout === 0 ? {
@@ -42675,10 +42716,40 @@ async function navigatorLock(name, acquireTimeout, fn) {
             }
         });
     } catch (e) {
-        // When the AbortController times out, navigator.locks.request rejects with
-        // a DOMException named 'AbortError'. Convert this to NavigatorLockAcquireTimeoutError
-        // so callers can check error.isAcquireTimeout as documented.
-        if ((e === null || e === void 0 ? void 0 : e.name) === 'AbortError') throw new NavigatorLockAcquireTimeoutError(`Acquiring an exclusive Navigator LockManager lock "${name}" timed out waiting ${acquireTimeout}ms`);
+        if ((e === null || e === void 0 ? void 0 : e.name) === 'AbortError' && acquireTimeout > 0) {
+            // The lock acquisition was aborted because the timeout fired while the
+            // request was still pending. This typically means another lock holder is
+            // not releasing the lock, possibly due to React Strict Mode's
+            // double-mount/unmount behavior or a component unmounting mid-operation,
+            // leaving an orphaned lock.
+            //
+            // Recovery: use { steal: true } to forcefully acquire the lock. Per the
+            // Web Locks API spec, this releases any currently held lock with the same
+            // name and grants the request immediately, preempting any queued requests.
+            // The previous holder's callback continues running to completion but no
+            // longer holds the lock for exclusion purposes.
+            //
+            // See: https://github.com/supabase/supabase/issues/42505
+            if (internals.debug) console.log('@supabase/gotrue-js: navigatorLock: acquire timeout, recovering by stealing lock', name);
+            console.warn(`@supabase/gotrue-js: Lock "${name}" was not released within ${acquireTimeout}ms. ` + 'This may indicate an orphaned lock from a component unmount (e.g., React Strict Mode). ' + 'Forcefully acquiring the lock to recover.');
+            return await Promise.resolve().then(()=>globalThis.navigator.locks.request(name, {
+                    mode: 'exclusive',
+                    steal: true
+                }, async (lock)=>{
+                    if (lock) {
+                        if (internals.debug) console.log('@supabase/gotrue-js: navigatorLock: recovered (stolen)', name, lock.name);
+                        try {
+                            return await fn();
+                        } finally{
+                            if (internals.debug) console.log('@supabase/gotrue-js: navigatorLock: released (stolen)', name, lock.name);
+                        }
+                    } else {
+                        // This should not happen with steal: true, but handle gracefully.
+                        console.warn('@supabase/gotrue-js: Navigator LockManager returned null lock even with steal: true');
+                        return await fn();
+                    }
+                }));
+        }
         throw e;
     }
 }
@@ -47583,7 +47654,18 @@ $RefreshReg$(_c, "TechnicianApp");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","../shared/Camera":"hCU7R","./TechnicianApp.css":"2NjVN","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"2NjVN":[function() {},{}],"iSs9O":[function(require,module,exports,__globalThis) {
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","../shared/Camera":"hCU7R","./TechnicianApp.css":"2NjVN","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"2NjVN":[function() {},{}],"baEbC":[function(require,module,exports,__globalThis) {
+// src/supabase.js
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "supabase", ()=>supabase);
+var _supabaseJs = require("@supabase/supabase-js");
+const supabaseUrl = "https://qwqzejzwdzqapjkqadjt.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cXplanp3ZHpxYXBqa3FhZGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzA1MDksImV4cCI6MjA4NTc0NjUwOX0.JV36saRgJtP-zKwI86RzjWQRmuwVo9wAqNpyoVSJm3A";
+if (!supabaseUrl || !supabaseAnonKey) console.error("Supabase environment variables are missing");
+const supabase = (0, _supabaseJs.createClient)(supabaseUrl, supabaseAnonKey);
+
+},{"@supabase/supabase-js":"6LYPf","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"iSs9O":[function(require,module,exports,__globalThis) {
 module.exports = module.bundle.resolve("sw.js");
 
 },{}]},["hiyDA","gYcKb"], "gYcKb", "parcelRequired271", {}, "./", "/", "http://localhost:1234")

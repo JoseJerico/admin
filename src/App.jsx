@@ -3,6 +3,7 @@ import RoleSelector from './RoleSelector'
 import AdminApp from './Admin/AdminApp'
 import UserApp from './User/UserApp'
 import TechnicianApp from './Technician/TechnicianApp'
+import { supabase } from './supabase'
 import './App.css'
 
 export default function App() {
@@ -16,6 +17,19 @@ export default function App() {
       setUser(JSON.parse(savedUser))
       setRole(savedRole)
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user)
+        } else {
+          setUser(null)
+          setRole(null)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
   }, [])
 
   function handleRoleSelect(selectedRole, userData) {
@@ -30,14 +44,15 @@ export default function App() {
     setRole(null)
     localStorage.removeItem('appRole')
     localStorage.removeItem('appUser')
+    supabase.auth.signOut()
   }
 
-  // No role selected - show role selector
+
   if (!role || !user) {
     return <RoleSelector onRoleSelect={handleRoleSelect} />
   }
 
-  // Route to appropriate app based on role
+
   if (role === 'admin') {
     return <AdminApp user={user} onLogout={handleLogout} />
   }
