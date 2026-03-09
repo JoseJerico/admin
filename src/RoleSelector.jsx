@@ -90,18 +90,27 @@ export default function RoleSelector({ onRoleSelect }) {
       return
     }
 
-    await supabase.from("profiles").insert({
-      id: user.id,
-      role_id: roleData.id
-    })
+   try {
+      await supabase.from("profiles").insert({
+        id: user.id,
+        role_id: roleData.id
+      })
 
-    await supabase.from("user_details").insert({
-      id: user.id,
-      email: email
-    })
+      await supabase.from("user_details").insert({
+        id: user.id,
+        email: email
+      })
 
-    alert("Account created successfully! Please login.")
-    setIsRegistering(false)
+      alert("Account created successfully! Please login.")
+      setIsRegistering(false)
+    } catch (insertError) {
+      console.error("Database error:", insertError)
+      alert(`Database error saving new user: ${insertError.message}`)
+      alert("Account created successfully! Please login.")
+      setIsRegistering(false)
+      // Optionally, you might want to delete the auth user if inserts fail
+      // await supabase.auth.admin.deleteUser(user.id) // but this requires admin key
+  }
   }
 
   async function handleLogin() {
