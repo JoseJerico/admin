@@ -1,20 +1,25 @@
-import React, { useState } from "react"
-import { supabase } from "./supabase"
-import "./RoleSelector.css"
+import React, { useState } from "react";
+import { supabase } from "./supabase";
+import "./RoleSelector.css";
 
 export default function RoleSelector({ onRoleSelect }) {
-  const [selectedRole, setSelectedRole] = useState(null)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isRegistering, setIsRegistering] = useState(false)
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleInitial, setMiddleInitial] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [address, setAddress] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const [adminAccessGranted, setAdminAccessGranted] = useState(false)
-  const [showAdminPin, setShowAdminPin] = useState(false)
-  const [adminPin, setAdminPin] = useState("")
-  const [pinError, setPinError] = useState("")
+  const [adminAccessGranted, setAdminAccessGranted] = useState(false);
+  const [showAdminPin, setShowAdminPin] = useState(false);
+  const [adminPin, setAdminPin] = useState("");
+  const [pinError, setPinError] = useState("");
 
-  const ADMIN_PIN = "8888"
+  const ADMIN_PIN = "8888";
 
   const baseRoles = [
     {
@@ -22,16 +27,16 @@ export default function RoleSelector({ onRoleSelect }) {
       name: "Customer",
       icon: "👤",
       description: "Browse & book services",
-      color: "#10b981"
+      color: "#10b981",
     },
     {
       id: "technician",
       name: "Technician",
       icon: "🔧",
       description: "View jobs & work updates",
-      color: "#3b82f6"
-    }
-  ]
+      color: "#3b82f6",
+    },
+  ];
 
   const roleList = adminAccessGranted
     ? [
@@ -40,156 +45,154 @@ export default function RoleSelector({ onRoleSelect }) {
           name: "Admin",
           icon: "👨‍💼",
           description: "Manage schedules and technicians",
-          color: "#667eea"
+          color: "#667eea",
         },
-        ...baseRoles
+        ...baseRoles,
       ]
-    : baseRoles
+    : baseRoles;
 
   async function handleRegister() {
     if (!email || !password) {
-      alert("Email and password are required")
-      return
+      alert("Email and password are required");
+      return;
     }
-
     if (password.length < 6) {
-      alert("Password must be at least 6 characters")
-      return
+      alert("Password must be at least 6 characters");
+      return;
     }
-
     if (password !== confirmPassword) {
-      alert("Passwords do not match")
-      return
+      alert("Passwords do not match");
+      return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password
-    })
-
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
-      alert(error.message)
-      return
+      alert(error.message);
+      return;
     }
 
-    const user = data.user
-
+    const user = data.user;
     if (!user) {
-      alert("Signup failed")
-      return
+      alert("Signup failed");
+      return;
     }
 
-    const { data: roleData } = await supabase
+    const { data: roleData, error: roleError } = await supabase
       .from("roles")
       .select("id")
       .eq("name", selectedRole)
-      .single()
-
-    if (!roleData) {
-      alert("Role not found in database")
-      return
+      .single();
+    if (roleError || !roleData) {
+      alert("Role not found in database");
+      return;
     }
 
-   try {
+    try {
+      // Insert sa profiles table
       await supabase.from("profiles").insert({
         id: user.id,
-        role_id: roleData.id
-      })
+        role_id: roleData.id,
+      });
 
+      // Insert sa user_details table kasama ang mga inputs
       await supabase.from("user_details").insert({
         id: user.id,
-        email: email
-      })
+        user_id: user.id,
+        first_name: firstName,
+        middle_initial: middleInitial,
+        last_name: lastName,
+        address: address,
+        mobile_number: mobileNumber,
+        email: email,
+        role: selectedRole,
+        role_id: roleData.id,
+        is_verified: false,
+        created_at: new Date(),
+      });
 
-      alert("Account created successfully! Please login.")
-      setIsRegistering(false)
+      alert("Account created successfully! Please login.");
+      setIsRegistering(false);
     } catch (insertError) {
-      console.error("Database error:", insertError)
-      alert(`Database error saving new user: ${insertError.message}`)
-      alert("Account created successfully! Please login.")
-      setIsRegistering(false)
-      // Optionally, you might want to delete the auth user if inserts fail
-      // await supabase.auth.admin.deleteUser(user.id) // but this requires admin key
-  }
+      console.error("Database error:", insertError);
+      alert(`Database error saving new user: ${insertError.message}`);
+      setIsRegistering(false);
+    }
   }
 
   async function handleLogin() {
     if (!email || !password) {
-      alert("Email and password are required")
-      return
+      alert("Email and password are required");
+      return;
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
-    })
-
+      password,
+    });
     if (error) {
-      alert(error.message)
-      return
+      alert(error.message);
+      return;
     }
 
-    const user = data.user
+    const user = data.user;
+    if (!user) {
+      alert("Login failed");
+      return;
+    }
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role_id, roles(name)")
       .eq("id", user.id)
-      .single()
-
+      .single();
     if (profileError || !profile) {
-      alert("Role not found for this user")
-      return
+      alert("Role not found for this user");
+      return;
     }
 
-    const userRole = profile.roles.name
-
+    const userRole = profile.roles.name;
     if (userRole !== selectedRole) {
-      alert(`This account is registered as ${userRole}`)
-      return
+      alert(`This account is registered as ${userRole}`);
+      return;
     }
 
-    onRoleSelect(userRole)
+    onRoleSelect(userRole, user);
   }
 
   function handleAdminPinSubmit() {
     if (!adminPin) {
-      setPinError("Please enter the PIN")
-      return
+      setPinError("Please enter the PIN");
+      return;
     }
-
     if (adminPin === ADMIN_PIN) {
-      setAdminAccessGranted(true)
-      setShowAdminPin(false)
-      setAdminPin("")
-      setPinError("")
+      setAdminAccessGranted(true);
+      setShowAdminPin(false);
+      setAdminPin("");
+      setPinError("");
     } else {
-      setPinError("❌ Incorrect PIN")
-      setAdminPin("")
+      setPinError("❌ Incorrect PIN");
+      setAdminPin("");
     }
   }
 
   function handleOpenAdminAccess() {
-    setShowAdminPin(true)
-    setPinError("")
-    setAdminPin("")
+    setShowAdminPin(true);
+    setPinError("");
+    setAdminPin("");
   }
 
   function handleCloseAdminPin() {
-    setShowAdminPin(false)
-    setPinError("")
+    setShowAdminPin(false);
+    setPinError("");
   }
 
   if (selectedRole) {
-    const role = roleList.find((r) => r.id === selectedRole)
+    const role = roleList.find((r) => r.id === selectedRole);
 
     return (
       <div className="role-selector">
         <div className="login-container">
-          <button
-            onClick={() => setSelectedRole(null)}
-            className="btn-back-role"
-          >
+          <button onClick={() => setSelectedRole(null)} className="btn-back-role">
             ← Back
           </button>
 
@@ -201,10 +204,8 @@ export default function RoleSelector({ onRoleSelect }) {
 
             <form
               onSubmit={(e) => {
-                e.preventDefault()
-                isRegistering
-                  ? handleRegister()
-                  : handleLogin()
+                e.preventDefault();
+                isRegistering ? handleRegister() : handleLogin();
               }}
               className="login-form"
             >
@@ -228,16 +229,56 @@ export default function RoleSelector({ onRoleSelect }) {
               </div>
 
               {isRegistering && (
-                <div className="form-group">
-                  <label>Confirm Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
-                  />
-                </div>
+                <>
+                  <div className="form-group">
+                    <label>First Name</label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Middle Initial</label>
+                    <input
+                      type="text"
+                      value={middleInitial}
+                      onChange={(e) => setMiddleInitial(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Last Name</label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Address</label>
+                    <input
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Mobile Number</label>
+                    <input
+                      type="text"
+                      value={mobileNumber}
+                      onChange={(e) => setMobileNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Confirm Password</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </>
               )}
 
               <button type="submit" className="btn-login-role">
@@ -247,14 +288,12 @@ export default function RoleSelector({ onRoleSelect }) {
 
             <div className="login-toggle-section">
               <p className="toggle-text">
-                {isRegistering
-                  ? "Already have an account? "
-                  : "Don't have an account? "}
+                {isRegistering ? "Already have an account? " : "Don't have an account? "}
                 <button
                   type="button"
                   onClick={() => {
-                    setIsRegistering(!isRegistering)
-                    setConfirmPassword("")
+                    setIsRegistering(!isRegistering);
+                    setConfirmPassword("");
                   }}
                   className="toggle-btn"
                 >
@@ -265,7 +304,7 @@ export default function RoleSelector({ onRoleSelect }) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -287,11 +326,11 @@ export default function RoleSelector({ onRoleSelect }) {
                 type="password"
                 value={adminPin}
                 onChange={(e) => {
-                  setAdminPin(e.target.value)
-                  setPinError("")
+                  setAdminPin(e.target.value);
+                  setPinError("");
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAdminPinSubmit()
+                  if (e.key === "Enter") handleAdminPinSubmit();
                 }}
                 maxLength="4"
               />
@@ -299,12 +338,8 @@ export default function RoleSelector({ onRoleSelect }) {
               {pinError && <p className="pin-error">{pinError}</p>}
 
               <div className="pin-buttons">
-                <button onClick={handleAdminPinSubmit}>
-                  Verify
-                </button>
-                <button onClick={handleCloseAdminPin}>
-                  Cancel
-                </button>
+                <button onClick={handleAdminPinSubmit}>Verify</button>
+                <button onClick={handleCloseAdminPin}>Cancel</button>
               </div>
             </div>
           </div>
@@ -312,9 +347,7 @@ export default function RoleSelector({ onRoleSelect }) {
 
         <div className="selector-content">
           <h2>Who are you?</h2>
-          <p className="selector-subtitle">
-            Choose your role to continue
-          </p>
+          <p className="selector-subtitle">Choose your role to continue</p>
 
           <div className="role-cards">
             {roleList.map((role) => (
@@ -345,5 +378,5 @@ export default function RoleSelector({ onRoleSelect }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
