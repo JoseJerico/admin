@@ -12,6 +12,8 @@ export default function RoleSelector({ onRoleSelect }) {
   const [lastName, setLastName] = useState("");
   const [address, setAddress] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
   const [adminAccessGranted, setAdminAccessGranted] = useState(false);
@@ -22,33 +24,12 @@ export default function RoleSelector({ onRoleSelect }) {
   const ADMIN_PIN = "8888";
 
   const baseRoles = [
-    {
-      id: "customer",
-      name: "Customer",
-      icon: "👤",
-      description: "Browse & book services",
-      color: "#10b981",
-    },
-    {
-      id: "technician",
-      name: "Technician",
-      icon: "🔧",
-      description: "View jobs & work updates",
-      color: "#3b82f6",
-    },
+    { id: "customer", name: "Customer", icon: "👤", description: "Browse & book services", color: "#10b981" },
+    { id: "technician", name: "Technician", icon: "🔧", description: "View jobs & work updates", color: "#3b82f6" },
   ];
 
   const roleList = adminAccessGranted
-    ? [
-        {
-          id: "admin",
-          name: "Admin",
-          icon: "👨‍💼",
-          description: "Manage schedules and technicians",
-          color: "#667eea",
-        },
-        ...baseRoles,
-      ]
+    ? [{ id: "admin", name: "Admin", icon: "👨‍💼", description: "Manage schedules and technicians", color: "#667eea" }, ...baseRoles]
     : baseRoles;
 
   async function handleRegister() {
@@ -64,13 +45,24 @@ export default function RoleSelector({ onRoleSelect }) {
       alert("Passwords do not match");
       return;
     }
+    if (!age || Number(age) <= 0) {
+      alert("Please enter a valid age");
+      return;
+    }
+    if (!gender) {
+      alert("Please select a gender");
+      return;
+    }
+    if (!/^\d{11}$/.test(mobileNumber)) {
+      alert("Mobile number must be exactly 11 digits");
+      return;
+    }
 
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       alert(error.message);
       return;
     }
-
     const user = data.user;
     if (!user) {
       alert("Signup failed");
@@ -88,13 +80,14 @@ export default function RoleSelector({ onRoleSelect }) {
     }
 
     try {
-      // Insert sa profiles table
       await supabase.from("profiles").insert({
         id: user.id,
         role_id: roleData.id,
       });
 
-      // Insert sa user_details table kasama ang mga inputs
+      // Convert current time to PH timezone
+      const phTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+
       await supabase.from("user_details").insert({
         id: user.id,
         user_id: user.id,
@@ -106,11 +99,13 @@ export default function RoleSelector({ onRoleSelect }) {
         email: email,
         role: selectedRole,
         role_id: roleData.id,
+        age: Number(age),
+        gender: gender,
         is_verified: false,
-        created_at: new Date(),
+        created_at: phTime,
       });
 
-      alert("Account created successfully! Please login.");
+      alert(`Account created successfully! Philippine Time: ${phTime.toLocaleString()}`);
       setIsRegistering(false);
     } catch (insertError) {
       console.error("Database error:", insertError);
@@ -125,10 +120,7 @@ export default function RoleSelector({ onRoleSelect }) {
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       alert(error.message);
       return;
@@ -175,16 +167,8 @@ export default function RoleSelector({ onRoleSelect }) {
     }
   }
 
-  function handleOpenAdminAccess() {
-    setShowAdminPin(true);
-    setPinError("");
-    setAdminPin("");
-  }
-
-  function handleCloseAdminPin() {
-    setShowAdminPin(false);
-    setPinError("");
-  }
+  function handleOpenAdminAccess() { setShowAdminPin(true); setPinError(""); setAdminPin(""); }
+  function handleCloseAdminPin() { setShowAdminPin(false); setPinError(""); }
 
   if (selectedRole) {
     const role = roleList.find((r) => r.id === selectedRole);
@@ -192,113 +176,49 @@ export default function RoleSelector({ onRoleSelect }) {
     return (
       <div className="role-selector">
         <div className="login-container">
-          <button onClick={() => setSelectedRole(null)} className="btn-back-role">
-            ← Back
-          </button>
-
+          <button onClick={() => setSelectedRole(null)} className="btn-back-role">← Back</button>
           <div className="login-box" style={{ borderTopColor: role.color }}>
             <div className="login-header">
               <div className="login-icon">{role.icon}</div>
               <h1>{isRegistering ? "Sign Up" : "Login"} as {role.name}</h1>
             </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                isRegistering ? handleRegister() : handleLogin();
-              }}
-              className="login-form"
-            >
+            <form onSubmit={(e) => { e.preventDefault(); isRegistering ? handleRegister() : handleLogin(); }} className="login-form">
               <div className="form-group">
                 <label>Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={`${role.id}@example.com`}
-                />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`${role.id}@example.com`} />
               </div>
-
               <div className="form-group">
                 <label>Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
 
               {isRegistering && (
                 <>
-                  <div className="form-group">
-                    <label>First Name</label>
-                    <input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                    />
+                  <div className="form-group"><label>First Name</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+                  <div className="form-group"><label>Middle Initial</label><input type="text" value={middleInitial} onChange={(e) => setMiddleInitial(e.target.value)} /></div>
+                  <div className="form-group"><label>Last Name</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+                  <div className="form-group"><label>Address</label><input type="text" value={address} onChange={(e) => setAddress(e.target.value)} /></div>
+                  <div className="form-group"><label>Mobile Number</label><input type="text" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} placeholder="11-digit number" /></div>
+                  <div className="form-group"><label>Age</label><input type="number" value={age} onChange={(e) => setAge(e.target.value)} /></div>
+                  <div className="form-group"><label>Gender</label>
+                    <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
-                  <div className="form-group">
-                    <label>Middle Initial</label>
-                    <input
-                      type="text"
-                      value={middleInitial}
-                      onChange={(e) => setMiddleInitial(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Last Name</label>
-                    <input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Address</label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Mobile Number</label>
-                    <input
-                      type="text"
-                      value={mobileNumber}
-                      onChange={(e) => setMobileNumber(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Confirm Password</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
+                  <div className="form-group"><label>Confirm Password</label><input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
                 </>
               )}
 
-              <button type="submit" className="btn-login-role">
-                {isRegistering ? "Sign Up" : "Login"}
-              </button>
+              <button type="submit" className="btn-login-role">{isRegistering ? "Sign Up" : "Login"}</button>
             </form>
 
             <div className="login-toggle-section">
               <p className="toggle-text">
                 {isRegistering ? "Already have an account? " : "Don't have an account? "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRegistering(!isRegistering);
-                    setConfirmPassword("");
-                  }}
-                  className="toggle-btn"
-                >
-                  {isRegistering ? "Login" : "Sign Up"}
-                </button>
+                <button type="button" onClick={() => { setIsRegistering(!isRegistering); setConfirmPassword(""); }} className="toggle-btn">{isRegistering ? "Login" : "Sign Up"}</button>
               </p>
             </div>
           </div>
@@ -321,22 +241,9 @@ export default function RoleSelector({ onRoleSelect }) {
             <div className="admin-pin-box">
               <h2>🔐 Admin Access</h2>
               <p>Enter PIN to access admin portal</p>
-
-              <input
-                type="password"
-                value={adminPin}
-                onChange={(e) => {
-                  setAdminPin(e.target.value);
-                  setPinError("");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAdminPinSubmit();
-                }}
-                maxLength="4"
-              />
-
+              <input type="password" value={adminPin} onChange={(e) => { setAdminPin(e.target.value); setPinError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAdminPinSubmit(); }} maxLength="4" />
               {pinError && <p className="pin-error">{pinError}</p>}
-
               <div className="pin-buttons">
                 <button onClick={handleAdminPinSubmit}>Verify</button>
                 <button onClick={handleCloseAdminPin}>Cancel</button>
@@ -348,14 +255,9 @@ export default function RoleSelector({ onRoleSelect }) {
         <div className="selector-content">
           <h2>Who are you?</h2>
           <p className="selector-subtitle">Choose your role to continue</p>
-
           <div className="role-cards">
             {roleList.map((role) => (
-              <button
-                key={role.id}
-                onClick={() => setSelectedRole(role.id)}
-                className="role-card"
-              >
+              <button key={role.id} onClick={() => setSelectedRole(role.id)} className="role-card">
                 <div className="role-icon">{role.icon}</div>
                 <h3>{role.name}</h3>
                 <p>{role.description}</p>
@@ -366,15 +268,7 @@ export default function RoleSelector({ onRoleSelect }) {
 
         <div className="selector-footer">
           <p>🔒 Secure Portal • PWA Ready • Mobile Optimized</p>
-
-          {!adminAccessGranted && (
-            <button
-              onClick={handleOpenAdminAccess}
-              className="btn-admin-access"
-            >
-              🔑 Admin Access
-            </button>
-          )}
+          {!adminAccessGranted && <button onClick={handleOpenAdminAccess} className="btn-admin-access">🔑 Admin Access</button>}
         </div>
       </div>
     </div>
