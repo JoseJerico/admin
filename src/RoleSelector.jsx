@@ -83,6 +83,9 @@ export default function RoleSelector({ onRoleSelect }) {
       await supabase.from("profiles").insert({
         id: user.id,
         role_id: roleData.id,
+        full_name: `${firstName} ${middleInitial} ${lastName}`,
+        username: email,
+        avatar_url: null,
       });
 
       // Convert current time to PH timezone
