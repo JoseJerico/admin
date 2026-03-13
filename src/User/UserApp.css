@@ -996,3 +996,52 @@
   transform: none;
   box-shadow: none;
 }
+/* Measurement Choice Screen */
+.measure-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;      /* Center horizontally */
+  justify-content: center;  /* Center vertically */
+  gap: 20px;                /* Space between buttons */
+  margin-top: 30px;         /* Add some spacing from header */
+}
+
+.measure-option {
+  font-size: 1.2rem;        /* Bigger text */
+  padding: 15px 30px;       /* Bigger clickable area */
+  border-radius: 10px;
+  cursor: pointer;
+  width: 250px;             /* Fixed width so they look uniform */
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.measure-option.manual {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+}
+
+.measure-option.manual:hover {
+  background-color: #45a049;
+}
+
+.measure-option.ar {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+}
+
+.measure-option.ar:hover {
+  background-color: #1e88e5;
+}
+
+/* Center the Back button on this screen */
+.user-main .btn-back {
+  display: block;
+  margin: 30px auto 0 auto; /* auto left & right centers it */
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
