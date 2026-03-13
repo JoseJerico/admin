@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import './Camera.css'
 
-export default function Camera({ onCapture, title = 'Take Photo', mode = 'photo' }) {
+export default function Camera({ onCapture, title = 'Take Photo', mode = 'photo', products, getRecommendation, addToCart, setScreen }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -10,6 +10,7 @@ export default function Camera({ onCapture, title = 'Take Photo', mode = 'photo'
   const [error, setError] = useState(null)
   const [facingMode, setFacingMode] = useState('environment')
   const [measurements, setMeasurements] = useState({ width: 0, height: 0, area: 0 })
+  const [recommendedProduct, setRecommendedProduct] = useState(null)
 
   useEffect(() => {
     startCamera()
@@ -81,6 +82,12 @@ export default function Camera({ onCapture, title = 'Take Photo', mode = 'photo'
     
     if (newMeasurements.width && newMeasurements.height) {
       newMeasurements.area = (newMeasurements.width * newMeasurements.height / 10.764).toFixed(2) // Convert to sq meters
+      if (getRecommendation) {
+        setRecommendedProduct(getRecommendation(newMeasurements.area))
+      }
+    } else {
+      newMeasurements.area = 0
+      setRecommendedProduct(null)
     }
     
     setMeasurements(newMeasurements)
@@ -134,6 +141,30 @@ export default function Camera({ onCapture, title = 'Take Photo', mode = 'photo'
               {measurements.area > 0 && (
                 <div className="area-display">
                   <strong>Room Area: {measurements.area} m²</strong>
+                </div>
+              )}
+
+              {recommendedProduct && (
+                <div className="recommendation">
+                  <h3>🎯 Recommended for You</h3>
+                  <div className="recommended-card">
+                    <div className="rec-image">{recommendedProduct.image || '❄️'}</div>
+                    <h4>{recommendedProduct.name}</h4>
+                    <p className="capacity">{recommendedProduct.capacity}</p>
+                    <p className="coverage">Coverage: {recommendedProduct.area}</p>
+                    <p className="rec-price">₱{recommendedProduct.price.toLocaleString()}</p>
+                    <button
+                      onClick={() => {
+                        if (addToCart && setScreen) {
+                          addToCart(recommendedProduct)
+                          setScreen('cart')
+                        }
+                      }}
+                      className="btn-add-recommended"
+                    >
+                      ✓ Add to Cart
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

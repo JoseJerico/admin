@@ -314,3 +314,63 @@
     padding-right: max(20px, env(safe-area-inset-right));
   }
 }
+
+/* Recommendation in Camera */
+.recommendation {
+  padding: 20px;
+  background: #f0f9ff;
+  border-top: 1px solid #e0f2fe;
+}
+
+.recommendation h3 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.recommended-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rec-image {
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.recommended-card h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.capacity,
+.coverage,
+.rec-price {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.btn-add-recommended {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: transform 0.2s;
+}
+
+.btn-add-recommended:hover {
+  transform: translateY(-1px);
+}

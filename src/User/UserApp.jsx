@@ -14,6 +14,11 @@ export default function UserApp({ user, onLogout }) {
   const [products, setProducts] = useState([])
   const [services, setServices] = useState([])
 
+  // Manual measurement states
+  const [manualLength, setManualLength] = useState('')
+  const [manualWidth, setManualWidth] = useState('')
+  const [manualUnit, setManualUnit] = useState('meters')
+
   useEffect(() => {
     fetchProducts()
     fetchServices()
@@ -54,7 +59,50 @@ export default function UserApp({ user, onLogout }) {
   function removeFromCart(cartId) {
     setCart(cart.filter(item => item.cartId !== cartId))
   }
+  function handleManualCalculate() {
+  if (!manualLength || !manualWidth) {
+    alert("Please enter both length and width");
+    return;
+  }
 
+  let length = parseFloat(manualLength);
+  let width = parseFloat(manualWidth);
+
+  if (manualUnit === "feet") {
+    length = length * 0.3048; // feet to meters
+    width = width * 0.3048;
+  }
+
+  const area = length * width;
+
+  setRoomMeasurements({
+    measurements: {
+      length: length.toFixed(2),
+      width: width.toFixed(2),
+      area: area.toFixed(2)
+    }
+  });
+
+  const recommendedHP = getAirconHP(area);
+  setRecommendedProduct({ capacity: recommendedHP });
+
+  setScreen('measure'); // Go to Room Analysis screen
+}
+ function getAirconHP(area) {
+  const areaNum = parseFloat(area)
+
+  if (areaNum <= 9) return "0.5 HP"
+  if (areaNum <= 18) return "1.0 HP"
+  if (areaNum <= 25) return "1.5 HP"
+  if (areaNum <= 35) return "2.0 HP"
+  if (areaNum <= 45) return "2.5 HP"
+  if (areaNum <= 60) return "3.0 HP"
+  if (areaNum <= 80) return "4.0 HP"
+
+  return "5.0 HP or higher"
+
+  
+  }
   function getRecommendation(area) {
     if (!products.length) return null
 
@@ -70,16 +118,22 @@ export default function UserApp({ user, onLogout }) {
   }
 
   function handleCameraCapture(data) {
-    setRoomMeasurements(data)
-    const recommendation = getRecommendation(data.measurements.area)
-    setRecommendedProduct(recommendation)
-    setShowCamera(false)
-    setScreen('measure')
-  }
+    // 1. I-set ang na-capture na measurements
+    setRoomMeasurements(data);
 
-  function calculateTotal() {
-    return cart.reduce((sum, item) => sum + (item.price || 0), 0)
-  }
+    // 2. Kunin ang area mula sa camera capture
+    const area = parseFloat(data.measurements.area);
+
+    // 3. I-calculate ang recommended HP gamit ang function na meron ka na
+    const recommendedHP = getAirconHP(area);
+
+    // 4. I-set sa state para ipakita sa UI
+    setRecommendedProduct({ capacity: recommendedHP });
+
+    // 5. Isara ang camera at ipakita ang measure result screen
+    setShowCamera(false);
+    setScreen('measure');
+}
 
   async function handleConfirmBooking() {
     if (!user?.id) {
@@ -154,14 +208,14 @@ export default function UserApp({ user, onLogout }) {
 
           <div className="quick-actions">
             <button
-              onClick={() => setShowCamera(true)}
+              onClick={() => setScreen('measure-choice')}
               className="action-card measure"
             >
               <div className="action-icon">📐</div>
               <h3>Measure Room</h3>
               <p>Get AC recommendation</p>
             </button>
-
+          {/*
             <button
               onClick={() => setScreen('products')}
               className="action-card products"
@@ -170,7 +224,7 @@ export default function UserApp({ user, onLogout }) {
               <h3>Browse ACs</h3>
               <p>View our products</p>
             </button>
-
+          */}
             <button
               onClick={() => setScreen('services')}
               className="action-card services"
@@ -180,7 +234,7 @@ export default function UserApp({ user, onLogout }) {
               <p>Installation & repair</p>
             </button>
           </div>
-
+          {/*
           <section className="featured">
             <h3>Featured Products</h3>
             <div className="products-grid">
@@ -200,10 +254,12 @@ export default function UserApp({ user, onLogout }) {
               ))}
             </div>
           </section>
+         */}
         </main>
       )}
-
+      
       {/* Products Screen */}
+      {/*
       {screen === 'products' && (
         <main className="user-main">
           <div className="screen-header">
@@ -230,7 +286,7 @@ export default function UserApp({ user, onLogout }) {
           </div>
         </main>
       )}
-
+      */}
       {/* Services Screen */}
       {screen === 'services' && (
         <main className="user-main">
@@ -258,7 +314,36 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Room Measurement Result */}
+      {/* Room Measurement Result */} 
+      {screen === 'measure-choice' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>📏 Choose Measurement Method</h2>
+      <p>Select how you want to measure your room</p>
+    </div>
+
+    <div className="measure-options">
+      <button
+        className="measure-option manual"
+        onClick={() => setScreen('manual-measure')}
+      >
+        ✏️ Manual Input
+      </button>
+
+      <button
+        className="measure-option ar"
+        onClick={() => setShowCamera(true)}
+      >
+        📷 Use AR Camera
+      </button>
+    </div>
+
+    <button onClick={() => setScreen('home')} className="btn-back">
+      ← Back
+    </button>
+  </main>
+)}
+     
       {screen === 'measure' && (
         <main className="user-main">
           <div className="screen-header">
@@ -266,48 +351,84 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           {roomMeasurements && (
-            <div className="measurement-results">
-              <div className="result-card">
-                <h3>Room Dimensions</h3>
-                <div className="measurements">
-                  <p>Width: <strong>{roomMeasurements.measurements.width} ft</strong></p>
-                  <p>Length: <strong>{roomMeasurements.measurements.height} ft</strong></p>
-                  <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
-                </div>
-              </div>
+  <div className="measurement-results">
+    <div className="result-card">
+      <h3>Room Dimensions</h3>
+      <div className="measurements">
+        <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
+        <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
+        <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
+      </div>
+    </div>
 
-              {recommendedProduct && (
-                <div className="recommendation">
-                  <h3>🎯 Recommended for You</h3>
-                  <div className="recommended-card">
-                    <div className="rec-image">{recommendedProduct.image || '❄️'}</div>
-                    <h4>{recommendedProduct.name}</h4>
-                    <p className="capacity">{recommendedProduct.capacity}</p>
-                    <p className="coverage">Coverage: {recommendedProduct.area}</p>
-                    <p className="rec-price">₱{recommendedProduct.price.toLocaleString()}</p>
-                    <button
-                      onClick={() => {
-                        addToCart(recommendedProduct)
-                        setScreen('cart')
-                      }}
-                      className="btn-add-recommended"
-                    >
-                      ✓ Add to Cart
-                    </button>
-                  </div>
-                </div>
-              )}
+    {recommendedProduct && (
+      <div className="recommendation">
+        <h3>🎯 Recommended AirCon</h3>
+        <p>{recommendedProduct.capacity}</p>
+      </div>
+    )}
 
-              <div className="actions">
-                <button onClick={() => { setShowCamera(true); setScreen('home') }} className="btn-remeasure">
-                  📐 Measure Again
-                </button>
-              </div>
-            </div>
-          )}
+    <div className="actions">
+      <button onClick={() => setScreen('manual-measure')} className="btn-remeasure">
+        📐 Measure Again
+      </button>
+      <button onClick={() => setScreen('home')} className="btn-back">
+        ← Back to Home
+      </button>
+    </div>
+  </div>
+)}
         </main>
       )}
+        {screen === 'manual-measure' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>✏️ Manual Room Measurement</h2>
+      <p>Enter your room dimensions below</p>
+    </div>
 
+    <div className="manual-form">
+      <div className="form-group">
+        <label>Length</label>
+        <input
+          type="number"
+          value={manualLength}
+          onChange={(e) => setManualLength(e.target.value)}
+          placeholder="Enter length"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Width</label>
+        <input
+          type="number"
+          value={manualWidth}
+          onChange={(e) => setManualWidth(e.target.value)}
+          placeholder="Enter width"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Unit</label>
+        <select
+          value={manualUnit}
+          onChange={(e) => setManualUnit(e.target.value)}
+        >
+          <option value="meters">Meters</option>
+          <option value="feet">Feet</option>
+        </select>
+      </div>
+
+      <button className="btn-calculate" onClick={handleManualCalculate}>
+        Calculate
+      </button>
+
+      <button onClick={() => setScreen('measure-choice')} className="btn-back">
+        ← Back
+      </button>
+    </div>
+  </main>
+)}
       {/* Shopping Cart */}
       {screen === 'cart' && (
         <main className="user-main">
@@ -464,11 +585,11 @@ export default function UserApp({ user, onLogout }) {
       {screen === 'home' && (
         <nav className="bottom-nav">
           <button className="nav-item active" onClick={() => setScreen('home')}>🏠 Home</button>
-          <button className="nav-item" onClick={() => setScreen('products')}>❄️ Products</button>
+          {/*<button className="nav-item" onClick={() => setScreen('products')}>❄️ Products</button>*/}
           <button className="nav-item" onClick={() => setScreen('services')}>🔧 Services</button>
           <button className="nav-item" onClick={() => setScreen('cart')}>🛒 Cart ({cart.length})</button>
         </nav>
       )}
     </div>
   )
-}
+}{}
