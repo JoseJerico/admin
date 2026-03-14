@@ -7,42 +7,60 @@ export default function UserApp({ user, onLogout }) {
   const [screen, setScreen] = useState('home')
   const [cart, setCart] = useState([])
   const [showCamera, setShowCamera] = useState(false)
+  const [arSupported, setArSupported] = useState(false)
   const [roomMeasurements, setRoomMeasurements] = useState(null)
   const [recommendedProduct, setRecommendedProduct] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
-  const [arSupported, setArSupported] = useState(false)
+
+  const [products, setProducts] = useState([])
+  const [services, setServices] = useState([])
 
   // Manual measurement states
   const [manualLength, setManualLength] = useState('')
   const [manualWidth, setManualWidth] = useState('')
   const [manualUnit, setManualUnit] = useState('meters')
 
-  const [products, setProducts] = useState([])
-  const [services, setServices] = useState([])
-
   useEffect(() => {
     fetchProducts()
     fetchServices()
 
-    // Check if AR is supported
-    if (navigator.xr && navigator.xr.isSessionSupported) {
-      navigator.xr.isSessionSupported('immersive-ar')
-        .then((supported) => setArSupported(supported))
-        .catch(() => setArSupported(false))
+    // Detect if AR is supported
+    if (navigator.xr) {
+      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        setArSupported(supported)
+      }).catch(() => {
+        setArSupported(false)
+      })
     } else {
       setArSupported(false)
     }
   }, [])
 
   async function fetchProducts() {
-    const { data, error } = await supabase.from('products').select('*').order('id')
-    if (error) return console.error('Products error:', error)
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id')
+
+    if (error) {
+      console.error('Products error:', error)
+      return
+    }
+
     setProducts(data || [])
   }
 
   async function fetchServices() {
-    const { data, error } = await supabase.from('services').select('*').order('id')
-    if (error) return console.error('Services error:', error)
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .order('id')
+
+    if (error) {
+      console.error('Services error:', error)
+      return
+    }
+
     setServices(data || [])
   }
 
@@ -54,19 +72,18 @@ export default function UserApp({ user, onLogout }) {
     setCart(cart.filter(item => item.cartId !== cartId))
   }
 
-  function calculateTotal() {
-    return cart.reduce((sum, item) => sum + (item.price || 0), 0)
-  }
-
   function handleManualCalculate() {
-    if (!manualLength || !manualWidth) return alert("Please enter both length and width")
+    if (!manualLength || !manualWidth) {
+      alert("Please enter both length and width");
+      return;
+    }
 
-    let length = parseFloat(manualLength)
-    let width = parseFloat(manualWidth)
+    let length = parseFloat(manualLength);
+    let width = parseFloat(manualWidth);
 
     if (manualUnit === "feet") {
-      length *= 0.3048
-      width *= 0.3048
+      length = length * 0.3048
+      width = width * 0.3048
     }
 
     const area = length * width
@@ -86,15 +103,15 @@ export default function UserApp({ user, onLogout }) {
   }
 
   function getAirconHP(area) {
-    const a = parseFloat(area)
-    if (a <= 9) return '0.5 HP'
-    if (a <= 18) return '1.0 HP'
-    if (a <= 25) return '1.5 HP'
-    if (a <= 35) return '2.0 HP'
-    if (a <= 45) return '2.5 HP'
-    if (a <= 60) return '3.0 HP'
-    if (a <= 80) return '4.0 HP'
-    return '5.0 HP or higher'
+    const areaNum = parseFloat(area)
+    if (areaNum <= 9) return "0.5 HP"
+    if (areaNum <= 18) return "1.0 HP"
+    if (areaNum <= 25) return "1.5 HP"
+    if (areaNum <= 35) return "2.0 HP"
+    if (areaNum <= 45) return "2.5 HP"
+    if (areaNum <= 60) return "3.0 HP"
+    if (areaNum <= 80) return "4.0 HP"
+    return "5.0 HP or higher"
   }
 
   function handleCameraCapture(data) {
@@ -106,6 +123,11 @@ export default function UserApp({ user, onLogout }) {
     setScreen('measure')
   }
 
+  function calculateTotal() {
+    return cart.reduce((acc, item) => acc + (item.price || 0), 0)
+  }
+
+  // AR Camera Screen
   if (showCamera) {
     return (
       <div className="user-app">
@@ -161,6 +183,16 @@ export default function UserApp({ user, onLogout }) {
               <h3>Measure Room</h3>
               <p>Get AC recommendation</p>
             </button>
+
+            {/* <button
+              onClick={() => setScreen('products')}
+              className="action-card products"
+            >
+              <div className="action-icon">❄️</div>
+              <h3>Browse ACs</h3>
+              <p>View our products</p>
+            </button> */}
+
             <button
               onClick={() => setScreen('services')}
               className="action-card services"
@@ -189,21 +221,21 @@ export default function UserApp({ user, onLogout }) {
               ✏️ Manual Input
             </button>
 
-            <button
-              className="measure-option ar"
-              onClick={() => setShowCamera(true)}
-              disabled={!arSupported}
-              title={!arSupported ? 'AR not supported on this device' : 'Use AR Camera'}
-            >
-              📷 Use AR Camera
-            </button>
-          </div>
+            {arSupported && (
+              <button
+                className="measure-option ar"
+                onClick={() => setShowCamera(true)}
+              >
+                📷 Use AR Camera
+              </button>
+            )}
 
-          {!arSupported && (
-            <p style={{ color: 'red', marginTop: '10px' }}>
-              ⚠️ AR Camera is not supported on your device. Please use Manual Input.
-            </p>
-          )}
+            {!arSupported && (
+              <p style={{ color: 'red', marginTop: '10px' }}>
+                ⚠️ AR not supported on this device
+              </p>
+            )}
+          </div>
 
           <button onClick={() => setScreen('home')} className="btn-back">
             ← Back
@@ -262,7 +294,7 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Room Measurement Result */}
+      {/* Room Analysis */}
       {screen === 'measure' && roomMeasurements && (
         <main className="user-main">
           <div className="screen-header">
@@ -296,6 +328,39 @@ export default function UserApp({ user, onLogout }) {
             </div>
           </div>
         </main>
+      )}
+
+      {/* Profile Modal */}
+      {showProfile && (
+        <div className="profile-modal-overlay" onClick={() => setShowProfile(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>👤 My Profile</h2>
+              <button onClick={() => setShowProfile(false)} className="btn-close-modal">✕</button>
+            </div>
+            <div className="profile-content">
+              <div className="profile-item">
+                <span className="label">Name:</span>
+                <span>{user?.name || 'Guest'}</span>
+              </div>
+              <div className="profile-item">
+                <span className="label">Email:</span>
+                <span>{user?.email || 'N/A'}</span>
+              </div>
+              <div className="profile-item">
+                <span className="label">Role:</span>
+                <span>Customer</span>
+              </div>
+              <div className="profile-item">
+                <span className="label">Member Since:</span>
+                <span>{new Date().toLocaleDateString()}</span>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowProfile(false)} className="btn-close">Close</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
