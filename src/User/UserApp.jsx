@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import Camera from '../shared/Camera'
+import Camera from '../shared/Camera' // latest OpenCV.js Camera
 import './UserApp.css'
 import { supabase } from '../supabase'
 
@@ -7,7 +7,6 @@ export default function UserApp({ user, onLogout }) {
   const [screen, setScreen] = useState('home')
   const [cart, setCart] = useState([])
   const [showCamera, setShowCamera] = useState(false)
-  const [arSupported, setArSupported] = useState(false)
   const [roomMeasurements, setRoomMeasurements] = useState(null)
   const [recommendedProduct, setRecommendedProduct] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -23,17 +22,6 @@ export default function UserApp({ user, onLogout }) {
   useEffect(() => {
     fetchProducts()
     fetchServices()
-
-    // Detect if AR is supported
-    if (navigator.xr) {
-      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-        setArSupported(supported)
-      }).catch(() => {
-        setArSupported(false)
-      })
-    } else {
-      setArSupported(false)
-    }
   }, [])
 
   async function fetchProducts() {
@@ -74,12 +62,12 @@ export default function UserApp({ user, onLogout }) {
 
   function handleManualCalculate() {
     if (!manualLength || !manualWidth) {
-      alert("Please enter both length and width");
-      return;
+      alert("Please enter both length and width")
+      return
     }
 
-    let length = parseFloat(manualLength);
-    let width = parseFloat(manualWidth);
+    let length = parseFloat(manualLength)
+    let width = parseFloat(manualWidth)
 
     if (manualUnit === "feet") {
       length = length * 0.3048
@@ -115,6 +103,7 @@ export default function UserApp({ user, onLogout }) {
   }
 
   function handleCameraCapture(data) {
+    // data = { measurements: { length, width, area } }
     setRoomMeasurements(data)
     const area = parseFloat(data.measurements.area)
     const recommendedHP = getAirconHP(area)
@@ -127,11 +116,12 @@ export default function UserApp({ user, onLogout }) {
     return cart.reduce((acc, item) => acc + (item.price || 0), 0)
   }
 
-  // AR Camera Screen
+  // Camera Screen (photo-based, AR-free)
   if (showCamera) {
     return (
       <div className="user-app">
         <Camera
+          getRecommendation={getAirconHP}
           onCapture={handleCameraCapture}
           title="📐 Measure Your Room"
           mode="measure"
@@ -184,15 +174,6 @@ export default function UserApp({ user, onLogout }) {
               <p>Get AC recommendation</p>
             </button>
 
-            {/* <button
-              onClick={() => setScreen('products')}
-              className="action-card products"
-            >
-              <div className="action-icon">❄️</div>
-              <h3>Browse ACs</h3>
-              <p>View our products</p>
-            </button> */}
-
             <button
               onClick={() => setScreen('services')}
               className="action-card services"
@@ -221,20 +202,12 @@ export default function UserApp({ user, onLogout }) {
               ✏️ Manual Input
             </button>
 
-            {arSupported && (
-              <button
-                className="measure-option ar"
-                onClick={() => setShowCamera(true)}
-              >
-                📷 Use AR Camera
-              </button>
-            )}
-
-            {!arSupported && (
-              <p style={{ color: 'red', marginTop: '10px' }}>
-                ⚠️ AR not supported on this device
-              </p>
-            )}
+            <button
+              className="measure-option ar"
+              onClick={() => setShowCamera(true)}
+            >
+              📷 Use Camera
+            </button>
           </div>
 
           <button onClick={() => setScreen('home')} className="btn-back">
