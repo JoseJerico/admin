@@ -1,169 +1,102 @@
-import React, { useRef, useState, useEffect } from 'react'
-import './Camera.css'
-import * as THREE from 'three'
-import { ARButton } from 'three/examples/jsm/webxr/ARButton.js'
+import React, { useRef, useState } from "react";
+import cv from "@techstark/opencv-js"; // OpenCV.js in browser
 
-export default function Camera({ onCapture, title = 'Measure Room', mode = 'measure' }) {
-  const [measurements, setMeasurements] = useState({ width: 0, length: 0, area: 0 })
-  const [recommendedHP, setRecommendedHP] = useState(null)
-  const [error, setError] = useState(null)
+export default function Camera({ getRecommendation }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [roomData, setRoomData] = useState(null);
 
-  const containerRef = useRef(null)
-  const rendererRef = useRef(null)
-  const sceneRef = useRef(null)
-  const cameraRef = useRef(null)
-  const reticleRef = useRef(null)
-  const hitTestSourceRef = useRef(null)
-  const hitTestSourceRequestedRef = useRef(false)
-  const pointsRef = useRef([])
+  const startCamera = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    videoRef.current.srcObject = stream;
+    videoRef.current.play();
+  };
 
-  useEffect(() => {
-    if (!navigator.xr) {
-      setError('WebXR not supported on this device')
-      return
-    }
+  const captureAndMeasure = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera()
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.xr.enabled = true
-    containerRef.current.appendChild(renderer.domElement)
+    // Convert canvas to OpenCV Mat
+    let src = cv.imread(canvas);
+    let gray = new cv.Mat();
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray, gray, new cv.Size(5,5), 0);
 
-    sceneRef.current = scene
-    cameraRef.current = camera
-    rendererRef.current = renderer
+    // Edge detection
+    let edges = new cv.Mat();
+    cv.Canny(gray, edges, 50, 150);
 
-    // AR Button
-    document.body.appendChild(
-      ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] })
-    )
+    // Contour detection
+    let contours = new cv.MatVector();
+    let hierarchy = new cv.Mat();
+    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-    // Reticle
-    const geometry = new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2)
-    const material = new THREE.MeshBasicMaterial({ color: 0x0fff00 })
-    const reticle = new THREE.Mesh(geometry, material)
-    reticle.visible = false
-    scene.add(reticle)
-    reticleRef.current = reticle
-
-    // Animation loop
-    renderer.setAnimationLoop(render)
-
-    // Bind AR "tap" event (select) para mobile
-    const session = renderer.xr.getSession()
-    if (session) {
-      session.addEventListener('select', handleTap)
-    }
-
-    return () => {
-      renderer.setAnimationLoop(null)
-      renderer.domElement.remove()
-      if (session) session.removeEventListener('select', handleTap)
-    }
-  }, [])
-
-  function render(timestamp, frame) {
-    if (!rendererRef.current) return
-    const renderer = rendererRef.current
-    const scene = sceneRef.current
-    const camera = cameraRef.current
-
-    if (frame) {
-      const session = renderer.xr.getSession()
-      if (!hitTestSourceRequestedRef.current && session) {
-        session.requestReferenceSpace('viewer').then((refSpace) => {
-          session.requestHitTestSource({ space: refSpace }).then((source) => {
-            hitTestSourceRef.current = source
-          })
-        })
-        session.addEventListener('end', () => {
-          hitTestSourceRequestedRef.current = false
-          hitTestSourceRef.current = null
-        })
-        hitTestSourceRequestedRef.current = true
-      }
-
-      if (hitTestSourceRef.current) {
-        const hitTestResults = frame.getHitTestResults(hitTestSourceRef.current)
-        if (hitTestResults.length > 0) {
-          const hit = hitTestResults[0]
-          const pose = hit.getPose(renderer.xr.getReferenceSpace())
-          reticleRef.current.visible = true
-          reticleRef.current.position.set(
-            pose.transform.position.x,
-            pose.transform.position.y,
-            pose.transform.position.z
-          )
-        } else {
-          reticleRef.current.visible = false
-        }
+    // Find largest contour (assume floor)
+    let maxArea = 0;
+    let floorContour = null;
+    for (let i = 0; i < contours.size(); i++) {
+      const cnt = contours.get(i);
+      const area = cv.contourArea(cnt);
+      if (area > maxArea) {
+        maxArea = area;
+        floorContour = cnt;
       }
     }
 
-    renderer.render(scene, camera)
-  }
+    if (floorContour) {
+      let rect = cv.boundingRect(floorContour);
+      // Width & Length in pixels
+      const widthPx = rect.width;
+      const lengthPx = rect.height;
 
-  function handleTap() {
-    console.log('AR reticle tapped') // debug log
-    if (!reticleRef.current.visible) return
-    const pos = reticleRef.current.position.clone()
-    pointsRef.current.push(pos)
+      // Reference object length in meters (example: door 2m)
+      const refObjectMeters = 2;
+      const scale = refObjectMeters / lengthPx;
 
-    if (pointsRef.current.length === 2) {
-      const [p1, p2] = pointsRef.current
-      const dx = p2.x - p1.x
-      const dz = p2.z - p1.z
-      const width = Math.abs(dx)
-      const length = Math.abs(dz)
-      const area = (width * length).toFixed(2)
+      const width = widthPx * scale;
+      const length = lengthPx * scale;
+      const area = width * length;
 
-      setMeasurements({ width: width.toFixed(2), length: length.toFixed(2), area })
-      setRecommendedHP(getAirconHP(area))
+      let recommendedAC = getRecommendation ? getRecommendation(area) : "N/A";
 
-      if (onCapture) onCapture({ measurements: { width, length, area }, photo: null })
+      setRoomData({
+        width: width.toFixed(2),
+        length: length.toFixed(2),
+        area: area.toFixed(2),
+        recommendedAC
+      });
     }
-  }
 
-  function getAirconHP(area) {
-    const a = parseFloat(area)
-    if (a <= 9) return '0.5 HP'
-    if (a <= 18) return '1.0 HP'
-    if (a <= 25) return '1.5 HP'
-    if (a <= 35) return '2.0 HP'
-    if (a <= 45) return '2.5 HP'
-    if (a <= 60) return '3.0 HP'
-    if (a <= 80) return '4.0 HP'
-    return '5.0 HP or higher'
-  }
+    // Clean up
+    src.delete(); gray.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+  };
+
+  const reset = () => setRoomData(null);
 
   return (
-    <div
-      ref={containerRef}
-      className="camera-container"
-      style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}
-    >
-      {error && <p>{error}</p>}
-
-      {measurements.area > 0 && (
-        <div
-          className="measurement-overlay"
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            left: '20px',
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            color: '#fff',
-            padding: '10px',
-            borderRadius: '8px'
-          }}
-        >
-          <p>Width: {measurements.width} m</p>
-          <p>Length: {measurements.length} m</p>
-          <p>Area: {measurements.area} m²</p>
-          <p>Recommended: {recommendedHP}</p>
+    <div>
+      {!roomData && (
+        <>
+          <video ref={videoRef} style={{ width: "100%" }} />
+          <button onClick={startCamera}>Start Camera</button>
+          <button onClick={captureAndMeasure}>Capture & Measure</button>
+        </>
+      )}
+      <canvas ref={canvasRef} style={{ display: roomData ? "block" : "none", width: "100%" }} />
+      {roomData && (
+        <div>
+          <h3>Room Measurement</h3>
+          <p>Length: {roomData.length} m</p>
+          <p>Width: {roomData.width} m</p>
+          <p>Area: {roomData.area} m²</p>
+          <p>Recommended AC: {roomData.recommendedAC}</p>
+          <button onClick={reset}>Take Another</button>
         </div>
       )}
     </div>
-  )
+  );
 }
