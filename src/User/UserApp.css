@@ -120,11 +120,18 @@
 
 /* Main Content */
 .user-main {
-  flex: 1;
-  padding: 16px;
-  padding-bottom: 100px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; 
+  scrollbar-color: #888 #fff; 
+}
+
+/* Chrome, Edge, Safari */
+.user-main::-webkit-scrollbar {
+  width: 8px;
+}
+.user-main::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
 }
 
 /* Hero Section */
