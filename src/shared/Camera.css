@@ -28,7 +28,7 @@
   font-weight: 700;
   text-align: center;
   z-index: 10;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.5);
   padding: 10px 20px;
   border-radius: 10px;
 }
@@ -39,8 +39,9 @@
   font-size: 20px;
   font-weight: 700;
   color: #ffffff;
-  text-shadow: 0 3px 6px rgba(0,0,0,0.9);
-}
+  text-shadow: 0 3px 8px rgba(0,0,0,0.9);
+  letter-spacing: 1px;
+}git
 
 .camera-video {
   width: 100%;

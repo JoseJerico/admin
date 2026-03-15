@@ -152,12 +152,17 @@ export default function Camera({ getRecommendation, onClose, onMeasured }) {
               </button>
             )}
 
-            <button
-              onClick={onClose}
-              className="btn-camera close"
-            >
-              Close
-            </button>
+              <button
+               onClick={() => {
+                if (videoRef.current && videoRef.current.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        }
+             if (onClose) onClose();
+            }}
+              className="btn-camera"
+  >
+            Close
+              </button>
 
           </div>
 
