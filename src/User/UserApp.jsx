@@ -1,80 +1,80 @@
-import React, { useState, useEffect } from 'react'
-import Camera from '../shared/Camera' // latest OpenCV.js Camera
-import './UserApp.css'
-import { supabase } from '../supabase'
+import React, { useState, useEffect } from 'react';
+import Camera from '../shared/Camera'; // latest AR + fallback Camera
+import './UserApp.css';
+import { supabase } from '../supabase';
 
 export default function UserApp({ user, onLogout }) {
-  const [screen, setScreen] = useState('home')
-  const [cart, setCart] = useState([])
-  const [showCamera, setShowCamera] = useState(false)
-  const [roomMeasurements, setRoomMeasurements] = useState(null)
-  const [recommendedProduct, setRecommendedProduct] = useState(null)
-  const [showProfile, setShowProfile] = useState(false)
+  const [screen, setScreen] = useState('home');
+  const [cart, setCart] = useState([]);
+  const [showCamera, setShowCamera] = useState(false);
+  const [roomMeasurements, setRoomMeasurements] = useState(null);
+  const [recommendedProduct, setRecommendedProduct] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
-  const [products, setProducts] = useState([])
-  const [services, setServices] = useState([])
+  const [products, setProducts] = useState([]);
+  const [services, setServices] = useState([]);
 
   // Manual measurement states
-  const [manualLength, setManualLength] = useState('')
-  const [manualWidth, setManualWidth] = useState('')
-  const [manualUnit, setManualUnit] = useState('meters')
+  const [manualLength, setManualLength] = useState('');
+  const [manualWidth, setManualWidth] = useState('');
+  const [manualUnit, setManualUnit] = useState('meters');
 
   useEffect(() => {
-    fetchProducts()
-    fetchServices()
-  }, [])
+    fetchProducts();
+    fetchServices();
+  }, []);
 
   async function fetchProducts() {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('id')
+      .order('id');
 
     if (error) {
-      console.error('Products error:', error)
-      return
+      console.error('Products error:', error);
+      return;
     }
 
-    setProducts(data || [])
+    setProducts(data || []);
   }
 
   async function fetchServices() {
     const { data, error } = await supabase
       .from('services')
       .select('*')
-      .order('id')
+      .order('id');
 
     if (error) {
-      console.error('Services error:', error)
-      return
+      console.error('Services error:', error);
+      return;
     }
 
-    setServices(data || [])
+    setServices(data || []);
   }
 
   function addToCart(item) {
-    setCart([...cart, { ...item, cartId: Date.now() }])
+    setCart([...cart, { ...item, cartId: Date.now() }]);
   }
 
   function removeFromCart(cartId) {
-    setCart(cart.filter(item => item.cartId !== cartId))
+    setCart(cart.filter(item => item.cartId !== cartId));
   }
 
   function handleManualCalculate() {
     if (!manualLength || !manualWidth) {
-      alert("Please enter both length and width")
-      return
+      alert("Please enter both length and width");
+      return;
     }
 
-    let length = parseFloat(manualLength)
-    let width = parseFloat(manualWidth)
+    let length = parseFloat(manualLength);
+    let width = parseFloat(manualWidth);
 
     if (manualUnit === "feet") {
-      length = length * 0.3048
-      width = width * 0.3048
+      length = length * 0.3048;
+      width = width * 0.3048;
     }
 
-    const area = length * width
+    const area = length * width;
 
     setRoomMeasurements({
       measurements: {
@@ -82,55 +82,38 @@ export default function UserApp({ user, onLogout }) {
         width: width.toFixed(2),
         area: area.toFixed(2)
       }
-    })
+    });
 
-    const recommendedHP = getAirconHP(area)
-    setRecommendedProduct({ capacity: recommendedHP })
+    const recommendedHP = getAirconHP(area);
+    setRecommendedProduct({ capacity: recommendedHP });
 
-    setScreen('measure')
+    setScreen('measure');
   }
 
   function getAirconHP(area) {
-    const areaNum = parseFloat(area)
-    if (areaNum <= 9) return "0.5 HP"
-    if (areaNum <= 18) return "1.0 HP"
-    if (areaNum <= 25) return "1.5 HP"
-    if (areaNum <= 35) return "2.0 HP"
-    if (areaNum <= 45) return "2.5 HP"
-    if (areaNum <= 60) return "3.0 HP"
-    if (areaNum <= 80) return "4.0 HP"
-    return "5.0 HP or higher"
+    const areaNum = parseFloat(area);
+    if (areaNum <= 9) return "0.5 HP";
+    if (areaNum <= 18) return "1.0 HP";
+    if (areaNum <= 25) return "1.5 HP";
+    if (areaNum <= 35) return "2.0 HP";
+    if (areaNum <= 45) return "2.5 HP";
+    if (areaNum <= 60) return "3.0 HP";
+    if (areaNum <= 80) return "4.0 HP";
+    return "5.0 HP or higher";
   }
 
   function handleCameraCapture(data) {
-    // data = { measurements: { length, width, area } }
-    setRoomMeasurements(data)
-    const area = parseFloat(data.measurements.area)
-    const recommendedHP = getAirconHP(area)
-    setRecommendedProduct({ capacity: recommendedHP })
-    setShowCamera(false)
-    setScreen('measure')
+    setRoomMeasurements(data);
+    const area = parseFloat(data.measurements.area);
+    const recommendedHP = getAirconHP(area);
+    setRecommendedProduct({ capacity: recommendedHP });
+    setShowCamera(false);
+    setScreen('measure');
   }
 
   function calculateTotal() {
-    return cart.reduce((acc, item) => acc + (item.price || 0), 0)
+    return cart.reduce((acc, item) => acc + (item.price || 0), 0);
   }
-
-  // Camera Screen (photo-based, AR-free)
- {showCamera && (
-  <Camera
-    title="📐 Measure Your Room (AR)"
-    onClose={() => setShowCamera(false)}
-    onMeasured={(data) => {
-      setRoomMeasurements(data);
-      const area = parseFloat(data.measurements.area);
-      const recommendedHP = getAirconHP(area);
-      setRecommendedProduct({ capacity: recommendedHP });
-      setShowCamera(false);
-      setScreen('measure');
-    }}
-  />
-)}
 
   return (
     <div className="user-app">
@@ -153,6 +136,15 @@ export default function UserApp({ user, onLogout }) {
         )}
       </header>
 
+      {/* Camera Screen (AR / fallback) */}
+      {showCamera && (
+        <Camera
+          title="📐 Measure Your Room (AR)"
+          onClose={() => setShowCamera(false)}
+          onMeasured={handleCameraCapture} // receive data from Camera
+        />
+      )}
+
       {/* Home Screen */}
       {screen === 'home' && (
         <main className="user-main">
@@ -164,19 +156,13 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="quick-actions">
-            <button
-              onClick={() => setScreen('measure-choice')}
-              className="action-card measure"
-            >
+            <button onClick={() => setScreen('measure-choice')} className="action-card measure">
               <div className="action-icon">📐</div>
               <h3>Measure Room</h3>
               <p>Get AC recommendation</p>
             </button>
 
-            <button
-              onClick={() => setScreen('services')}
-              className="action-card services"
-            >
+            <button onClick={() => setScreen('services')} className="action-card services">
               <div className="action-icon">🔧</div>
               <h3>Services</h3>
               <p>Installation & repair</p>
@@ -194,24 +180,16 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="measure-options">
-            <button
-              className="measure-option manual"
-              onClick={() => setScreen('manual-measure')}
-            >
+            <button className="measure-option manual" onClick={() => setScreen('manual-measure')}>
               ✏️ Manual Input
             </button>
 
-            <button
-              className="measure-option ar"
-              onClick={() => setShowCamera(true)}
-            >
+            <button className="measure-option ar" onClick={() => setShowCamera(true)}>
               📷 Use Camera AR
             </button>
           </div>
 
-          <button onClick={() => setScreen('home')} className="btn-back">
-            ← Back
-          </button>
+          <button onClick={() => setScreen('home')} className="btn-back">← Back</button>
         </main>
       )}
 
@@ -226,42 +204,24 @@ export default function UserApp({ user, onLogout }) {
           <div className="manual-form">
             <div className="form-group">
               <label>Length</label>
-              <input
-                type="number"
-                value={manualLength}
-                onChange={(e) => setManualLength(e.target.value)}
-                placeholder="Enter length"
-              />
+              <input type="number" value={manualLength} onChange={(e) => setManualLength(e.target.value)} placeholder="Enter length"/>
             </div>
 
             <div className="form-group">
               <label>Width</label>
-              <input
-                type="number"
-                value={manualWidth}
-                onChange={(e) => setManualWidth(e.target.value)}
-                placeholder="Enter width"
-              />
+              <input type="number" value={manualWidth} onChange={(e) => setManualWidth(e.target.value)} placeholder="Enter width"/>
             </div>
 
             <div className="form-group">
               <label>Unit</label>
-              <select
-                value={manualUnit}
-                onChange={(e) => setManualUnit(e.target.value)}
-              >
+              <select value={manualUnit} onChange={(e) => setManualUnit(e.target.value)}>
                 <option value="meters">Meters</option>
                 <option value="feet">Feet</option>
               </select>
             </div>
 
-            <button className="btn-calculate" onClick={handleManualCalculate}>
-              Calculate
-            </button>
-
-            <button onClick={() => setScreen('measure-choice')} className="btn-back">
-              ← Back
-            </button>
+            <button className="btn-calculate" onClick={handleManualCalculate}>Calculate</button>
+            <button onClick={() => setScreen('measure-choice')} className="btn-back">← Back</button>
           </div>
         </main>
       )}
@@ -269,9 +229,7 @@ export default function UserApp({ user, onLogout }) {
       {/* Room Analysis */}
       {screen === 'measure' && roomMeasurements && (
         <main className="user-main">
-          <div className="screen-header">
-            <h2>📏 Room Analysis</h2>
-          </div>
+          <div className="screen-header"><h2>📏 Room Analysis</h2></div>
 
           <div className="measurement-results">
             <div className="result-card">
@@ -291,12 +249,8 @@ export default function UserApp({ user, onLogout }) {
             )}
 
             <div className="actions">
-              <button onClick={() => setScreen('manual-measure')} className="btn-remeasure">
-                📐 Measure Again
-              </button>
-              <button onClick={() => setScreen('home')} className="btn-back">
-                ← Back to Home
-              </button>
+              <button onClick={() => setScreen('manual-measure')} className="btn-remeasure">📐 Measure Again</button>
+              <button onClick={() => setScreen('home')} className="btn-back">← Back to Home</button>
             </div>
           </div>
         </main>
@@ -335,5 +289,5 @@ export default function UserApp({ user, onLogout }) {
         </div>
       )}
     </div>
-  )
+  );
 }

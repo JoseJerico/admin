@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@fortawesome/react-fontawesome": "^3.2.0",
     "@react-three/fiber": "^9.5.0",
     "@react-three/xr": "^6.6.29",
     "@supabase/supabase-js": "^2.98.0",

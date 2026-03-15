@@ -1,40 +1,63 @@
-// src/shared/Camera.jsx
-import React, { useState } from "react";
-import { Canvas } from "@react-three/fiber";
-import { XR, Hands, Controllers, useHitTest } from "@react-three/xr";
+import React, { useRef, useState, useEffect } from "react";
 import "./Camera.css";
 
 export default function Camera({ onClose, title }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const [points, setPoints] = useState([]);
   const [areaData, setAreaData] = useState(null);
 
-  // Tap handler sa AR scene
-  const handleTap = (hit) => {
+  // Start fallback camera
+  useEffect(() => {
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+        });
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch (err) {
+        alert("Unable to access camera");
+      }
+    }
+    startCamera();
+  }, []);
+
+  // Handle taps / touches
+  const handleTap = (e) => {
+    e.preventDefault();
     if (points.length >= 4) return;
 
-    const newPoints = [...points, hit.position.clone()];
-    setPoints(newPoints);
+    const rect = canvasRef.current.getBoundingClientRect();
+    let x, y;
 
-    if (newPoints.length === 4) {
-      calculateMeasurements(newPoints);
+    if (e.touches && e.touches.length > 0) {
+      // touch event
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
+    } else {
+      // mouse click
+      x = e.clientX - rect.left;
+      y = e.clientY - rect.top;
     }
+
+    setPoints([...points, { x, y }]);
   };
 
-  // Compute measurements at 4 points
-  const calculateMeasurements = (pts) => {
-    const p0 = pts[0];
-    const p1 = pts[1];
-    const p3 = pts[3];
+  // Calculate area after 4 taps
+  useEffect(() => {
+    if (points.length !== 4) return;
 
-    const width = p0.distanceTo(p1).toFixed(2);
-    const length = p0.distanceTo(p3).toFixed(2);
+    const scale = 0.02; // meters per pixel
+    const widthPx = Math.abs(points[1].x - points[0].x);
+    const lengthPx = Math.abs(points[3].y - points[0].y);
+    const width = (widthPx * scale).toFixed(2);
+    const length = (lengthPx * scale).toFixed(2);
     const area = (width * length).toFixed(2);
     const recommendedHP = getAirconHP(area);
 
     setAreaData({ length, width, area, recommendedHP });
-  };
+  }, [points]);
 
-  // AirCon HP recommendation
   const getAirconHP = (area) => {
     const a = parseFloat(area);
     if (a <= 9) return "0.5 HP";
@@ -47,7 +70,6 @@ export default function Camera({ onClose, title }) {
     return "5.0 HP or higher";
   };
 
-  // Reset points & measurements
   const handleReset = () => {
     setPoints([]);
     setAreaData(null);
@@ -55,36 +77,22 @@ export default function Camera({ onClose, title }) {
 
   return (
     <div className="camera-container">
-      <h2>{title || "📏 AR Room Measurement"}</h2>
+      <h2>{title || "📏 Room Measurement"}</h2>
 
-      <Canvas style={{ width: "100%", height: "100%" }}>
-        <XR>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} />
-          <Hands />
-          <Controllers />
-
-          <HitTestPlane onTap={handleTap} />
-
-          {points.map((p, idx) => (
-            <mesh key={idx} position={[p.x, p.y, p.z]}>
-              <sphereGeometry args={[0.05, 16, 16]} />
-              <meshStandardMaterial color="red" />
-            </mesh>
-          ))}
-
-          {points.length >= 2 && <LinePoints points={points} />}
-        </XR>
-      </Canvas>
+      <div className="camera-fallback">
+        <video ref={videoRef} autoPlay playsInline className="camera-video" />
+        <canvas
+          ref={canvasRef}
+          className="camera-overlay"
+          onClick={handleTap}
+          onTouchStart={handleTap}
+        />
+      </div>
 
       <div className="camera-actions">
-        <button className="btn-toggle" onClick={onClose}>
-          Close
-        </button>
+        <button onClick={onClose}>Close</button>
         {points.length > 0 && (
-          <button className="btn-reset" onClick={handleReset}>
-            🔄 Reset / Tap Again
-          </button>
+          <button onClick={handleReset}>🔄 Reset / Tap Again</button>
         )}
       </div>
 
@@ -99,34 +107,4 @@ export default function Camera({ onClose, title }) {
       )}
     </div>
   );
-}
-
-// Invisible floor for AR hit testing
-function HitTestPlane({ onTap }) {
-  useHitTest((hit) => {
-    if (onTap) onTap(hit);
-  });
-  return null;
-}
-
-// Lines connecting points
-function LinePoints({ points }) {
-  return points.map((p, idx) => {
-    if (idx === 0) return null;
-    const prev = points[idx - 1];
-    const positions = [prev.x, prev.y, prev.z, p.x, p.y, p.z];
-    return (
-      <mesh key={idx}>
-        <bufferGeometry attach="geometry">
-          <bufferAttribute
-            attachObject={["attributes", "position"]}
-            count={positions.length / 3}
-            array={new Float32Array(positions)}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <meshBasicMaterial color="lime" />
-      </mesh>
-    );
-  });
 }
