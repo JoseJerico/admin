@@ -19,16 +19,20 @@
 }
 
 .camera-header {
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 16px;
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
   text-align: center;
   z-index: 10;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  background: rgba(0,0,0,0.4);
+  padding: 10px 20px;
+  border-radius: 10px;
 }
+
 
 .camera-header h3 {
   margin: 0;
@@ -45,16 +49,16 @@
 
 .camera-guide {
   position: absolute;
-  top: 50%;
+  top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 5;
-  width: 90%;
-  max-width: 400px;
-  aspect-ratio: 1;
+  width: 95%;
+  max-width: 480px;
+  height: 320px;
   border: 3px dashed white;
-  border-radius: 8px;
-  background: rgba(102, 126, 234, 0.1);
+  border-radius: 10px;
+  background: rgba(102, 126, 234, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,8 +67,10 @@
 .guide-box {
   text-align: center;
   color: white;
-  font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
 }
 
 .camera-actions {

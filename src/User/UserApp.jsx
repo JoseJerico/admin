@@ -206,7 +206,7 @@ export default function UserApp({ user, onLogout }) {
               className="measure-option ar"
               onClick={() => setShowCamera(true)}
             >
-              📷 Use Camera
+              📷 Use Camera AR
             </button>
           </div>
 
