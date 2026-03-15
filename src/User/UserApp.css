@@ -1052,3 +1052,58 @@
   border-radius: 8px;
   cursor: pointer;
 }
+/* Room Analysis adjustments */
+.measurement-results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 15px;
+}
+
+.result-card, .recommendation {
+  background-color: #1a1a1a; /* dark background para white text visible */
+  color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  width: 100%;
+  max-width: 500px; /* fit nicely on phone screens */
+  margin: 0 auto;
+}
+
+.result-card h3, .recommendation h3 {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.measurements p, .recommendation p {
+  font-size: 1.1rem;
+  margin: 5px 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-remeasure {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-back {
+  background-color: #f44336;
+  color: white;
+}
