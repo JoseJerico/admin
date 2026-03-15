@@ -1,46 +1,62 @@
+// src/shared/Camera.jsx
 import React, { useRef, useState } from "react";
-import cv from "@techstark/opencv-js"; // OpenCV.js in browser
+import cv from "@techstark/opencv-js";
+import "./Camera.css";
 
-export default function Camera({ getRecommendation }) {
+export default function Camera({ getRecommendation, onClose, onMeasured }) {
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+
   const [roomData, setRoomData] = useState(null);
+  const [cameraStarted, setCameraStarted] = useState(false);
 
   const startCamera = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+
     videoRef.current.srcObject = stream;
     videoRef.current.play();
+
+    setCameraStarted(true);
   };
 
   const captureAndMeasure = () => {
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
     const ctx = canvas.getContext("2d");
+
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert canvas to OpenCV Mat
     let src = cv.imread(canvas);
     let gray = new cv.Mat();
+
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, gray, new cv.Size(5,5), 0);
 
-    // Edge detection
     let edges = new cv.Mat();
     cv.Canny(gray, edges, 50, 150);
 
-    // Contour detection
     let contours = new cv.MatVector();
     let hierarchy = new cv.Mat();
+
     cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-    // Find largest contour (assume floor)
     let maxArea = 0;
     let floorContour = null;
+
     for (let i = 0; i < contours.size(); i++) {
+
       const cnt = contours.get(i);
       const area = cv.contourArea(cnt);
+
       if (area > maxArea) {
         maxArea = area;
         floorContour = cnt;
@@ -48,55 +64,144 @@ export default function Camera({ getRecommendation }) {
     }
 
     if (floorContour) {
+
       let rect = cv.boundingRect(floorContour);
-      // Width & Length in pixels
+
       const widthPx = rect.width;
       const lengthPx = rect.height;
 
-      // Reference object length in meters (example: door 2m)
       const refObjectMeters = 2;
+
       const scale = refObjectMeters / lengthPx;
 
       const width = widthPx * scale;
       const length = lengthPx * scale;
+
       const area = width * length;
 
-      let recommendedAC = getRecommendation ? getRecommendation(area) : "N/A";
+      const recommendedAC = getRecommendation
+        ? getRecommendation(area)
+        : "N/A";
 
-      setRoomData({
+      const result = {
+
         width: width.toFixed(2),
         length: length.toFixed(2),
         area: area.toFixed(2),
         recommendedAC
-      });
+
+      };
+
+      setRoomData(result);
+
+      if (onMeasured) onMeasured(result);
     }
 
-    // Clean up
-    src.delete(); gray.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+    src.delete();
+    gray.delete();
+    edges.delete();
+    contours.delete();
+    hierarchy.delete();
   };
 
-  const reset = () => setRoomData(null);
+  const reset = () => {
+    setRoomData(null);
+  };
 
   return (
-    <div>
+
+    <div className="camera-container">
+
       {!roomData && (
-        <>
-          <video ref={videoRef} style={{ width: "100%" }} />
-          <button onClick={startCamera}>Start Camera</button>
-          <button onClick={captureAndMeasure}>Capture & Measure</button>
-        </>
+
+        <div className="camera-live">
+
+          <h2 className="camera-title">
+            📏 AR Room Measurement
+          </h2>
+
+          <video
+            ref={videoRef}
+            className="camera-video"
+          />
+
+          {/* AR GUIDE OVERLAY */}
+          <div className="ar-overlay">
+            <div className="guide-box">
+              ALIGN FLOOR HERE
+            </div>
+          </div>
+
+          <div className="camera-buttons">
+
+            {!cameraStarted && (
+              <button
+                onClick={startCamera}
+                className="btn-camera start"
+              >
+                Start Camera
+              </button>
+            )}
+
+            {cameraStarted && (
+              <button
+                onClick={captureAndMeasure}
+                className="btn-camera capture"
+              >
+                📸 Capture & Measure
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="btn-camera close"
+            >
+              Close
+            </button>
+
+          </div>
+
+        </div>
       )}
-      <canvas ref={canvasRef} style={{ display: roomData ? "block" : "none", width: "100%" }} />
+
+      <canvas
+        ref={canvasRef}
+        style={{ display: "none" }}
+      />
+
       {roomData && (
-        <div>
-          <h3>Room Measurement</h3>
+
+        <div className="measurement-results">
+
+          <h3>Room Measurement Result</h3>
+
           <p>Length: {roomData.length} m</p>
           <p>Width: {roomData.width} m</p>
           <p>Area: {roomData.area} m²</p>
-          <p>Recommended AC: {roomData.recommendedAC}</p>
-          <button onClick={reset}>Take Another</button>
+
+          <p>
+            Recommended AC:
+            <strong> {roomData.recommendedAC}</strong>
+          </p>
+
+          <button
+            onClick={reset}
+            className="btn-camera"
+          >
+            Measure Again
+          </button>
+
+          <button
+            onClick={onClose}
+            className="btn-camera close"
+          >
+            Close
+          </button>
+
         </div>
+
       )}
+
     </div>
   );
 }
