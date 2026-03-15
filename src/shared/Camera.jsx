@@ -1,173 +1,176 @@
-// src/shared/Camera.jsx
-import React, { useRef, useState, useEffect } from "react";
-import "./Camera.css";
+import React, { useRef, useEffect, useState } from "react"
+import "./Camera.css"
 
-export default function Camera({ getRecommendation, onMeasured, onClose, title }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [cameraStarted, setCameraStarted] = useState(false);
-  const [points, setPoints] = useState([]); // store 4 tap points
-  const [captured, setCaptured] = useState(false);
+export default function Camera({ onMeasured, onClose, title }) {
 
-  // Start camera
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
-      });
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-      setCameraStarted(true);
-    } catch (err) {
-      console.error("Camera error:", err);
-      alert("Cannot access camera. Please allow camera permissions.");
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+
+  const [points, setPoints] = useState([])
+
+  // Start Camera
+  useEffect(() => {
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        })
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+
+      } catch (err) {
+        console.error("Camera error:", err)
+        alert("Unable to access camera")
+      }
     }
-  };
+
+    startCamera()
+
+    return () => {
+      stopCamera()
+    }
+
+  }, [])
 
   // Stop camera
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop())
     }
-    setCameraStarted(false);
-  };
-
-  // Handle user tap on video
-  const handleTap = (e) => {
-    if (!cameraStarted || captured) return;
-    const rect = e.target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (points.length < 4) {
-      setPoints([...points, { x, y }]);
-    }
-  };
-
-  // Compute approximate room dimensions (meters)
-  useEffect(() => {
-    if (points.length === 4) {
-      // Approximate width = distance between point0 & point1 (top)
-      const dx = points[1].x - points[0].x;
-      const dy = points[1].y - points[0].y;
-      const widthPx = Math.sqrt(dx*dx + dy*dy);
-
-      // Approximate length = distance between point0 & point3 (left side)
-      const dx2 = points[3].x - points[0].x;
-      const dy2 = points[3].y - points[0].y;
-      const lengthPx = Math.sqrt(dx2*dx2 + dy2*dy2);
-
-      // Reference: assume top edge ~ 2 meters
-      const refMeters = 2;
-      const scale = refMeters / widthPx;
-
-      const width = (widthPx * scale).toFixed(2);
-      const length = (lengthPx * scale).toFixed(2);
-      const area = (width * length).toFixed(2);
-
-      const result = {
-        measurements: { length, width, area }
-      };
-
-      setCaptured(true);
-
-      if (onMeasured) onMeasured(result);
-    }
-  }, [points, onMeasured]);
-
-  const drawOverlay = () => {
-  const canvas = canvasRef.current;
-  const video = videoRef.current;
-  if (!canvas || !video) return;
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Draw points with numbers
-  points.forEach((p, i) => {
-    // Circle
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
-    ctx.fillStyle = "red";
-    ctx.fill();
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.closePath();
-
-    // Number label
-    ctx.fillStyle = "white";
-    ctx.font = "16px Arial";
-    ctx.fillText(i + 1, p.x - 5, p.y - 12);
-  });
-
-  // Draw connecting lines if more than 1 point
-  if (points.length > 1) {
-    ctx.strokeStyle = "lime";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    points.forEach((p, i) => {
-      if (i > 0) ctx.lineTo(p.x, p.y);
-    });
-    if (points.length === 4) ctx.lineTo(points[0].x, points[0].y);
-    ctx.stroke();
-    ctx.closePath();
   }
 
-  requestAnimationFrame(drawOverlay);
-};
-
+  // Draw overlay points
   useEffect(() => {
-    if (cameraStarted) drawOverlay();
-  }, [cameraStarted, points]);
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext("2d")
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    ctx.strokeStyle = "lime"
+    ctx.lineWidth = 3
+
+    ctx.fillStyle = "red"
+
+    points.forEach((p, index) => {
+
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, 8, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = "white"
+      ctx.font = "18px Arial"
+      ctx.fillText(index + 1, p.x + 10, p.y - 10)
+
+      ctx.fillStyle = "red"
+
+      if (index > 0) {
+        ctx.beginPath()
+        ctx.moveTo(points[index - 1].x, points[index - 1].y)
+        ctx.lineTo(p.x, p.y)
+        ctx.stroke()
+      }
+
+    })
+
+    if (points.length === 4) {
+
+      ctx.beginPath()
+      ctx.moveTo(points[3].x, points[3].y)
+      ctx.lineTo(points[0].x, points[0].y)
+      ctx.stroke()
+
+    }
+
+  }, [points])
+
+  // Compute after 4 taps
+  useEffect(() => {
+
+    if (points.length !== 4) return
+
+    const widthPx = Math.abs(points[1].x - points[0].x)
+    const heightPx = Math.abs(points[2].y - points[1].y)
+
+    const scale = 0.02
+
+    const length = (widthPx * scale).toFixed(2)
+    const width = (heightPx * scale).toFixed(2)
+
+    const area = (length * width).toFixed(2)
+
+    const result = {
+      measurements: {
+        length,
+        width,
+        area
+      }
+    }
+
+    if (onMeasured) {
+      onMeasured(result)
+    }
+
+    stopCamera()
+
+    if (onClose) {
+      onClose()
+    }
+
+  }, [points])
+
+  // Tap handler
+  function handleTap(e) {
+
+    if (points.length >= 4) return
+
+    const rect = canvasRef.current.getBoundingClientRect()
+
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    setPoints([...points, { x, y }])
+
+  }
 
   return (
+
     <div className="camera-container">
-      <h2 className="camera-title">{title || "📏 AR Room Measurement"}</h2>
+
+      <div className="camera-header">
+        <h2>{title || "📏 Measure Room"}</h2>
+        <p>Tap the 4 corners of your floor</p>
+      </div>
 
       <video
         ref={videoRef}
+        autoPlay
+        playsInline
         className="camera-video"
-        onClick={handleTap}
       />
 
       <canvas
         ref={canvasRef}
         className="camera-overlay"
-        style={{ position: "absolute", top: 0, left: 0 }}
+        onClick={handleTap}
       />
 
-      <div className="ar-overlay">
-        <div className="guide-box">TAP 4 CORNERS OF FLOOR</div>
-      </div>
+      <button
+        className="camera-close"
+        onClick={() => {
+          stopCamera()
+          if (onClose) onClose()
+        }}
+      >
+        ✕ Close
+      </button>
 
-      <div className="camera-actions">
-        {!cameraStarted && (
-          <button className="btn-capture" onClick={startCamera}>Start</button>
-        )}
-        {cameraStarted && !captured && (
-          <button
-            className="btn-capture"
-            onClick={() => {
-              if (points.length < 4) alert("Please tap 4 corners first!");
-            }}
-          >
-            📌 Done Tapping
-          </button>
-        )}
-        <button
-          className="btn-toggle"
-          onClick={() => {
-            stopCamera();
-            if (onClose) onClose();
-          }}
-        >
-          Close
-        </button>
-      </div>
     </div>
-  );
+
+  )
 }
