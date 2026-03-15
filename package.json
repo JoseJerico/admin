@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@react-three/fiber": "^9.5.0",
+    "@react-three/xr": "^6.6.29",
     "@supabase/supabase-js": "^2.98.0",
     "@techstark/opencv-js": "^4.12.0-release.1",
     "dotenv": "^17.3.1",

@@ -117,21 +117,20 @@ export default function UserApp({ user, onLogout }) {
   }
 
   // Camera Screen (photo-based, AR-free)
-  if (showCamera) {
-    return (
-      <div className="user-app">
-        <Camera
-          getRecommendation={getAirconHP}
-          onCapture={handleCameraCapture}
-          title="📐 Measure Your Room"
-          mode="measure"
-        />
-        <button onClick={() => setShowCamera(false)} className="btn-close-camera">
-          ✕
-        </button>
-      </div>
-    )
-  }
+ {showCamera && (
+  <Camera
+    title="📐 Measure Your Room (AR)"
+    onClose={() => setShowCamera(false)}
+    onMeasured={(data) => {
+      setRoomMeasurements(data);
+      const area = parseFloat(data.measurements.area);
+      const recommendedHP = getAirconHP(area);
+      setRecommendedProduct({ capacity: recommendedHP });
+      setShowCamera(false);
+      setScreen('measure');
+    }}
+  />
+)}
 
   return (
     <div className="user-app">
