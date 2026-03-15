@@ -103,7 +103,6 @@ export default function UserApp({ user, onLogout }) {
   }
 
   function handleCameraCapture(data) {
-    // data = { measurements: { length, width, area } }
     setRoomMeasurements(data)
     const area = parseFloat(data.measurements.area)
     const recommendedHP = getAirconHP(area)
@@ -117,30 +116,28 @@ export default function UserApp({ user, onLogout }) {
   }
 
   // Camera Screen (photo-based, AR-free)
- {/* Camera Screen (AR / fallback) */}
-{showCamera && (
-  <Camera
-    title="📐 Measure Your Room (AR)"
-    onClose={() => setShowCamera(false)}
-    onMeasured={(data) => {
-      // data = { length, width, area, recommendedHP }
-      setRoomMeasurements({
-        measurements: {
-          length: data.length,
-          width: data.width,
-          area: data.area,
-        },
-      });
+  {showCamera && (
+    <Camera
+      title="📐 Measure Your Room (AR)"
+      onClose={() => setShowCamera(false)}
+      onMeasured={(data) => {
+        setRoomMeasurements({
+          measurements: {
+            length: data.length,
+            width: data.width,
+            area: data.area,
+          },
+        })
 
-      setRecommendedProduct({
-        capacity: data.recommendedHP,
-      });
+        setRecommendedProduct({
+          capacity: data.recommendedHP,
+        })
 
-      setShowCamera(false);
-      setScreen('measure'); // go to measurement result screen
-    }}
-  />
-)}
+        setShowCamera(false)
+        setScreen('measure')
+      }}
+    />
+  )}
 
   return (
     <div className="user-app">
@@ -208,18 +205,29 @@ export default function UserApp({ user, onLogout }) {
               className="measure-option manual"
               onClick={() => setScreen('manual-measure')}
             >
-              ✏️ Manual Input
+              <div className="measure-icon">📏</div>
+              <div className="measure-text">
+                <h3>Manual Measurement</h3>
+                <p>Enter room size manually</p>
+              </div>
             </button>
 
             <button
               className="measure-option ar"
               onClick={() => setShowCamera(true)}
             >
-              📷 Use Camera AR
+              <div className="measure-icon">📷</div>
+              <div className="measure-text">
+                <h3>Use Camera AR</h3>
+                <p>Scan your room using camera</p>
+              </div>
             </button>
           </div>
 
-          <button onClick={() => setScreen('home')} className="btn-back">
+          <button
+            className="btn-back"
+            onClick={() => setScreen('home')}
+          >
             ← Back
           </button>
         </main>
@@ -301,7 +309,17 @@ export default function UserApp({ user, onLogout }) {
             )}
 
             <div className="actions">
-              <button onClick={() => setScreen('manual-measure')} className="btn-remeasure">
+              <button
+                className="btn-remeasure"
+                onClick={() => {
+                  setManualLength('')
+                  setManualWidth('')
+                  setManualUnit('meters')  // reset unit
+                  setRoomMeasurements(null)
+                  setRecommendedProduct(null)
+                  setScreen('manual-measure')
+                }}
+              >
                 📐 Measure Again
               </button>
               <button onClick={() => setScreen('home')} className="btn-back">
