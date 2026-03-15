@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Camera from '../shared/Camera'; // latest AR + fallback Camera
+import Camera from '../shared/Camera'; // latest Camera.jsx na may tap 1-4
 import './UserApp.css';
 import { supabase } from '../supabase';
 
@@ -25,88 +25,46 @@ export default function UserApp({ user, onLogout }) {
   }, []);
 
   async function fetchProducts() {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('id');
-
-    if (error) {
-      console.error('Products error:', error);
-      return;
-    }
-
+    const { data, error } = await supabase.from('products').select('*').order('id');
+    if (error) return console.error(error);
     setProducts(data || []);
   }
 
   async function fetchServices() {
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .order('id');
-
-    if (error) {
-      console.error('Services error:', error);
-      return;
-    }
-
+    const { data, error } = await supabase.from('services').select('*').order('id');
+    if (error) return console.error(error);
     setServices(data || []);
   }
 
-  function addToCart(item) {
-    setCart([...cart, { ...item, cartId: Date.now() }]);
-  }
-
-  function removeFromCart(cartId) {
-    setCart(cart.filter(item => item.cartId !== cartId));
-  }
-
-  function handleManualCalculate() {
-    if (!manualLength || !manualWidth) {
-      alert("Please enter both length and width");
-      return;
-    }
-
-    let length = parseFloat(manualLength);
-    let width = parseFloat(manualWidth);
-
-    if (manualUnit === "feet") {
-      length = length * 0.3048;
-      width = width * 0.3048;
-    }
-
-    const area = length * width;
-
-    setRoomMeasurements({
-      measurements: {
-        length: length.toFixed(2),
-        width: width.toFixed(2),
-        area: area.toFixed(2)
-      }
-    });
-
-    const recommendedHP = getAirconHP(area);
-    setRecommendedProduct({ capacity: recommendedHP });
-
-    setScreen('measure');
-  }
-
   function getAirconHP(area) {
-    const areaNum = parseFloat(area);
-    if (areaNum <= 9) return "0.5 HP";
-    if (areaNum <= 18) return "1.0 HP";
-    if (areaNum <= 25) return "1.5 HP";
-    if (areaNum <= 35) return "2.0 HP";
-    if (areaNum <= 45) return "2.5 HP";
-    if (areaNum <= 60) return "3.0 HP";
-    if (areaNum <= 80) return "4.0 HP";
+    const a = parseFloat(area);
+    if (a <= 9) return "0.5 HP";
+    if (a <= 18) return "1.0 HP";
+    if (a <= 25) return "1.5 HP";
+    if (a <= 35) return "2.0 HP";
+    if (a <= 45) return "2.5 HP";
+    if (a <= 60) return "3.0 HP";
+    if (a <= 80) return "4.0 HP";
     return "5.0 HP or higher";
   }
 
-  function handleCameraCapture(data) {
-    setRoomMeasurements(data);
-    const area = parseFloat(data.measurements.area);
-    const recommendedHP = getAirconHP(area);
-    setRecommendedProduct({ capacity: recommendedHP });
+  function handleManualCalculate() {
+    if (!manualLength || !manualWidth) return alert("Please enter both length and width");
+    let length = parseFloat(manualLength);
+    let width = parseFloat(manualWidth);
+    if (manualUnit === "feet") {
+      length *= 0.3048;
+      width *= 0.3048;
+    }
+    const area = length * width;
+    setRoomMeasurements({ measurements: { length: length.toFixed(2), width: width.toFixed(2), area: area.toFixed(2) } });
+    setRecommendedProduct({ capacity: getAirconHP(area) });
+    setScreen('measure');
+  }
+
+  function handleCameraMeasured(data) {
+    setRoomMeasurements({ measurements: { length: data.length, width: data.width, area: data.area } });
+    setRecommendedProduct({ capacity: data.recommendedHP });
     setShowCamera(false);
     setScreen('measure');
   }
@@ -131,19 +89,8 @@ export default function UserApp({ user, onLogout }) {
             <button onClick={onLogout} className="btn-logout-user">🚪 Logout</button>
           </div>
         </div>
-        {screen !== 'home' && (
-          <button onClick={() => setScreen('home')} className="btn-back">← Back</button>
-        )}
+        {screen !== 'home' && <button onClick={() => setScreen('home')} className="btn-back">← Back</button>}
       </header>
-
-      {/* Camera Screen (AR / fallback) */}
-      {showCamera && (
-        <Camera
-          title="📐 Measure Your Room (AR)"
-          onClose={() => setShowCamera(false)}
-          onMeasured={handleCameraCapture} // receive data from Camera
-        />
-      )}
 
       {/* Home Screen */}
       {screen === 'home' && (
@@ -156,13 +103,19 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="quick-actions">
-            <button onClick={() => setScreen('measure-choice')} className="action-card measure">
+            <button
+              onClick={() => setScreen('measure-choice')}
+              className="action-card measure"
+            >
               <div className="action-icon">📐</div>
               <h3>Measure Room</h3>
               <p>Get AC recommendation</p>
             </button>
 
-            <button onClick={() => setScreen('services')} className="action-card services">
+            <button
+              onClick={() => setScreen('services')}
+              className="action-card services"
+            >
               <div className="action-icon">🔧</div>
               <h3>Services</h3>
               <p>Installation & repair</p>
@@ -172,7 +125,7 @@ export default function UserApp({ user, onLogout }) {
       )}
 
       {/* Measure Choice */}
-      {screen === 'measure-choice' && (
+      {screen === 'measure-choice' && !showCamera && (
         <main className="user-main">
           <div className="screen-header">
             <h2>📏 Choose Measurement Method</h2>
@@ -180,17 +133,30 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="measure-options">
-            <button className="measure-option manual" onClick={() => setScreen('manual-measure')}>
+            <button
+              className="measure-option manual"
+              onClick={() => setScreen('manual-measure')}
+            >
               ✏️ Manual Input
             </button>
 
-            <button className="measure-option ar" onClick={() => setShowCamera(true)}>
+            <button
+              className="measure-option ar"
+              onClick={() => setShowCamera(true)} // Auto show Camera, hide this screen
+            >
               📷 Use Camera AR
             </button>
           </div>
-
-          <button onClick={() => setScreen('home')} className="btn-back">← Back</button>
         </main>
+      )}
+
+      {/* Camera AR */}
+      {showCamera && (
+        <Camera
+          title="📐 Measure Your Room (AR)"
+          onClose={() => setShowCamera(false)}
+          onMeasured={handleCameraMeasured}
+        />
       )}
 
       {/* Manual Measurement */}
@@ -204,14 +170,12 @@ export default function UserApp({ user, onLogout }) {
           <div className="manual-form">
             <div className="form-group">
               <label>Length</label>
-              <input type="number" value={manualLength} onChange={(e) => setManualLength(e.target.value)} placeholder="Enter length"/>
+              <input type="number" value={manualLength} onChange={(e) => setManualLength(e.target.value)} placeholder="Enter length" />
             </div>
-
             <div className="form-group">
               <label>Width</label>
-              <input type="number" value={manualWidth} onChange={(e) => setManualWidth(e.target.value)} placeholder="Enter width"/>
+              <input type="number" value={manualWidth} onChange={(e) => setManualWidth(e.target.value)} placeholder="Enter width" />
             </div>
-
             <div className="form-group">
               <label>Unit</label>
               <select value={manualUnit} onChange={(e) => setManualUnit(e.target.value)}>
@@ -230,15 +194,12 @@ export default function UserApp({ user, onLogout }) {
       {screen === 'measure' && roomMeasurements && (
         <main className="user-main">
           <div className="screen-header"><h2>📏 Room Analysis</h2></div>
-
           <div className="measurement-results">
             <div className="result-card">
               <h3>Room Dimensions</h3>
-              <div className="measurements">
-                <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
-                <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
-                <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
-              </div>
+              <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
+              <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
+              <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
             </div>
 
             {recommendedProduct && (
@@ -265,26 +226,12 @@ export default function UserApp({ user, onLogout }) {
               <button onClick={() => setShowProfile(false)} className="btn-close-modal">✕</button>
             </div>
             <div className="profile-content">
-              <div className="profile-item">
-                <span className="label">Name:</span>
-                <span>{user?.name || 'Guest'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="label">Email:</span>
-                <span>{user?.email || 'N/A'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="label">Role:</span>
-                <span>Customer</span>
-              </div>
-              <div className="profile-item">
-                <span className="label">Member Since:</span>
-                <span>{new Date().toLocaleDateString()}</span>
-              </div>
+              <div className="profile-item"><span className="label">Name:</span> <span>{user?.name || 'Guest'}</span></div>
+              <div className="profile-item"><span className="label">Email:</span> <span>{user?.email || 'N/A'}</span></div>
+              <div className="profile-item"><span className="label">Role:</span> <span>Customer</span></div>
+              <div className="profile-item"><span className="label">Member Since:</span> <span>{new Date().toLocaleDateString()}</span></div>
             </div>
-            <div className="modal-actions">
-              <button onClick={() => setShowProfile(false)} className="btn-close">Close</button>
-            </div>
+            <div className="modal-actions"><button onClick={() => setShowProfile(false)} className="btn-close">Close</button></div>
           </div>
         </div>
       )}
