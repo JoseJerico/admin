@@ -1,212 +1,173 @@
 // src/shared/Camera.jsx
-import React, { useRef, useState } from "react";
-import cv from "@techstark/opencv-js";
+import React, { useRef, useState, useEffect } from "react";
 import "./Camera.css";
 
-export default function Camera({ getRecommendation, onClose, onMeasured }) {
-
+export default function Camera({ getRecommendation, onMeasured, onClose, title }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-
-  const [roomData, setRoomData] = useState(null);
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [points, setPoints] = useState([]); // store 4 tap points
+  const [captured, setCaptured] = useState(false);
 
+  // Start camera
   const startCamera = async () => {
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
-    });
-
-    videoRef.current.srcObject = stream;
-    videoRef.current.play();
-
-    setCameraStarted(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setCameraStarted(true);
+    } catch (err) {
+      console.error("Camera error:", err);
+      alert("Cannot access camera. Please allow camera permissions.");
+    }
   };
 
-  const captureAndMeasure = () => {
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const ctx = canvas.getContext("2d");
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    let src = cv.imread(canvas);
-    let gray = new cv.Mat();
-
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    cv.GaussianBlur(gray, gray, new cv.Size(5,5), 0);
-
-    let edges = new cv.Mat();
-    cv.Canny(gray, edges, 50, 150);
-
-    let contours = new cv.MatVector();
-    let hierarchy = new cv.Mat();
-
-    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-    let maxArea = 0;
-    let floorContour = null;
-
-    for (let i = 0; i < contours.size(); i++) {
-
-      const cnt = contours.get(i);
-      const area = cv.contourArea(cnt);
-
-      if (area > maxArea) {
-        maxArea = area;
-        floorContour = cnt;
-      }
+  // Stop camera
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
     }
+    setCameraStarted(false);
+  };
 
-    if (floorContour) {
+  // Handle user tap on video
+  const handleTap = (e) => {
+    if (!cameraStarted || captured) return;
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-      let rect = cv.boundingRect(floorContour);
+    if (points.length < 4) {
+      setPoints([...points, { x, y }]);
+    }
+  };
 
-      const widthPx = rect.width;
-      const lengthPx = rect.height;
+  // Compute approximate room dimensions (meters)
+  useEffect(() => {
+    if (points.length === 4) {
+      // Approximate width = distance between point0 & point1 (top)
+      const dx = points[1].x - points[0].x;
+      const dy = points[1].y - points[0].y;
+      const widthPx = Math.sqrt(dx*dx + dy*dy);
 
-      const refObjectMeters = 2;
+      // Approximate length = distance between point0 & point3 (left side)
+      const dx2 = points[3].x - points[0].x;
+      const dy2 = points[3].y - points[0].y;
+      const lengthPx = Math.sqrt(dx2*dx2 + dy2*dy2);
 
-      const scale = refObjectMeters / lengthPx;
+      // Reference: assume top edge ~ 2 meters
+      const refMeters = 2;
+      const scale = refMeters / widthPx;
 
-      const width = widthPx * scale;
-      const length = lengthPx * scale;
-
-      const area = width * length;
-
-      const recommendedAC = getRecommendation
-        ? getRecommendation(area)
-        : "N/A";
+      const width = (widthPx * scale).toFixed(2);
+      const length = (lengthPx * scale).toFixed(2);
+      const area = (width * length).toFixed(2);
 
       const result = {
-
-        width: width.toFixed(2),
-        length: length.toFixed(2),
-        area: area.toFixed(2),
-        recommendedAC
-
+        measurements: { length, width, area }
       };
 
-      setRoomData(result);
+      setCaptured(true);
 
       if (onMeasured) onMeasured(result);
     }
+  }, [points, onMeasured]);
 
-    src.delete();
-    gray.delete();
-    edges.delete();
-    contours.delete();
-    hierarchy.delete();
-  };
+  const drawOverlay = () => {
+  const canvas = canvasRef.current;
+  const video = videoRef.current;
+  if (!canvas || !video) return;
 
-  const reset = () => {
-    setRoomData(null);
-  };
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw points with numbers
+  points.forEach((p, i) => {
+    // Circle
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.closePath();
+
+    // Number label
+    ctx.fillStyle = "white";
+    ctx.font = "16px Arial";
+    ctx.fillText(i + 1, p.x - 5, p.y - 12);
+  });
+
+  // Draw connecting lines if more than 1 point
+  if (points.length > 1) {
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    points.forEach((p, i) => {
+      if (i > 0) ctx.lineTo(p.x, p.y);
+    });
+    if (points.length === 4) ctx.lineTo(points[0].x, points[0].y);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  requestAnimationFrame(drawOverlay);
+};
+
+  useEffect(() => {
+    if (cameraStarted) drawOverlay();
+  }, [cameraStarted, points]);
 
   return (
-
     <div className="camera-container">
+      <h2 className="camera-title">{title || "📏 AR Room Measurement"}</h2>
 
-      {!roomData && (
-
-        <div className="camera-live">
-
-          <h2 className="camera-title">
-            📏 AR Room Measurement
-          </h2>
-
-          <video
-            ref={videoRef}
-            className="camera-video"
-          />
-
-          {/* AR GUIDE OVERLAY */}
-          <div className="ar-overlay">
-            <div className="guide-box">
-              ALIGN FLOOR HERE
-            </div>
-          </div>
-
-          <div className="camera-buttons">
-
-            {!cameraStarted && (
-              <button
-                onClick={startCamera}
-                className="btn-camera start"
-              >
-                Start Camera
-              </button>
-            )}
-
-            {cameraStarted && (
-              <button
-                onClick={captureAndMeasure}
-                className="btn-camera capture"
-              >
-                📸 Capture & Measure
-              </button>
-            )}
-
-              <button
-               onClick={() => {
-                if (videoRef.current && videoRef.current.srcObject) {
-                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-        }
-             if (onClose) onClose();
-            }}
-              className="btn-camera"
-  >
-            Close
-              </button>
-
-          </div>
-
-        </div>
-      )}
+      <video
+        ref={videoRef}
+        className="camera-video"
+        onClick={handleTap}
+      />
 
       <canvas
         ref={canvasRef}
-        style={{ display: "none" }}
+        className="camera-overlay"
+        style={{ position: "absolute", top: 0, left: 0 }}
       />
 
-      {roomData && (
+      <div className="ar-overlay">
+        <div className="guide-box">TAP 4 CORNERS OF FLOOR</div>
+      </div>
 
-        <div className="measurement-results">
-
-          <h3>Room Measurement Result</h3>
-
-          <p>Length: {roomData.length} m</p>
-          <p>Width: {roomData.width} m</p>
-          <p>Area: {roomData.area} m²</p>
-
-          <p>
-            Recommended AC:
-            <strong> {roomData.recommendedAC}</strong>
-          </p>
-
+      <div className="camera-actions">
+        {!cameraStarted && (
+          <button className="btn-capture" onClick={startCamera}>Start</button>
+        )}
+        {cameraStarted && !captured && (
           <button
-            onClick={reset}
-            className="btn-camera"
+            className="btn-capture"
+            onClick={() => {
+              if (points.length < 4) alert("Please tap 4 corners first!");
+            }}
           >
-            Measure Again
+            📌 Done Tapping
           </button>
-
-          <button
-            onClick={onClose}
-            className="btn-camera close"
-          >
-            Close
-          </button>
-
-        </div>
-
-      )}
-
+        )}
+        <button
+          className="btn-toggle"
+          onClick={() => {
+            stopCamera();
+            if (onClose) onClose();
+          }}
+        >
+          Close
+        </button>
+      </div>
     </div>
   );
 }
