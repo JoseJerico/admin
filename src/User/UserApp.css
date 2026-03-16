@@ -74,6 +74,9 @@
   overflow-y:auto;
   scrollbar-width: thin;
   scrollbar-color:#888 #fff;
+
+  padding:20px;
+  padding-top:40px; /* ito magbibigay space sa Room Analysis */
 }
 
 .user-main::-webkit-scrollbar{
@@ -240,13 +243,12 @@
 .measurement-results{
   display:flex;
   flex-direction:column;
-  align-items:center;
 
   gap:20px;
 
-  padding:15px;
+  padding:20px;
 
-  margin-top:80px; /* ito ang magtutulak pababa */
+  margin-top:20px;
 
   width:100%;
 }
