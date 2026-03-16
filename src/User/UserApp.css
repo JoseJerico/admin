@@ -74,9 +74,6 @@
   overflow-y:auto;
   scrollbar-width: thin;
   scrollbar-color:#888 #fff;
-
-  padding:20px;
-  padding-top:40px; /* ito magbibigay space sa Room Analysis */
 }
 
 .user-main::-webkit-scrollbar{
@@ -243,12 +240,13 @@
 .measurement-results{
   display:flex;
   flex-direction:column;
+  align-items:center;
 
   gap:20px;
 
-  padding:20px;
+  padding:15px;
 
-  margin-top:20px;
+  margin-top:80px; /* ito ang magtutulak pababa */
 
   width:100%;
 }
@@ -552,4 +550,44 @@
     font-size:11px;
   }
 
+}
+/* Container ng Room Analysis + Result */
+.room-analysis-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+  margin-top: 16px; /* space from header */
+}
+
+/* Result Card */
+.result-card,
+.recommendation {
+  background: #1a1a1a;
+  color: white;
+  padding: 18px;
+  border-radius: 12px;
+  text-align: center;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+/* Room Analysis Container Fix */
+.room-analysis-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 15px;
+  width: 100%;
+  max-width: 420px;   /* para hindi lumampas sa mobile screen */
+  margin: 0 auto 20px auto; /* center horizontally, at may space sa bottom */
+  box-sizing: border-box;
+}
+
+.result-card,
+.recommendation {
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
 }

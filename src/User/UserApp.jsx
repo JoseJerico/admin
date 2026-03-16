@@ -285,50 +285,51 @@ export default function UserApp({ user, onLogout }) {
       )}
 
       {/* Room Analysis */}
-      {screen === 'measure' && roomMeasurements && (
-        <main className="user-main">
-          <div className="screen-header">
-            <h2>📏 Room Analysis</h2>
-          </div>
+{screen === 'measure' && roomMeasurements && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>📏 Room Analysis</h2>
+    </div>
 
-          <div className="measurement-results">
-            <div className="result-card">
-              <h3>Room Dimensions</h3>
-              <div className="measurements">
-                <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
-                <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
-                <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
-              </div>
-            </div>
+    {/* Wrap results in new container */}
+    <div className="room-analysis-container">
+      <div className="result-card">
+        <h3>Room Dimensions</h3>
+        <div className="measurements">
+          <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
+          <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
+          <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
+        </div>
+      </div>
 
-            {recommendedProduct && (
-              <div className="recommendation">
-                <h3>🎯 Recommended AirCon</h3>
-                <p>{recommendedProduct.capacity}</p>
-              </div>
-            )}
-
-            <div className="actions">
-              <button
-                className="btn-remeasure"
-                onClick={() => {
-                  setManualLength('')
-                  setManualWidth('')
-                  setManualUnit('meters')  // reset unit
-                  setRoomMeasurements(null)
-                  setRecommendedProduct(null)
-                  setScreen('manual-measure')
-                }}
-              >
-                📐 Measure Again
-              </button>
-              <button onClick={() => setScreen('home')} className="btn-back">
-                ← Back to Home
-              </button>
-            </div>
-          </div>
-        </main>
+      {recommendedProduct && (
+        <div className="recommendation">
+          <h3>🎯 Recommended AirCon</h3>
+          <p>{recommendedProduct.capacity}</p>
+        </div>
       )}
+
+      <div className="actions">
+        <button
+          className="btn-remeasure"
+          onClick={() => {
+            setManualLength('')
+            setManualWidth('')
+            setManualUnit('meters')
+            setRoomMeasurements(null)
+            setRecommendedProduct(null)
+            setScreen('manual-measure')
+          }}
+        >
+          📐 Measure Again
+        </button>
+        <button onClick={() => setScreen('home')} className="btn-back">
+          ← Back to Home
+        </button>
+      </div>
+    </div>
+  </main>
+)}
 
       {/* Profile Modal */}
       {showProfile && (
