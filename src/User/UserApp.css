@@ -455,3 +455,95 @@
     padding:18px;
   }
 }
+/* ============================= */
+/* EXTRA MOBILE FIT FIX */
+/* ============================= */
+
+@media (max-width:480px){
+
+  .user-header h1{
+    font-size:20px;
+  }
+
+  .hero{
+    padding:20px 14px;
+  }
+
+  .hero-content h2{
+    font-size:18px;
+  }
+
+  .hero-content p{
+    font-size:13px;
+  }
+
+  /* quick action buttons */
+
+  .quick-actions{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .action-card{
+    padding:16px;
+  }
+
+  .action-icon{
+    font-size:26px;
+  }
+
+  .action-card h3{
+    font-size:13px;
+  }
+
+  /* products */
+
+  .products-grid{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+
+  .product-card{
+    padding:12px;
+  }
+
+  .product-image{
+    font-size:36px;
+  }
+
+  /* services */
+
+  .services-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  /* ROOM ANALYSIS */
+
+  .result-card,
+  .recommendation{
+    max-width:100%;
+    padding:16px;
+  }
+
+  .measurements p{
+    font-size:15px;
+  }
+
+  /* buttons */
+
+  .actions{
+    flex-direction:column;
+  }
+
+  .actions button{
+    width:100%;
+    font-size:15px;
+    padding:12px;
+  }
+
+  /* bottom nav */
+
+  .nav-item{
+    font-size:11px;
+  }
+
+}
