@@ -193,96 +193,85 @@ export default function UserApp({ user, onLogout }) {
       )}
 
       {/* Measure Choice */}
-      {screen === 'measure-choice' && (
-        <main className="user-main">
-          <div className="screen-header">
-            <h2>📏 Choose Measurement Method</h2>
-            <p>Select how you want to measure your room</p>
-          </div>
+{screen === 'measure-choice' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>📏 Choose Measurement Method</h2>
+      <p>Select how you want to measure your room</p>
+    </div>
 
-          <div className="measure-options">
-            <button
-              className="measure-option manual"
-              onClick={() => setScreen('manual-measure')}
-            >
-              <div className="measure-icon">📏</div>
-              <div className="measure-text">
-                <h3>Manual Measurement</h3>
-                <p>Enter room size manually</p>
-              </div>
-            </button>
+    <div className="measure-options">
+      <button
+        className="measure-option manual"
+        onClick={() => setScreen('manual-measure')}
+      >
+        <div className="measure-icon">📏</div>
+        <div className="measure-text">
+          <h3>Manual Measurement</h3>
+          <p>Enter room size manually</p>
+        </div>
+      </button>
 
-            <button
-              className="measure-option ar"
-              onClick={() => setShowCamera(true)}
-            >
-              <div className="measure-icon">📷</div>
-              <div className="measure-text">
-                <h3>Use Camera AR</h3>
-                <p>Scan your room using camera</p>
-              </div>
-            </button>
-          </div>
+      <button
+        className="measure-option ar"
+        onClick={() => setShowCamera(true)}
+      >
+        <div className="measure-icon">📷</div>
+        <div className="measure-text">
+          <h3>Use Camera AR</h3>
+          <p>Scan your room using camera</p>
+        </div>
+      </button>
+    </div>
+  </main>
+)}
 
-          <button
-            className="btn-back"
-            onClick={() => setScreen('home')}
-          >
-            ← Back
-          </button>
-        </main>
-      )}
+{/* Manual Measurement */}
+{screen === 'manual-measure' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>✏️ Manual Room Measurement</h2>
+      <p>Enter your room dimensions below</p>
+    </div>
 
-      {/* Manual Measurement */}
-      {screen === 'manual-measure' && (
-        <main className="user-main">
-          <div className="screen-header">
-            <h2>✏️ Manual Room Measurement</h2>
-            <p>Enter your room dimensions below</p>
-          </div>
+    <div className="manual-form">
+      <div className="form-group">
+        <label>Length</label>
+        <input
+          type="number"
+          value={manualLength}
+          onChange={(e) => setManualLength(e.target.value)}
+          placeholder="Enter length"
+        />
+      </div>
 
-          <div className="manual-form">
-            <div className="form-group">
-              <label>Length</label>
-              <input
-                type="number"
-                value={manualLength}
-                onChange={(e) => setManualLength(e.target.value)}
-                placeholder="Enter length"
-              />
-            </div>
+      <div className="form-group">
+        <label>Width</label>
+        <input
+          type="number"
+          value={manualWidth}
+          onChange={(e) => setManualWidth(e.target.value)}
+          placeholder="Enter width"
+        />
+      </div>
 
-            <div className="form-group">
-              <label>Width</label>
-              <input
-                type="number"
-                value={manualWidth}
-                onChange={(e) => setManualWidth(e.target.value)}
-                placeholder="Enter width"
-              />
-            </div>
+      <div className="form-group">
+        <label>Unit</label>
+        <select
+          value={manualUnit}
+          onChange={(e) => setManualUnit(e.target.value)}
+        >
+          <option value="meters">Meters</option>
+          <option value="feet">Feet</option>
+        </select>
+      </div>
 
-            <div className="form-group">
-              <label>Unit</label>
-              <select
-                value={manualUnit}
-                onChange={(e) => setManualUnit(e.target.value)}
-              >
-                <option value="meters">Meters</option>
-                <option value="feet">Feet</option>
-              </select>
-            </div>
-
-            <button className="btn-calculate" onClick={handleManualCalculate}>
-              Calculate
-            </button>
-
-            <button onClick={() => setScreen('measure-choice')} className="btn-back">
-              ← Back
-            </button>
-          </div>
-        </main>
-      )}
+      <button className="btn-calculate" onClick={handleManualCalculate}>
+        Calculate
+      </button>
+    </div>
+  </main>
+)}
 
       {/* Room Analysis */}
 {screen === 'measure' && roomMeasurements && (

@@ -591,3 +591,25 @@
   max-width: 100%;
   text-align: center;
 }
+/* Recommended AirCon Style */
+.recommendation p {
+  color: white;        /* kulay puti */
+  font-size: 1.5rem;   /* mas malaki */
+  font-weight: 700;    /* bold para mas kitang-kita */
+}
+@media (max-width: 768px) {
+  .recommendation p {
+    font-size: 1.8rem; /* mas kitang-kita sa cellphone */
+  }
+}
+/* Recommended AirCon Header Emoji Style */
+.recommendation h3 {
+  font-size: 1.8rem;    /* mas malaki ang text */
+}
+/* Recommended AirCon Header */
+.recommendation h3 {
+  font-size: 1.8rem;      /* mas malaki ang text */
+  color: white;           /* gawing puti */
+  text-align: center;     /* center sa card */
+  font-weight: 700;       /* bold */
+}
