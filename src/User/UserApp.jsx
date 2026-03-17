@@ -23,12 +23,96 @@ export default function UserApp({ user, onLogout }) {
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
   const [bookingNotes, setBookingNotes] = useState('')
+  const [bookingAddress, setBookingAddress] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
+  const [bookingHistory, setBookingHistory] = useState([])
+  const [bookings, setBookings] = useState([]);
+  const [formData, setFormData] = useState({});
+  const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    fetchServices()
-  }, [])
+  const fetchBookings = async () => {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("date", { ascending: false });
 
+  if (!error) setBookings(data);
+};
+
+useEffect(() => {
+  fetchBookings();
+}, []);
+
+const handleCancel = async (id) => {
+  const confirmCancel = window.confirm("Cancel this booking?");
+  if (!confirmCancel) return;
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ status: "cancelled" })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error cancelling booking:", error);
+    alert("❌ Failed to cancel booking.");
+    return;
+  }
+
+  alert("Booking cancelled!");
+  fetchBookingHistory(); // 🔹 refresh history para makita agad ang cancelled status
+};
+
+const handleEdit = (booking) => {
+  setFormData(booking);
+  setEditingId(booking.id);
+};
+
+const handleUpdate = async (e) => {
+  e.preventDefault();
+
+  await supabase
+    .from("bookings")
+    .update(formData)
+    .eq("id", editingId);
+
+  alert("Booking updated!");
+  setEditingId(null);
+  setFormData({});
+  fetchBookings();
+};
+
+ useEffect(() => {
+  console.log("User prop changed:", user);
+  console.log("User ID type:", typeof user.id, "value:", user.id);
+  if (user?.id) {
+    console.log("Fetching booking history for user ID:", user.id);
+    fetchBookingHistory();
+  }
+}, [user]);
+
+  async function fetchBookingHistory() {
+  if (!user?.id) return;
+
+  console.log("Attempting to fetch booking history for user ID:", user.id, "Type:", typeof user.id);
+
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('user_id', user.id.trim()) // ensure walang whitespace
+      .order('created_at', { ascending: false });
+
+    if (error) console.error("Error fetching booking history:", error);
+
+    console.log(`Fetched booking history for user ${user.id}:`, data);
+    console.log("Number of bookings fetched:", data?.length);
+
+    setBookingHistory(data || []);
+  } catch (err) {
+    console.error("Unexpected error fetching booking history:", err);
+  }
+}
   async function fetchServices() {
     const { data, error } = await supabase
       .from('services')
@@ -45,14 +129,14 @@ export default function UserApp({ user, onLogout }) {
 
   function handleManualCalculate() {
     if (!manualLength || !manualWidth) {
-      alert("Please enter both length and width")
+      alert('Please enter both length and width')
       return
     }
 
     let length = parseFloat(manualLength)
     let width = parseFloat(manualWidth)
 
-    if (manualUnit === "feet") {
+    if (manualUnit === 'feet') {
       length = length * 0.3048
       width = width * 0.3048
     }
@@ -63,8 +147,8 @@ export default function UserApp({ user, onLogout }) {
       measurements: {
         length: length.toFixed(2),
         width: width.toFixed(2),
-        area: area.toFixed(2)
-      }
+        area: area.toFixed(2),
+      },
     })
 
     const recommendedHP = getAirconHP(area)
@@ -75,14 +159,14 @@ export default function UserApp({ user, onLogout }) {
 
   function getAirconHP(area) {
     const areaNum = parseFloat(area)
-    if (areaNum <= 9) return "0.5 HP"
-    if (areaNum <= 18) return "1.0 HP"
-    if (areaNum <= 25) return "1.5 HP"
-    if (areaNum <= 35) return "2.0 HP"
-    if (areaNum <= 45) return "2.5 HP"
-    if (areaNum <= 60) return "3.0 HP"
-    if (areaNum <= 80) return "4.0 HP"
-    return "5.0 HP or higher"
+    if (areaNum <= 9) return '0.5 HP'
+    if (areaNum <= 18) return '1.0 HP'
+    if (areaNum <= 25) return '1.5 HP'
+    if (areaNum <= 35) return '2.0 HP'
+    if (areaNum <= 45) return '2.5 HP'
+    if (areaNum <= 60) return '3.0 HP'
+    if (areaNum <= 80) return '4.0 HP'
+    return '5.0 HP or higher'
   }
 
   function openBookingForm(service) {
@@ -95,7 +179,7 @@ export default function UserApp({ user, onLogout }) {
 
   function handleConfirmBooking() {
     if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
-      alert("Please complete all required fields")
+      alert('Please complete all required fields')
       return
     }
     setShowConfirm(true)
@@ -110,13 +194,14 @@ export default function UserApp({ user, onLogout }) {
       roomMeasurements: roomMeasurements?.measurements,
       recommendedProduct: recommendedProduct?.capacity,
       bookingDetails: {
-        name: bookingName,
-        contact: bookingContact,
+        fullName: bookingName,
+        mobileNumber: bookingContact,
         email: bookingEmail,
+        address: bookingAddress,
         date: bookingDate,
         time: bookingTime,
-        notes: bookingNotes
-      }
+        notes: bookingNotes,
+      },
     }
     setCart([...cart, newItem])
     alert(`Booking for ${bookingService.name} added to cart`)
@@ -126,35 +211,107 @@ export default function UserApp({ user, onLogout }) {
   }
 
   function removeFromCart(cartId) {
-    setCart(cart.filter(item => item.cartId !== cartId))
+    setCart(cart.filter((item) => item.cartId !== cartId))
   }
 
   function calculateTotal() {
     return cart.reduce((acc, item) => acc + (item.price || 0), 0)
   }
 
+  async function submitAllBookings() {
+  if (cart.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
+
+  if (!user?.id) {
+    alert("User not logged in properly");
+    return;
+  }
+
+  try {
+    const bookingsToInsert = cart.map(item => ({
+      user_id: user.id,
+      full_name: item.bookingDetails.fullName,
+      email: item.bookingDetails.email,
+      mobile_number: item.bookingDetails.mobileNumber,
+      address: item.bookingDetails.address,
+      service: item.serviceName,
+      room_area: parseFloat(item.roomMeasurements?.area) || null,
+      recommended_hp: item.recommendedProduct,
+      date: item.bookingDetails.date,
+      time: item.bookingDetails.time,
+      notes: item.bookingDetails.notes,
+      status: "pending",
+      created_at: new Date() // siguraduhin may timestamp para sa order
+    }));
+
+    const { data, error } = await supabase
+      .from("bookings")
+      .insert(bookingsToInsert);
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      alert("❌ Failed to submit bookings: " + error.message);
+      return;
+    }
+
+    console.log("Inserted bookings:", data);
+    alert("✅ Bookings submitted to admin!");
+
+    setCart([]);
+    await fetchBookingHistory(); // refresh history para lumabas agad
+    setScreen('history');        // switch screen to show history
+
+  } catch (err) {
+    console.error("Unexpected error submitting bookings:", err);
+    alert("❌ Unexpected error occurred");
+  }
+}
+
   return (
     <div className="user-app">
-      {/* Header */}
       <header className="user-header">
         <div className="header-top">
           <h1>❄️ AirCon Hub</h1>
           <div className="header-actions">
-            <button onClick={() => setShowProfile(true)} className="user-info" title="View profile">
+            <button
+              onClick={() => setShowProfile(true)}
+              className="user-info"
+              title="View profile"
+            >
               👤 {user?.name || 'Guest'}
             </button>
-            <button onClick={() => setScreen('cart')} className="btn-cart" title="View cart">
+            <button
+              onClick={() => setScreen('cart')}
+              className="btn-cart"
+              title="View cart"
+            >
               🛒 {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
             </button>
-            <button onClick={onLogout} className="btn-logout-user">🚪 Logout</button>
+            <button
+              onClick={async () => {
+                if (user?.id) await fetchBookingHistory()
+                setScreen('history')
+              }}
+              className="btn-history"
+              title="View past bookings"
+            >
+              📖 My Booking History
+            </button>
+            <button onClick={onLogout} className="btn-logout-user">
+              🚪 Logout
+            </button>
           </div>
         </div>
         {screen !== 'home' && (
-          <button onClick={() => setScreen('home')} className="btn-back">← Back</button>
+          <button onClick={() => setScreen('home')} className="btn-back">
+            ← Back
+          </button>
         )}
       </header>
 
-      {/* Home Screen */}
+      {/* --- Home Screen --- */}
       {screen === 'home' && (
         <main className="user-main">
           <div className="hero">
@@ -186,7 +343,7 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Manual Measurement */}
+      {/* --- Manual Measurement --- */}
       {screen === 'manual-measure' && (
         <main className="user-main">
           <div className="screen-header">
@@ -233,7 +390,7 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Room Analysis */}
+      {/* --- Room Analysis --- */}
       {screen === 'measure' && roomMeasurements && (
         <main className="user-main">
           <div className="screen-header">
@@ -244,14 +401,23 @@ export default function UserApp({ user, onLogout }) {
             <div className="result-card">
               <h3>Room Dimensions</h3>
               <div className="measurements">
-                <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
-                <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
-                <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
+                <p>
+                  Length: <strong>{roomMeasurements.measurements.length} m</strong>
+                </p>
+                <p>
+                  Width: <strong>{roomMeasurements.measurements.width} m</strong>
+                </p>
+                <p>
+                  Area: <strong>{roomMeasurements.measurements.area} m²</strong>
+                </p>
               </div>
             </div>
 
             {recommendedProduct && (
-              <div className="recommendation" style={{ backgroundColor: '#000', color: '#fff' }}>
+              <div
+                className="recommendation"
+                style={{ backgroundColor: '#000', color: '#fff' }}
+              >
                 <h3>🎯 Recommended AirCon</h3>
                 <p>{recommendedProduct.capacity}</p>
               </div>
@@ -274,7 +440,9 @@ export default function UserApp({ user, onLogout }) {
               {recommendedProduct && (
                 <button
                   className="btn-book-service"
-                  onClick={() => openBookingForm({ id: 1, name: 'AC Installation', price: 1500 })}
+                  onClick={() =>
+                    openBookingForm({ id: 1, name: 'AC Installation', price: 1500 })
+                  }
                 >
                   📌 Book this Service
                 </button>
@@ -284,51 +452,89 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Booking Form Screen */}
+      {/* --- Booking Form --- */}
       {screen === 'booking-form' && bookingService && (
         <main className="user-main">
           <div className="screen-header">
             <h2>📌 Booking: {bookingService.name}</h2>
             {roomMeasurements && recommendedProduct && (
-              <p>Room Area: {roomMeasurements.measurements.area} m² | Recommended AC: {recommendedProduct.capacity}</p>
+              <p>
+                Room Area: {roomMeasurements.measurements.area} m² | Recommended AC:{' '}
+                {recommendedProduct.capacity}
+              </p>
             )}
           </div>
 
           <div className="booking-form">
             <div className="form-group">
               <label>Full Name</label>
-              <input type="text" value={bookingName} onChange={(e) => setBookingName(e.target.value)} />
+              <input
+                type="text"
+                value={bookingName}
+                onChange={(e) => setBookingName(e.target.value)}
+              />
             </div>
             <div className="form-group">
               <label>Contact Number</label>
-              <input type="text" value={bookingContact} onChange={(e) => setBookingContact(e.target.value)} />
+              <input
+                type="text"
+                value={bookingContact}
+                onChange={(e) => setBookingContact(e.target.value)}
+              />
             </div>
             <div className="form-group">
               <label>Email</label>
-              <input type="email" value={bookingEmail} onChange={(e) => setBookingEmail(e.target.value)} />
+              <input
+                type="email"
+                value={bookingEmail}
+                onChange={(e) => setBookingEmail(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Address</label>
+              <input
+                type="text"
+                value={bookingAddress}
+                onChange={(e) => setBookingAddress(e.target.value)}
+                placeholder="Enter full address"
+              />
             </div>
             <div className="form-group">
               <label>Preferred Date</label>
-              <input type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
+              <input
+                type="date"
+                value={bookingDate}
+                onChange={(e) => setBookingDate(e.target.value)}
+              />
             </div>
             <div className="form-group">
               <label>Preferred Time</label>
-              <input type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
+              <input
+                type="time"
+                value={bookingTime}
+                onChange={(e) => setBookingTime(e.target.value)}
+              />
             </div>
             <div className="form-group">
               <label>Additional Notes</label>
-              <textarea value={bookingNotes} onChange={(e) => setBookingNotes(e.target.value)} placeholder="Optional notes for technician" />
+              <textarea
+                value={bookingNotes}
+                onChange={(e) => setBookingNotes(e.target.value)}
+                placeholder="Optional notes for technician"
+              />
             </div>
 
             <button className="btn-confirm-booking" onClick={handleConfirmBooking}>
               Confirm Booking
             </button>
-            <button className="btn-back" onClick={() => setScreen('services')}>← Back to Services</button>
+            <button className="btn-back" onClick={() => setScreen('services')}>
+              ← Back to Services
+            </button>
           </div>
         </main>
       )}
 
-      {/* Confirmation Modal */}
+      {/* --- Confirmation Modal --- */}
       {showConfirm && (
         <div className="confirmation-modal-overlay" onClick={() => setShowConfirm(false)}>
           <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
@@ -340,7 +546,75 @@ export default function UserApp({ user, onLogout }) {
         </div>
       )}
 
-      {/* Services Screen */}
+{/* --- Booking History --- */}
+{screen === 'history' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>📖 My Booking History</h2>
+    </div>
+
+    {bookingHistory.length === 0 ? (
+      <p>No past bookings yet.</p>
+    ) : (
+      <div className="history-list">
+        {bookingHistory.map((item) => {
+          // Mag-set ng class base sa status para sa kulay ng box
+          let statusClass = '';
+          if (item.status === 'pending') statusClass = 'history-pending';
+          if (item.status === 'approved') statusClass = 'history-approved';
+          if (item.status === 'cancelled') statusClass = 'history-cancelled';
+          if (item.status === 'rejected') statusClass = 'history-rejected';
+
+          return (
+            <div key={item.id} className={`history-item ${statusClass}`}>
+              <h3>{item.service}</h3>
+              <p>Date: {item.date} | Time: {item.time}</p>
+              <p>Room Area: {item.room_area || 'N/A'} m²</p>
+              <p>Recommended AC: {item.recommended_hp || 'N/A'}</p>
+              <p>Status: {item.status}</p>
+              <p>Name: {item.full_name}</p>
+              <p>Contact: {item.mobile_number}</p>
+              <p>Email: {item.email}</p>
+              <p>Address: {item.address}</p>
+              {item.notes && <p>Notes: {item.notes}</p>}
+
+              {/* 🔹 Actions depende sa status */}
+              {item.status === "pending" ? (
+                <div className="history-actions">
+                  <button onClick={() => handleEdit(item)}>Edit</button>
+                  <button onClick={() => handleCancel(item.id)}>Cancel</button>
+                </div>
+              ) : (
+                <div className="history-actions-locked">
+                  {item.status === 'approved' && (
+                    <span className="status-badge approved" title="Booking approved by admin, cannot edit or cancel">
+                      ✔ Approved
+                    </span>
+                  )}
+                  {item.status === 'cancelled' && (
+                    <span className="status-badge cancelled" title="You cancelled this booking">
+                      ❌ Cancelled
+                    </span>
+                  )}
+                  {item.status === 'rejected' && (
+                    <span className="status-badge rejected" title="Booking rejected by admin">
+                      ⚠ Rejected
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )}
+    <button onClick={() => setScreen('home')} className="btn-back">
+      ← Back
+    </button>
+  </main>
+)}
+    
+      {/* --- Services --- */}
       {screen === 'services' && (
         <main className="user-main">
           <div className="screen-header">
@@ -349,7 +623,7 @@ export default function UserApp({ user, onLogout }) {
           </div>
 
           <div className="services-list">
-            {services.map(service => (
+            {services.map((service) => (
               <div key={service.id} className="service-card">
                 <h3>{service.name}</h3>
                 <p>Price: ₱{service.price}</p>
@@ -363,7 +637,7 @@ export default function UserApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Cart Screen */}
+      {/* --- Cart --- */}
       {screen === 'cart' && (
         <main className="user-main">
           <div className="screen-header">
@@ -374,42 +648,118 @@ export default function UserApp({ user, onLogout }) {
             <p>No services added yet.</p>
           ) : (
             <div className="cart-list">
-              {cart.map(item => (
+              {cart.map((item) => (
                 <div key={item.cartId} className="cart-item">
                   <h3>{item.serviceName}</h3>
                   <p>Price: ₱{item.price}</p>
                   {item.roomMeasurements && (
                     <p>Room Area: {item.roomMeasurements.area} m²</p>
                   )}
-                  {item.recommendedProduct && (
-                    <p>Recommended AC: {item.recommendedProduct}</p>
-                  )}
+                  {item.recommendedProduct && <p>Recommended AC: {item.recommendedProduct}</p>}
                   {item.bookingDetails && (
                     <>
-                      <p>Name: {item.bookingDetails.name}</p>
-                      <p>Contact: {item.bookingDetails.contact}</p>
-                      <p>Email: {item.bookingDetails.email}</p>
-                      <p>Date: {item.bookingDetails.date}</p>
-                      <p>Time: {item.bookingDetails.time}</p>
-                      {item.bookingDetails.notes && <p>Notes: {item.bookingDetails.notes}</p>}
+                      <p>👤 {item.bookingDetails.fullName}</p>
+                      <p>📞 {item.bookingDetails.mobileNumber}</p>
+                      <p>📍 {item.bookingDetails.address}</p>
+                      <p>📧 {item.bookingDetails.email}</p>
+                      <p>📅 {item.bookingDetails.date}</p>
+                      <p>⏰ {item.bookingDetails.time}</p>
+                      {item.bookingDetails.notes && <p>📝 {item.bookingDetails.notes}</p>}
                     </>
                   )}
-                  <button className="btn-delete" onClick={() => removeFromCart(item.cartId)}>Delete</button>
+                  <button className="btn-delete" onClick={() => removeFromCart(item.cartId)}>
+                    Delete
+                  </button>
                 </div>
               ))}
               <h3>Total: ₱{calculateTotal()}</h3>
+              <button onClick={submitAllBookings} className="btn-submit">
+                Submit All Bookings
+              </button>
             </div>
           )}
         </main>
       )}
 
-      {/* Profile Modal */}
+    {/* --- Edit Modal --- */}
+{editingId && (
+  <div className="edit-modal-overlay" onClick={() => setEditingId(null)}>
+    <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
+      <h3>Edit Booking</h3>
+      <form onSubmit={handleUpdate} className="edit-form">
+        <label>
+          Full Name:
+          <input
+            type="text"
+            value={formData.full_name || ''}
+            onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+          />
+        </label>
+        <label>
+          Contact:
+          <input
+            type="text"
+            value={formData.mobile_number || ''}
+            onChange={(e) => setFormData({...formData, mobile_number: e.target.value})}
+          />
+        </label>
+        <label>
+          Email:
+          <input
+            type="email"
+            value={formData.email || ''}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+          />
+        </label>
+        <label>
+          Address:
+          <input
+            type="text"
+            value={formData.address || ''}
+            onChange={(e) => setFormData({...formData, address: e.target.value})}
+          />
+        </label>
+        <label>
+          Date:
+          <input
+            type="date"
+            value={formData.date || ''}
+            onChange={(e) => setFormData({...formData, date: e.target.value})}
+          />
+        </label>
+        <label>
+          Time:
+          <input
+            type="time"
+            value={formData.time || ''}
+            onChange={(e) => setFormData({...formData, time: e.target.value})}
+          />
+        </label>
+        <label>
+          Notes:
+          <textarea
+            value={formData.notes || ''}
+            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+          />
+        </label>
+        <div className="modal-buttons">
+          <button type="submit" className="btn-update">Update Booking</button>
+          <button type="button" onClick={() => setEditingId(null)} className="btn-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
+      {/* --- Profile Modal --- */}
       {showProfile && (
         <div className="profile-modal-overlay" onClick={() => setShowProfile(false)}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>👤 My Profile</h2>
-              <button onClick={() => setShowProfile(false)} className="btn-close-modal">✕</button>
+              <button onClick={() => setShowProfile(false)} className="btn-close-modal">
+                ✕
+              </button>
             </div>
             <div className="profile-content">
               <div className="profile-item">
@@ -426,7 +776,9 @@ export default function UserApp({ user, onLogout }) {
               </div>
             </div>
             <div className="modal-actions">
-              <button onClick={() => setShowProfile(false)} className="btn-close">Close</button>
+              <button onClick={() => setShowProfile(false)} className="btn-close">
+                Close
+              </button>
             </div>
           </div>
         </div>

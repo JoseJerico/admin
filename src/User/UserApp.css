@@ -613,3 +613,168 @@
   text-align: center;     /* center sa card */
   font-weight: 700;       /* bold */
 }
+.edit-modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 600px;
+  max-width: 90%;
+}
+
+.edit-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.edit-table th, .edit-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.edit-table th {
+  background-color: #f4f4f4;
+}
+
+.edit-table input, .edit-table textarea {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.edit-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.history-pending {
+  border-left: 4px solid #ff9800; /* orange */
+  padding-left: 10px;
+}
+
+.history-approved {
+  border-left: 4px solid #4caf50; /* green */
+  padding-left: 10px;
+}
+
+.history-cancelled {
+  border-left: 4px solid #f44336; /* red */
+  padding-left: 10px;
+}
+
+.history-rejected {
+  border-left: 4px solid #9e9e9e; /* gray */
+  padding-left: 10px;
+}
+.status-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: default;
+}
+
+.status-badge.approved {
+  background-color: #4caf50;
+  color: #fff;
+}
+
+.status-badge.cancelled {
+  background-color: #f44336;
+  color: #fff;
+}
+
+.status-badge.rejected {
+  background-color: #9e9e9e;
+  color: #fff;
+}
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.edit-modal {
+  width: 90%;          /* responsive sa mobile */
+  max-width: 500px;    /* hindi sosobra sa desktop */
+  max-height: 90vh;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  overflow-y: auto;    /* scroll kung marami */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.edit-modal h3 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.edit-modal label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.edit-modal input,
+.edit-modal textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.edit-modal textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.btn-update {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-cancel {
+  background-color: #f44336;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Responsive text & spacing */
+@media (max-width: 480px) {
+  .edit-modal {
+    padding: 15px;
+  }
+  .edit-modal h3 {
+    font-size: 1.2rem;
+  }
+  .btn-update, .btn-cancel {
+    flex: 1;
+    font-size: 0.9rem;
+  }
+  .modal-buttons {
+    gap: 10px;
+    flex-direction: column;
+  }
+}
