@@ -778,3 +778,166 @@
     flex-direction: column;
   }
 }
+.history-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-edit, .btn-cancel {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-edit {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.btn-cancel {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #e53935;
+  transform: translateY(-2px);
+}
+
+/* Locked status styling */
+.status-approved {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.status-cancelled {
+  color: #c62828;
+  font-weight: bold;
+}
+
+.status-rejected {
+  color: #616161;
+  font-weight: bold;
+}
+
+/* Responsive tweaks sa mobile */
+@media (max-width: 480px) {
+  .history-actions {
+    flex-direction: column;
+  }
+  .btn-edit, .btn-cancel {
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+  }
+}
+.btn-header {
+  padding: 10px 18px;
+  margin: 5px;
+  font-size: 14px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+  transition: all 0.2s ease;
+}
+
+.btn-header:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+.user-info { background-color: #4caf50; color: #fff; }
+.btn-cart { background-color: #2196f3; color: #fff; }
+.btn-history { background-color: #ff9800; color: #fff; }
+.btn-logout-user { background-color: #f44336; color: #fff; }
+
+/* Mobile-friendly: stacked buttons sa maliit na screen */
+@media (max-width: 600px) {
+  .header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-header {
+    width: 100%;
+    font-size: 16px;
+  }
+}/* Button styles */
+.btn-edit {
+  background-color: orange;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btn-cancel {
+  background-color: blue; /* dito yung kulay */
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background-color: darkorange;
+}
+
+.btn-cancel:hover {
+  background-color: darkblue;
+}
+/* Button styles */
+.btn-edit {
+  background-color: green; /* edit = green */
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btn-cancel {
+  background-color: blue; /* cancel = blue */
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background-color: darkgreen;
+}
+
+.btn-cancel:hover {
+  background-color: darkblue;
+}
+.btn-edit {
+  background-color: green !important; /* edit = green */
+  color: white !important;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btn-edit:hover {
+  background-color: darkgreen !important;
+}

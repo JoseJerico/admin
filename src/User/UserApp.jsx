@@ -579,12 +579,16 @@ const handleUpdate = async (e) => {
               {item.notes && <p>Notes: {item.notes}</p>}
 
               {/* 🔹 Actions depende sa status */}
-              {item.status === "pending" ? (
+                  {item.status === "pending" ? (
                 <div className="history-actions">
-                  <button onClick={() => handleEdit(item)}>Edit</button>
-                  <button onClick={() => handleCancel(item.id)}>Cancel</button>
-                </div>
-              ) : (
+                <button className="btn-edit" onClick={() => handleEdit(item)}>
+                   ✏ Edit
+                </button>
+                <button className="btn-cancel" onClick={() => handleCancel(item.id)}>
+                   🗑 Cancel
+               </button>
+             </div>
+          ) : (
                 <div className="history-actions-locked">
                   {item.status === 'approved' && (
                     <span className="status-badge approved" title="Booking approved by admin, cannot edit or cancel">
