@@ -283,12 +283,13 @@ const handleUpdate = async (e) => {
               👤 {user?.name || 'Guest'}
             </button>
             <button
-              onClick={() => setScreen('cart')}
-              className="btn-cart"
-              title="View cart"
-            >
-              🛒 {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
-            </button>
+  onClick={() => setScreen('cart')}
+  className="btn-cart"
+  title="View cart"
+>
+  🛒 View Cart 
+  {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
+</button>
             <button
               onClick={async () => {
                 if (user?.id) await fetchBookingHistory()

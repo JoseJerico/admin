@@ -1004,3 +1004,28 @@
     width: 100%;
   }
 }
+.header-top h1 {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+/* BUTTON STYLE (same gradient theme) */
+.header-actions-vertical button {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, #00bfff, #6c63ff); /* 🔥 same sa tagline */
+  transition: 0.3s;
+}
+
+/* HOVER EFFECT */
+.header-actions-vertical button:hover {
+  opacity: 0.85;
+  transform: scale(1.02);
+}
+.header-actions-vertical button {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
