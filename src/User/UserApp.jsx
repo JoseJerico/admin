@@ -29,7 +29,11 @@ export default function UserApp({ user, onLogout }) {
   const [bookings, setBookings] = useState([]);
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
-
+  // --- DASHBOARD SUMMARY LOGIC ---
+  const total = bookingHistory.length;
+  const pending = bookingHistory.filter(b => b.status === "pending").length;
+  const approved = bookingHistory.filter(b => b.status === "approved").length;
+  const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
   const fetchBookings = async () => {
   const { data, error } = await supabase
     .from("bookings")
@@ -61,6 +65,7 @@ const handleCancel = async (id) => {
 
   alert("Booking cancelled!");
   fetchBookingHistory(); // 🔹 refresh history para makita agad ang cancelled status
+  fetchBookings();
 };
 
 const handleEdit = (booking) => {
@@ -321,6 +326,28 @@ const handleUpdate = async (e) => {
               <p>Professional AC installation, maintenance & repair services</p>
             </div>
           </div>
+
+          <div className="dashboard-summary">
+           <div className="card">
+              <h3>{total}</h3>
+              <p>Total Bookings</p>
+           </div>
+
+           <div className="card pending">
+              <h3>{pending}</h3>
+              <p>Pending</p>
+           </div>
+
+          <div className="card approved">
+            <h3>{approved}</h3>
+            <p>Approved</p>
+          </div>
+
+          <div className="card cancelled">
+            <h3>{cancelled}</h3>
+            <p>Cancelled</p>
+          </div>
+        </div>
 
           <div className="quick-actions">
             <button
