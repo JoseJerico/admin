@@ -34,6 +34,7 @@ export default function UserApp({ user, onLogout }) {
   const pending = bookingHistory.filter(b => b.status === "pending").length;
   const approved = bookingHistory.filter(b => b.status === "approved").length;
   const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
+  const [notification, setNotification] = useState(null);
   const fetchBookings = async () => {
   const { data, error } = await supabase
     .from("bookings")
@@ -47,6 +48,39 @@ export default function UserApp({ user, onLogout }) {
 useEffect(() => {
   fetchBookings();
 }, []);
+
+useEffect(() => {
+  if (notification) {
+    const timer = setTimeout(() => {
+      setNotification(null); // automatic na tatanggalin after 5 sec
+    }, 5000); // 5000ms = 5 seconds
+
+    return () => clearTimeout(timer); // cleanup in case may bago agad na notification
+  }
+}, [notification]);
+
+useEffect(() => {
+  if (!user?.id) return;
+
+  const channel = supabase
+    .channel('booking-status')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `user_id=eq.${user.id}` },
+      (payload) => {
+        const updatedBooking = payload.new;
+        if (updatedBooking.status !== 'pending') {
+          setNotification(`📢 Your booking "${updatedBooking.service}" is now ${updatedBooking.status.toUpperCase()}`);
+          fetchBookingHistory(); // refresh para makita agad
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user]);
 
 const handleCancel = async (id) => {
   const confirmCancel = window.confirm("Cancel this booking?");
@@ -316,6 +350,13 @@ const handleUpdate = async (e) => {
           </button>
         )}
       </header>
+
+      {notification && (
+  <div className="notification">
+    <p>{notification}</p>
+    <button onClick={() => setNotification(null)}>✕</button>
+  </div>
+)}
 
       {/* --- Home Screen --- */}
       {screen === 'home' && (
