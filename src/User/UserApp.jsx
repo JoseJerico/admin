@@ -24,7 +24,7 @@ export default function UserApp({ user, onLogout }) {
   const [bookingTime, setBookingTime] = useState('')
   const [bookingNotes, setBookingNotes] = useState('')
   const [bookingAddress, setBookingAddress] = useState('')
-  const [showConfirm, setShowConfirm] = useState(false)
+  const [showConfirm, setShowConfirm] = React.useState(false)
   const [bookingHistory, setBookingHistory] = useState([])
   const [bookings, setBookings] = useState([]);
   const [formData, setFormData] = useState({});
@@ -34,6 +34,7 @@ export default function UserApp({ user, onLogout }) {
   const pending = bookingHistory.filter(b => b.status === "pending").length;
   const approved = bookingHistory.filter(b => b.status === "approved").length;
   const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
+  const [filter, setFilter] = useState('All'); // para sa category highlight
   const [notification, setNotification] = useState(null);
   const fetchBookings = async () => {
   const { data, error } = await supabase
@@ -47,6 +48,20 @@ export default function UserApp({ user, onLogout }) {
 
 useEffect(() => {
   fetchBookings();
+  fetchServices();
+}, []);
+
+useEffect(() => {
+  const getSession = async () => {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) {
+      console.log("No valid session, logout user");
+      onLogout(); // 🔥 force logout
+    }
+  };
+
+  getSession();
 }, []);
 
 useEffect(() => {
@@ -165,7 +180,86 @@ const handleUpdate = async (e) => {
 
     setServices(data || [])
   }
+ // --- BookingForm Component ---
+function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm, onCancel, setScreen }) {
+  const [name, setName] = React.useState('')
+  const [contact, setContact] = React.useState('')
+  const [email, setEmail] = React.useState('')
+  const [address, setAddress] = React.useState('')
+  const [date, setDate] = React.useState('')
+  const [time, setTime] = React.useState('')
+  const [notes, setNotes] = React.useState('')
 
+  return (
+    <div className="booking-modal-overlay" onClick={onCancel}>
+      <div className="booking-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>📌 Booking: {service.name}</h3>
+
+        {roomMeasurements && recommendedProduct && (
+          <p>
+            Room Area: {roomMeasurements.measurements.area} m² | Recommended AC: {recommendedProduct.capacity}
+          </p>
+        )}
+
+        <div className="booking-form">
+          <label>Full Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" />
+
+          <label>Contact Number</label>
+          <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact Number" />
+
+          <label>Email</label>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+
+          <label>Address</label>
+          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+
+          <label>Preferred Date</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
+          <label>Preferred Time</label>
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+
+          <label>Additional Notes</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" />
+        </div>
+
+        {/* --- Footer na palaging nakikita sa ilalim --- */}
+        <div className="booking-footer">
+          <h3>Confirm Booking</h3>
+          <p>Are you sure you want to add this booking to your cart?</p>
+
+          <div className="footer-buttons">
+            <button
+              className="btn-confirm-modern"
+              onClick={() =>
+                onConfirm({
+                  fullName: name,
+                  mobileNumber: contact,
+                  email,
+                  address,
+                  date,
+                  time,
+                  notes,
+                })
+              }
+            >
+              ✅ Yes, Add to Cart
+            </button>
+
+            <button className="btn-header-style" onClick={onCancel}>
+              ❌ Cancel
+            </button>
+
+            <button className="btn-header-style" onClick={() => setScreen('services')}>
+              ← Back to Services
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
   function handleManualCalculate() {
     if (!manualLength || !manualWidth) {
       alert('Please enter both length and width')
@@ -687,28 +781,79 @@ const handleUpdate = async (e) => {
   </main>
 )}
     
-      {/* --- Services --- */}
-      {screen === 'services' && (
-        <main className="user-main">
-          <div className="screen-header">
-            <h2>🔧 Services</h2>
-            <p>Select a service to book</p>
-          </div>
+  {/* --- Services Catalog --- */}
+{screen === 'services' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>🔧 Services Catalog</h2>
+      <p>Select a service to book</p>
 
-          <div className="services-list">
-            {services.map((service) => (
-              <div key={service.id} className="service-card">
-                <h3>{service.name}</h3>
-                <p>Price: ₱{service.price}</p>
-                {roomMeasurements && recommendedProduct && (
-                  <p>Recommended AC: {recommendedProduct.capacity}</p>
-                )}
-                <button onClick={() => openBookingForm(service)}>Book this Service</button>
-              </div>
-            ))}
+      {/* --- Category Filters --- */}
+      <div className="service-filters">
+        {['Installation', 'Repair', 'Maintenance'].map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setFilter(cat)}
+            className={`filter-btn ${filter === cat ? 'active' : ''}`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* --- Services Grid --- */}
+    <div className="services-grid">
+      {services
+        .filter((s) => s.category.toLowerCase() === filter.toLowerCase())
+        .map((service) => (
+          <div key={service.id} className="service-card">
+            <h3>{service.name}</h3>
+            <p>Category: {service.category}</p>
+            <p>Price: ₱{service.price}</p>
+            <p>Duration: {service.duration}</p>
+            {roomMeasurements && recommendedProduct && (
+              <p>Recommended AC: {recommendedProduct.capacity}</p>
+            )}
+            <button onClick={() => openBookingForm(service)}>
+              Book this Service
+            </button>
           </div>
-        </main>
+        ))}
+
+      {/* --- No Services Message --- */}
+      {services.filter((s) => s.category.toLowerCase() === filter.toLowerCase()).length === 0 && (
+        <p>No services available in this category yet.</p>
       )}
+    </div>
+
+    {/* --- Booking Form Modal --- */}
+{bookingService && (
+  <BookingForm
+    service={bookingService}
+    onCancel={() => setBookingService(null)}
+    onConfirm={(data, localMeasurements, localRecommendation) => {
+      const newItem = {
+        cartId: Date.now(),
+        serviceId: bookingService.id,
+        serviceName: bookingService.name,
+        price: bookingService.price,
+        roomMeasurements: localMeasurements,
+        recommendedProduct: localRecommendation?.capacity,
+        bookingDetails: data,
+      }
+
+      setCart([...cart, newItem])
+      setBookingService(null)
+
+      alert(`Booking for ${bookingService.name} added to cart`)
+    }}
+  />
+)}
+  </main>
+)}
+
+     
 
       {/* --- Cart --- */}
       {screen === 'cart' && (

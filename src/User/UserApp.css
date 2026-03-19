@@ -1074,3 +1074,308 @@
   font-size: 16px;
   cursor: pointer;
 }
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.service-card {
+  background: #f8f8f8;
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.service-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+
+.filter-btn {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 5px;
+  background-color: #1e90ff;
+  color: white;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background-color: #1c86ee;
+}
+/* --- Services Catalog --- */
+.service-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #007bff;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #007bff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.filter-btn:hover {
+  background-color: #0056b3;
+  color: #fff;
+}
+
+/* Services Grid */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.service-card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.service-card h3 {
+  margin: 0 0 10px 0;
+}
+
+.service-card p {
+  margin: 5px 0;
+}
+
+.service-card button {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.service-card button:hover {
+  background-color: #0056b3;
+}
+
+/* Dimmed effect for filtered-out categories */
+.service-card.dimmed {
+  opacity: 0.4;
+  pointer-events: none; /* hindi pwedeng i-click */
+}
+
+/* Booking Modal */
+.booking-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.booking-modal {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.booking-modal h3 {
+  margin-top: 0;
+}
+
+.booking-form label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.booking-form input,
+.booking-form textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.booking-form textarea {
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.modal-buttons button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.modal-buttons button:first-child {
+  background-color: #28a745;
+  color: white;
+}
+
+.modal-buttons button:first-child:hover {
+  background-color: #218838;
+}
+
+.modal-buttons button:last-child {
+  background-color: #dc3545;
+  color: white;
+}
+
+.modal-buttons button:last-child:hover {
+  background-color: #c82333;
+}
+.service-filters button {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.7rem;
+  margin: 0.3rem;
+}
+
+.services-grid .service-card h3 {
+  font-size: 1rem;
+}
+
+.services-grid .service-card p {
+  font-size: 0.85rem;
+}
+.booking-footer {
+  border-top: 1px solid #ccc;
+  padding: 12px;
+  margin-top: 16px;
+  background-color: #f9f9f9;
+}
+.footer-buttons button {
+  margin-right: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+/* Footer container */
+.booking-footer {
+  border-top: 2px solid #e0e0e0;
+  padding: 16px;
+  margin-top: 20px;
+  background-color: #fdfdfd;
+  text-align: center;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+/* Footer titles */
+.footer-title {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.footer-text {
+  font-size: 1rem;
+  margin-bottom: 16px;
+  color: #555;
+}
+
+/* Buttons container */
+.footer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Common button style */
+.footer-buttons button {
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+/* Confirm button */
+.btn-confirm {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+/* Cancel button */
+.btn-cancel {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #e53935;
+  transform: scale(1.05);
+}
+
+/* Back to services button */
+.btn-back-services {
+  background-color: #2196F3;
+  color: white;
+}
+
+.btn-back-services:hover {
+  background-color: #1976D2;
+  transform: scale(1.05);
+}
+/* Header-style buttons for booking footer */
+.btn-header-style {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, #00bfff, #6c63ff);
+  transition: all 0.3s;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+}
+
+.btn-header-style:hover {
+  opacity: 0.85;
+  transform: scale(1.02);
+}
