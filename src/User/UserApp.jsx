@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import './UserApp.css'
 import { supabase } from '../supabase'
 
+
 export default function UserApp({ user, onLogout }) {
   const [screen, setScreen] = useState('home')
   const [cart, setCart] = useState([])
@@ -29,10 +30,14 @@ export default function UserApp({ user, onLogout }) {
   const [bookings, setBookings] = useState([]);
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [search, setSearch] = useState('')
   // --- DASHBOARD SUMMARY LOGIC ---
   const total = bookingHistory.length;
   const pending = bookingHistory.filter(b => b.status === "pending").length;
-  const approved = bookingHistory.filter(b => b.status === "approved").length;
+  const confirmed = bookingHistory.filter(b => b.status === "confirmed").length;
   const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
   const [filter, setFilter] = useState('All'); // para sa category highlight
   const [notification, setNotification] = useState(null);
@@ -46,10 +51,46 @@ export default function UserApp({ user, onLogout }) {
   if (!error) setBookings(data);
 };
 
+{/*const [maintenance, setMaintenance] = useState([
+  { id: 1, service: 'AC Filter Cleaning', date: '2026-03-25', status: 'okay' },
+  { id: 2, service: 'Cooling Coil Check', date: '2026-03-28', status: 'soon' },
+  { id: 3, service: 'Compressor Inspection', date: '2026-03-30', status: 'overdue' },
+]);
+*/}
+{/*const getMaintenanceColor = (status) => {
+  switch(status) {
+    case 'okay':
+      return '#3498db'; // blue
+    case 'soon':
+      return '#a0522d'; // brown
+    case 'overdue':
+      return '#e74c3c'; // red
+    default:
+      return '#bdc3c7'; // grey default
+  }
+};
+*/}
+
 useEffect(() => {
   fetchBookings();
   fetchServices();
 }, []);
+
+useEffect(() => {
+  if (!user?.id) return;
+
+  async function fetchMaintenance() {
+    const { data, error } = await supabase
+      .from("maintenance")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("date", { ascending: true });
+
+    if (!error) setMaintenance(data || []);
+  }
+
+  fetchMaintenance();
+}, [user]);
 
 useEffect(() => {
   const getSession = async () => {
@@ -148,38 +189,46 @@ const handleUpdate = async (e) => {
   async function fetchBookingHistory() {
   if (!user?.id) return;
 
-  console.log("Attempting to fetch booking history for user ID:", user.id, "Type:", typeof user.id);
+  setLoading(true)
+  setErrorMsg(null)
 
   try {
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
-      .eq('user_id', user.id.trim()) // ensure walang whitespace
-      .order('created_at', { ascending: false });
-
-    if (error) console.error("Error fetching booking history:", error);
-
-    console.log(`Fetched booking history for user ${user.id}:`, data);
-    console.log("Number of bookings fetched:", data?.length);
-
-    setBookingHistory(data || []);
-  } catch (err) {
-    console.error("Unexpected error fetching booking history:", err);
-  }
-}
-  async function fetchServices() {
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .order('id')
+      .eq('user_id', user.id.trim())
+      .order('created_at', { ascending: false })
+      .range(0, 9); // 🔥 pagination (top 10 only)
 
     if (error) {
-      console.error('Services error:', error)
-      return
+      console.error(error)
+      setErrorMsg("❌ Failed to load booking history")
     }
 
-    setServices(data || [])
+    setBookingHistory(data || [])
+  } catch (err) {
+    console.error(err)
+    setErrorMsg("❌ Unexpected error occurred")
   }
+
+  setLoading(false)
+}
+
+  async function fetchServices() {
+  setLoading(true)
+
+  const { data, error } = await supabase
+    .from('services')
+    .select('*')
+    .order('id')
+
+  if (error) {
+    setErrorMsg("Failed to load services")
+  }
+
+  setServices(data || [])
+  setLoading(false)
+}
  // --- BookingForm Component ---
 function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm, onCancel, setScreen }) {
   const [name, setName] = React.useState('')
@@ -215,7 +264,12 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
 
           <label>Preferred Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            type="date"
+             value={date}
+             min={new Date().toISOString().split("T")[0]}
+             onChange={(e) => setDate(e.target.value)}
+          />
 
           <label>Preferred Time</label>
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -315,6 +369,15 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
       alert('Please complete all required fields')
       return
     }
+
+    const existing = bookings.find(
+  (b) => b.date === bookingDate && b.time === bookingTime
+)
+
+if (existing) {
+  alert("⚠️ You already have a booking at this time!")
+  return
+}
     setShowConfirm(true)
   }
 
@@ -342,6 +405,23 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
     setShowConfirm(false)
     setScreen('services')
   }
+
+   function handleRebook(item) {
+    setBookingService({ id: item.id, name: item.service, price: 1500 });
+    setBookingName(item.full_name);
+    setBookingContact(item.mobile_number);
+    setBookingEmail(item.email);
+    setBookingAddress(item.address);
+    setBookingDate(item.date);
+    setBookingTime(item.time);
+    setBookingNotes(item.notes || '');
+
+    setRoomMeasurements({ measurements: { area: item.room_area, length: '', width: '' } });
+    setRecommendedProduct({ capacity: item.recommended_hp });
+
+    setScreen('booking-form');
+  }
+
 
   function removeFromCart(cartId) {
     setCart(cart.filter((item) => item.cartId !== cartId))
@@ -463,26 +543,93 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
           </div>
 
           <div className="dashboard-summary">
-           <div className="card">
-              <h3>{total}</h3>
-              <p>Total Bookings</p>
-           </div>
 
-           <div className="card pending">
-              <h3>{pending}</h3>
-              <p>Pending</p>
-           </div>
+  {/*<div className="maintenance-preview">
+  {maintenance.map((m) => (
+    <div
+      key={m.id}
+      className="maintenance-item"
+      style={{
+        backgroundColor: getMaintenanceColor(m.status),
+        padding: '1rem',
+        borderRadius: '10px',
+        marginBottom: '0.5rem',
+        cursor: 'pointer'
+      }}
+      onClick={() => {
+        setStatusFilter(m.status); // kung gusto mo i-filter sa history
+        setScreen('history');
+      }}
+    >
+      <p>{m.service}</p>
+      <p>{m.date}</p>
+    </div>
+  ))}
+</div>
+*/}
+  <div 
+    className="card total" 
+    onClick={() => {
+      setStatusFilter('All')
+      setScreen('history')
+    }}
+  >
+    <h3>{total}</h3>
+    <p>Total Bookings</p>
+  </div>
 
-          <div className="card approved">
-            <h3>{approved}</h3>
-            <p>Approved</p>
-          </div>
+  <div 
+    className="card pending" 
+    onClick={() => {
+      setStatusFilter('pending')
+      setScreen('history')
+    }}
+  >
+    <h3>{pending}</h3>
+    <p>Pending</p>
+  </div>
 
-          <div className="card cancelled">
-            <h3>{cancelled}</h3>
-            <p>Cancelled</p>
-          </div>
-        </div>
+  <div 
+    className="card confirmed" 
+    onClick={() => {
+      setStatusFilter('confirmed')
+      setScreen('history')
+    }}
+  >
+    <h3>{confirmed}</h3>
+    <p>Confirmed</p>
+  </div>
+
+  <div 
+    className="card cancelled" 
+    onClick={() => {
+      setStatusFilter('cancelled')
+      setScreen('history')
+    }}
+  >
+    <h3>{cancelled}</h3>
+    <p>Cancelled</p>
+  </div>
+
+</div>
+
+
+     <div  
+  style={{
+    backgroundColor: "#3b82f6", // blue color (Tailwind blue-500)
+    color: "#fff",              // white text para readable
+    padding: "1rem",
+    borderRadius: "10px",
+    marginBottom: "1rem",
+    cursor: "pointer"           // para clickable effect
+  }}  
+  onClick={() => alert("Go to maintenance page")} // optional click
+>
+  <h3>Upcoming Preventive Maintenance</h3>
+  <p>No scheduled preventive maintenance</p>
+</div>
+
+     
 
           <div className="quick-actions">
             <button
@@ -714,67 +861,122 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
   <main className="user-main">
     <div className="screen-header">
       <h2>📖 My Booking History</h2>
+
+      {/* 🔍 SEARCH */}
+      <input
+        type="text"
+        placeholder="Search service..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="search-input"
+      />
+
+      {/* 🔥 STATUS LEGEND */}
+      <div className="legend">
+  <button onClick={() => setStatusFilter('All')}>All</button>
+  <button onClick={() => setStatusFilter('pending')}>Pending</button>
+  <button onClick={() => setStatusFilter('confirmed')}>Confirmed</button>
+  <button onClick={() => setStatusFilter('cancelled')}>Cancelled</button>
+  <button onClick={() => setStatusFilter('rejected')}>Rejected</button>
+</div>
     </div>
 
-    {bookingHistory.length === 0 ? (
-      <p>No past bookings yet.</p>
-    ) : (
-      <div className="history-list">
-        {bookingHistory.map((item) => {
-          // Mag-set ng class base sa status para sa kulay ng box
-          let statusClass = '';
-          if (item.status === 'pending') statusClass = 'history-pending';
-          if (item.status === 'approved') statusClass = 'history-approved';
-          if (item.status === 'cancelled') statusClass = 'history-cancelled';
-          if (item.status === 'rejected') statusClass = 'history-rejected';
+    {/* 🔄 LOADING */}
+    {loading && <p>Loading bookings...</p>}
 
-          return (
-            <div key={item.id} className={`history-item ${statusClass}`}>
-              <h3>{item.service}</h3>
-              <p>Date: {item.date} | Time: {item.time}</p>
-              <p>Room Area: {item.room_area || 'N/A'} m²</p>
-              <p>Recommended AC: {item.recommended_hp || 'N/A'}</p>
-              <p>Status: {item.status}</p>
-              <p>Name: {item.full_name}</p>
-              <p>Contact: {item.mobile_number}</p>
-              <p>Email: {item.email}</p>
-              <p>Address: {item.address}</p>
-              {item.notes && <p>Notes: {item.notes}</p>}
+    {/* ❌ ERROR */}
+    {errorMsg && <div className="error">{errorMsg}</div>}
 
-              {/* 🔹 Actions depende sa status */}
-                  {item.status === "pending" ? (
+    {/* 😢 EMPTY STATE */}
+    {!loading && bookingHistory.length === 0 && (
+      <div className="empty-state">
+        <h3>No bookings yet 😢</h3>
+        <button onClick={() => setScreen('services')}>
+          Book Now
+        </button>
+      </div>
+    )}
+
+   {/* 📋 LIST */}
+<div className="history-list">
+  {bookingHistory
+    .filter((item) =>
+      item.service?.toLowerCase().includes(search.toLowerCase()) // 🔍 search filter
+    )
+    .filter((item) =>
+      statusFilter === 'All' ? true : item.status === statusFilter // 🟢 status filter
+    )
+    .map((item) => {
+      let statusClass = '';
+      if (item.status === 'pending') statusClass = 'history-pending';
+      if (item.status === 'confirmed') statusClass = 'history-confirmed';
+      if (item.status === 'cancelled') statusClass = 'history-cancelled';
+      if (item.status === 'rejected') statusClass = 'history-rejected';
+
+      return (
+        <div key={item.id} className={`history-item ${statusClass}`}>
+  <h3>{item.service}</h3>
+  <p>Date: {item.date} | Time: {item.time}</p>
+
+  {/* 🔹 Status Badge */}
+  <p>
+    Status: <span
+  className="status-badge"
+  style={{
+    backgroundColor:
+      item.status === "pending"
+        ? "#fbbf24"
+        : item.status === "approved"
+        ? "#34d399"
+        : item.status === "cancelled"
+        ? "#f87171"
+        : item.status === "rejected"
+        ? "#9ca3af"
+        : "#d1d5db",
+    color: "#fff",
+    padding: "4px 8px",
+    borderRadius: "6px",
+    fontWeight: "bold"
+  }}
+>
+  {item.status.toUpperCase()}
+</span>
+  </p>
+
+  <p>Room Area: {item.room_area || 'N/A'} m²</p>
+  <p>Recommended AC: {item.recommended_hp || 'N/A'}</p>
+
+  <p>👤 {item.full_name}</p>
+  <p>📞 {item.mobile_number}</p>
+  <p>📧 {item.email}</p>
+  <p>📍 {item.address}</p>
+
+  {item.notes && <p>📝 {item.notes}</p>}
+
+              {/* 🔁 QUICK REBOOK */}
+              <button
+                onClick={() =>
+                  openBookingForm({
+                    id: item.id,
+                    name: item.service,
+                    price: 1500,
+                  })
+                }
+              >
+                🔁 Book Again
+              </button>
+
+              {item.status === "pending" && (
                 <div className="history-actions">
-                <button className="btn-edit" onClick={() => handleEdit(item)}>
-                   ✏ Edit
-                </button>
-                <button className="btn-cancel" onClick={() => handleCancel(item.id)}>
-                   🗑 Cancel
-               </button>
-             </div>
-          ) : (
-                <div className="history-actions-locked">
-                  {item.status === 'approved' && (
-                    <span className="status-badge approved" title="Booking approved by admin, cannot edit or cancel">
-                      ✔ Approved
-                    </span>
-                  )}
-                  {item.status === 'cancelled' && (
-                    <span className="status-badge cancelled" title="You cancelled this booking">
-                      ❌ Cancelled
-                    </span>
-                  )}
-                  {item.status === 'rejected' && (
-                    <span className="status-badge rejected" title="Booking rejected by admin">
-                      ⚠ Rejected
-                    </span>
-                  )}
+                  <button onClick={() => handleEdit(item)}>✏ Edit</button>
+                  <button onClick={() => handleCancel(item.id)}>🗑 Cancel</button>
                 </div>
               )}
             </div>
           )
         })}
-      </div>
-    )}
+    </div>
+
     <button onClick={() => setScreen('home')} className="btn-back">
       ← Back
     </button>

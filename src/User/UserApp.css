@@ -1379,3 +1379,259 @@
   opacity: 0.85;
   transform: scale(1.02);
 }
+/* =======================
+   User Dashboard Styles
+======================= */
+
+/* --- Search Input --- */
+.search-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  margin: 12px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+/* --- Status Filter Buttons (Legend) --- */
+.legend {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.legend button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  background-color: #eee;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.legend button:hover {
+  background-color: #ddd;
+}
+
+.legend button.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+/* --- Booking List --- */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* --- Individual Booking Item --- */
+.history-item {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.history-item h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+}
+
+.history-item p {
+  margin: 2px 0;
+  font-size: 0.95rem;
+}
+
+/* --- Status Colors --- */
+.history-pending {
+  border-left: 4px solid #ffc107; /* amber */
+}
+.history-approved {
+  border-left: 4px solid #28a745; /* green */
+}
+.history-cancelled {
+  border-left: 4px solid #dc3545; /* red */
+}
+.history-rejected {
+  border-left: 4px solid #6c757d; /* gray */
+}
+
+/* --- Booking Action Buttons --- */
+.history-actions button,
+.history-item button {
+  padding: 6px 10px;
+  margin-right: 6px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.history-actions button:hover,
+.history-item button:hover {
+  opacity: 0.85;
+}
+
+.history-actions button:first-child {
+  background-color: #17a2b8; /* Edit - cyan */
+  color: white;
+}
+
+.history-actions button:last-child {
+  background-color: #dc3545; /* Cancel/Delete - red */
+  color: white;
+}
+
+.history-item button {
+  background-color: #007bff; /* Book Again - blue */
+  color: white;
+}
+
+/* --- Loading & Error --- */
+.error {
+  color: #dc3545;
+  margin: 10px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+  background-color: #f1f1f1;
+  border-radius: 8px;
+}
+
+.empty-state h3 {
+  margin-bottom: 12px;
+}
+
+/* --- Back Button --- */
+.btn-back {
+  margin-top: 16px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: #6c757d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  background-color: #5a6268;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+  .legend {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .search-input {
+    max-width: 100%;
+  }
+}
+/* --- Status Badge Styles --- */
+.status-badge {
+  padding: 3px 8px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+/* Kulay base sa status */
+.status-badge.pending { background-color: #f0ad4e; }   /* orange */
+.status-badge.approved { background-color: #5cb85c; }  /* green */
+.status-badge.cancelled { background-color: #d9534f; } /* red */
+.status-badge.rejected { background-color: #6c757d; }  /* gray */
+
+.dashboard-summary .card.pending { background-color: #fbbf24; color: #000; }
+.dashboard-summary .card.approved { background-color: #34d399; color: #fff; }
+.dashboard-summary .card.cancelled { background-color: #f87171; color: #fff; }
+.dashboard-summary .card { padding: 1rem; border-radius: 0.5rem; text-align: center; margin: 0.5rem; flex: 1; }
+
+.dashboard-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-summary .card {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.dashboard-summary .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+
+/* COLORS */
+.card.total {
+  background: #000;
+  color: white;
+}
+
+.card.pending {
+  background: #f59e0b;
+  color: white;
+}
+
+/* 🔥 FORCE WHITE TEXT */
+.card.pending h3,
+.card.pending p {
+  color: white !important;
+}
+
+.card.confirmed {
+  background: #059669; /* dark green */
+  color: white;
+}
+
+.card.cancelled {
+  background: #dc2626; /* dark red */
+  color: white;
+}
+
+.card.pending h3,
+.card.pending p,
+.card.confirmed h3,
+.card.confirmed p {
+  color: black !important;
+}
+
+.maintenance-preview {
+  background: #f0f4f8;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+}
+
+.maintenance-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.maintenance-item:last-child {
+  border-bottom: none;
+}
+.upcoming-maintenance {
+  background-color: #34d399;
+  color: #fff;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  cursor: pointer; /* para makita user na clickable siya */
+}
