@@ -15,6 +15,7 @@ export default function UserApp({ user, onLogout }) {
   const [manualLength, setManualLength] = useState('')
   const [manualWidth, setManualWidth] = useState('')
   const [manualUnit, setManualUnit] = useState('meters')
+  const [showCamera, setShowCamera] = useState(false)
 
   // Booking form states
   const [bookingService, setBookingService] = useState(null)
@@ -633,7 +634,7 @@ if (existing) {
 
           <div className="quick-actions">
             <button
-              onClick={() => setScreen('manual-measure')}
+              onClick={() => setScreen('measure-choice')}
               className="action-card measure"
             >
               <div className="action-icon">📐</div>
@@ -652,6 +653,40 @@ if (existing) {
           </div>
         </main>
       )}
+
+      {/* --- Measure Choice --- */}
+{screen === 'measure-choice' && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>📏 Choose Measurement Method</h2>
+      <p>Select how you want to measure your room</p>
+    </div>
+
+    <div className="measure-options">
+      <button
+        className="measure-option manual"
+        onClick={() => setScreen('manual-measure')}
+      >
+        <div className="measure-icon">📏</div>
+        <div className="measure-text">
+          <h3>Manual Measurement</h3>
+          <p>Enter room size manually</p>
+        </div>
+      </button>
+
+      <button
+        className="measure-option ar"
+        onClick={() => setShowCamera(true)}
+      >
+        <div className="measure-icon">📷</div>
+        <div className="measure-text">
+          <h3>Use Camera AR</h3>
+          <p>Scan your room using camera</p>
+        </div>
+      </button>
+    </div>
+  </main>
+)}
 
       {/* --- Manual Measurement --- */}
       {screen === 'manual-measure' && (
@@ -1167,6 +1202,19 @@ if (existing) {
           <button type="button" onClick={() => setEditingId(null)} className="btn-cancel">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+)}
+
+      {showCamera && (
+  <div className="camera-modal">
+    <div className="camera-box">
+      <h3>📷 Camera AR (Demo)</h3>
+      <p>Camera feature coming soon...</p>
+
+      <button onClick={() => setShowCamera(false)}>
+        Close
+      </button>
     </div>
   </div>
 )}
