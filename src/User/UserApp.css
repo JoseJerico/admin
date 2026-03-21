@@ -1714,3 +1714,25 @@
     font-size: 0.9rem;
   }
 }
+.card-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  word-wrap: break-word;   /* para hindi lumampas sa box */
+  overflow: hidden;
+}
+
+.card .number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.card .label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 4px;
+  word-break: break-word;
+}
