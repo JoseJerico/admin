@@ -1688,12 +1688,15 @@
 
 .dashboard-summary {
   display: flex;
-  gap: 1rem;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
+
 .dashboard-summary .card {
-  flex: 1;         /* pantay hati */
-  min-width: 0;    /* 🔥 ito ang fix sa overflow */
+  flex: 1 1 0%;
+  min-width: 0;
   padding: 1rem;
-  border-radius: 12px;
+  box-sizing: border-box;
   text-align: center;
 }
