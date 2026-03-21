@@ -41,6 +41,7 @@ export default function UserApp({ user, onLogout }) {
   const confirmed = bookingHistory.filter(b => b.status === "confirmed").length;
   const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
   const [filter, setFilter] = useState('All'); // para sa category highlight
+  const [maintenance, setMaintenance] = useState([]);
   const [notification, setNotification] = useState(null);
   const fetchBookings = async () => {
   const { data, error } = await supabase
@@ -52,45 +53,118 @@ export default function UserApp({ user, onLogout }) {
   if (!error) setBookings(data);
 };
 
+const fetchMaintenance = async () => {
+  if (!user?.id) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('maintenance')
+      .select('*')
+      .eq('user_id', user.id)          // filter by current user
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+
+    setMaintenance(data || []);
+  } catch (error) {
+    console.error("Error fetching maintenance:", error);
+    setMaintenance([]);
+  }
+};
+
 {/*const [maintenance, setMaintenance] = useState([
   { id: 1, service: 'AC Filter Cleaning', date: '2026-03-25', status: 'okay' },
   { id: 2, service: 'Cooling Coil Check', date: '2026-03-28', status: 'soon' },
   { id: 3, service: 'Compressor Inspection', date: '2026-03-30', status: 'overdue' },
 ]);
 */}
-{/*const getMaintenanceColor = (status) => {
+  const getMaintenanceColor = (status) => {
   switch(status) {
-    case 'okay':
-      return '#3498db'; // blue
-    case 'soon':
-      return '#a0522d'; // brown
-    case 'overdue':
-      return '#e74c3c'; // red
+    case 'pending':
+      return '#fbbf24'; // yellow
+    case 'done':
+      return '#34d399'; // green
+    case 'cancelled':
+      return '#f87171'; // red
     default:
-      return '#bdc3c7'; // grey default
+      return '#60a5fa'; // blue default
   }
 };
-*/}
+const getDaysRemaining = (date) => {
+  const today = new Date();
+  const target = new Date(date);
 
-useEffect(() => {
-  fetchBookings();
-  fetchServices();
-}, []);
+  const diffTime = target - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "Overdue";
+  if (diffDays === 0) return "Today";
+  return `${diffDays} days left`;
+};
 
 useEffect(() => {
   if (!user?.id) return;
 
   async function fetchMaintenance() {
     const { data, error } = await supabase
-      .from("maintenance")
+      .from("maintenance")          // table name mo sa Supabase
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", user.id)       // filtered sa current user
       .order("date", { ascending: true });
 
-    if (!error) setMaintenance(data || []);
+    if (error) {
+      console.error("Error fetching maintenance:", error);
+      setMaintenance([]);
+      return;
+    }
+
+    setMaintenance(data || []);
   }
 
+  async function createMaintenance(booking) {
+  try {
+    // 👉 add 30 days
+    const nextDate = new Date(booking.date);
+    nextDate.setDate(nextDate.getDate() + 30);
+
+    // 🔍 check muna kung may existing na (para di duplicate)
+    const { data: existing } = await supabase
+      .from("maintenance")
+      .select("*")
+      .eq("user_id", booking.user_id)
+      .eq("notes", `Auto maintenance for ${booking.service}`);
+
+    if (existing && existing.length > 0) return;
+
+    const { error } = await supabase
+      .from("maintenance")
+      .insert([
+        {
+          user_id: booking.user_id,
+          service_id: booking.service_id || null,
+          scheduled_date: nextDate.toISOString(),
+          status: "pending",
+          notes: `Auto maintenance for ${booking.service}`,
+        },
+      ]);
+
+    if (error) {
+      console.error("❌ Maintenance insert error:", error);
+    } else {
+      console.log("✅ Maintenance auto-created!");
+    }
+  } catch (err) {
+    console.error("❌ Unexpected error:", err);
+  }
+}
+
   fetchMaintenance();
+}, [user]);
+
+useEffect(() => {
+  if (user?.id) {
+    fetchMaintenance();
+  }
 }, [user]);
 
 useEffect(() => {
@@ -123,12 +197,26 @@ useEffect(() => {
     .channel('booking-status')
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `user_id=eq.${user.id}` },
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'bookings',
+        filter: `user_id=eq.${user.id}`
+      },
       (payload) => {
         const updatedBooking = payload.new;
+
+        // 🔔 Notification
         if (updatedBooking.status !== 'pending') {
-          setNotification(`📢 Your booking "${updatedBooking.service}" is now ${updatedBooking.status.toUpperCase()}`);
-          fetchBookingHistory(); // refresh para makita agad
+          setNotification(
+            `📢 Your booking "${updatedBooking.service}" is now ${updatedBooking.status.toUpperCase()}`
+          );
+          fetchBookingHistory();
+        }
+
+        // 🔥 AUTO GENERATE MAINTENANCE
+        if (updatedBooking.status === 'completed') {
+          createMaintenance(updatedBooking);
         }
       }
     )
@@ -138,6 +226,34 @@ useEffect(() => {
     supabase.removeChannel(channel);
   };
 }, [user]);
+
+useEffect(() => {
+  if (!user?.id || maintenance.length === 0) return;
+
+  const now = new Date();
+
+  maintenance.forEach((m) => {
+    const schedDate = new Date(m.scheduled_date); // importante: scheduled_date
+
+    const diffTime = schedDate - now;
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    // 🔔 3 days before reminder
+    if (diffDays <= 3 && diffDays > 0 && m.status === "pending") {
+      setNotification(
+        `🛠️ Reminder: Your maintenance "${m.notes}" is scheduled on ${schedDate.toLocaleDateString()}`
+      );
+    }
+
+    // ❗ overdue
+    if (diffDays < 0 && m.status === "pending") {
+      setNotification(
+        `⚠️ Maintenance overdue: "${m.notes}" scheduled last ${schedDate.toLocaleDateString()}`
+      );
+    }
+  });
+
+}, [maintenance, user]);
 
 const handleCancel = async (id) => {
   const confirmCancel = window.confirm("Cancel this booking?");
@@ -568,6 +684,9 @@ if (existing) {
   ))}
 </div>
 */}
+
+
+
   <div 
     className="card total" 
     onClick={() => {
@@ -615,19 +734,40 @@ if (existing) {
 </div>
 
 
-     <div  
+ <div  
   style={{
-    backgroundColor: "#3b82f6", // blue color (Tailwind blue-500)
-    color: "#fff",              // white text para readable
+    backgroundColor: "#1e293b", // dark para premium look
+    color: "#fff",
     padding: "1rem",
-    borderRadius: "10px",
+    borderRadius: "12px",
     marginBottom: "1rem",
-    cursor: "pointer"           // para clickable effect
+    cursor: "pointer"
   }}  
-  onClick={() => alert("Go to maintenance page")} // optional click
+  onClick={() => setScreen('preventive')}
 >
-  <h3>Upcoming Preventive Maintenance</h3>
-  <p>No scheduled preventive maintenance</p>
+  <h3>🔔 Upcoming Preventive Maintenance</h3>
+
+  {maintenance.length === 0 ? (
+    <p>No scheduled preventive maintenance</p>
+  ) : (
+    maintenance.slice(0, 3).map(item => (
+      <div
+        key={item.id}
+        style={{
+          backgroundColor: getMaintenanceColor(item.status),
+          padding: "0.5rem",
+          borderRadius: "8px",
+          marginTop: "0.5rem",
+          color: "#000",
+          fontWeight: "bold"
+        }}
+      >
+        <p>{item.notes}</p>
+        <p>{new Date(item.date).toLocaleDateString()}</p>
+        <p>⏳ {getDaysRemaining(item.date)}</p>
+      </div>
+    ))
+  )}
 </div>
 
      
@@ -1135,6 +1275,41 @@ if (existing) {
           )}
         </main>
       )}
+
+      {screen === "preventive" && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>🛠️ Preventive Maintenance Schedule</h2>
+      <button onClick={() => setScreen("home")} className="btn-back">
+        ← Back
+      </button>
+    </div>
+
+    <div className="maintenance-list">
+      {maintenance.length === 0 && <p>No preventive maintenance scheduled.</p>}
+
+      {maintenance.map((m) => (
+        <div
+          key={m.id}
+          className="maintenance-item"
+          style={{
+            backgroundColor: getMaintenanceColor(m.status),
+            padding: "1rem",
+            borderRadius: "10px",
+            marginBottom: "0.5rem",
+            cursor: "pointer",
+            color: "#fff",
+          }}
+          onClick={() => alert(`Maintenance Details:\nService: ${m.service}\nDate: ${m.date}\nStatus: ${m.status}`)}
+        >
+          <p>{m.service}</p>
+          <p>{m.date}</p>
+          <p>Status: {m.status.toUpperCase()}</p>
+        </div>
+      ))}
+    </div>
+  </main>
+)}
 
     {/* --- Edit Modal --- */}
 {editingId && (
