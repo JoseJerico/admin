@@ -194,6 +194,7 @@ useEffect(() => {
   }
 }
 
+
   fetchMaintenance();
 }, [user]);
 
@@ -382,6 +383,10 @@ const handleUpdate = async (e) => {
   setServices(data || [])
   setLoading(false)
 }
+
+useEffect(() => {
+  fetchServices();
+}, []);
  // --- BookingForm Component ---
 function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm, onCancel, setScreen }) {
   const [name, setName] = React.useState('')
