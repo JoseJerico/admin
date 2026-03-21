@@ -1032,7 +1032,7 @@
 .dashboard-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr); /* 4 boxes pantay-pantay */
-  gap: 6px; /* konting space lang sa pagitan */
+  gap: 3px; /* konting space lang sa pagitan */
   margin: 20px 0;
 }
 
@@ -1754,4 +1754,11 @@
     padding: 25px 15px;
     min-height: 120px;
   }
+}
+
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* mas lapad ang box */
+  gap: 3px; 
+  margin: 20px 0;
 }
