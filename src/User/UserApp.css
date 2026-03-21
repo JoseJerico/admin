@@ -1039,17 +1039,17 @@
 .dashboard-summary .card {
   background: #111827;
   color: white;
-  padding: 20px;  /* mas malaki konti para fit ang text */
+  padding: 25px 20px;       /* pataasin top/bottom para mas "mataba" */
   border-radius: 12px;
   text-align: center;
-  font-size: 1rem; /* adjustable kung kailangan mas malaki/maliit */
+  font-size: 1rem;          /* adjustable kung kailangan mas malaki/maliit ang text */
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-width: 0; /* para hindi mag-overflow */
+  justify-content: center;   /* para center sa vertical */
+  align-items: center;       /* para center sa horizontal */
+  min-width: 0;              /* para hindi mag-overflow */
+  min-height: 130px;         /* para pantay ang taas ng lahat ng box */
 }
-
 .card:hover {
   transform: translateY(-3px);
 }
@@ -1747,5 +1747,11 @@
   .dashboard-summary .card {
     padding: 18px;
     font-size: 0.95rem;
+  }
+}
+@media (max-width: 480px) {
+  .dashboard-summary .card {
+    padding: 25px 15px;
+    min-height: 120px;
   }
 }
