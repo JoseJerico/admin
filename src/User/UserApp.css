@@ -1043,6 +1043,8 @@
   border-radius: 12px;
   text-align: center;
   transition: 0.3s;
+  min-width: 0; /* important para hindi mag-overflow */
+  box-sizing: border-box;
 }
 
 .card:hover {
@@ -1699,4 +1701,16 @@
   padding: 1rem;
   box-sizing: border-box;
   text-align: center;
+}
+
+@media (max-width: 480px) {
+  .dashboard-summary {
+    grid-template-columns: repeat(2, 1fr); /* 2 per row sa mobile */
+    gap: 10px;
+  }
+
+  .card {
+    padding: 16px; /* hindi masyadong maliit */
+    font-size: 0.9rem;
+  }
 }
