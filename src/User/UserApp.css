@@ -1031,20 +1031,23 @@
 }
 .dashboard-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr); /* 4 boxes pantay-pantay */
+  gap: 6px; /* konting space lang sa pagitan */
   margin: 20px 0;
 }
 
-.card {
+.dashboard-summary .card {
   background: #111827;
   color: white;
-  padding: 15px;
+  padding: 20px;  /* mas malaki konti para fit ang text */
   border-radius: 12px;
   text-align: center;
-  transition: 0.3s;
-  min-width: 0; /* important para hindi mag-overflow */
-  box-sizing: border-box;
+  font-size: 1rem; /* adjustable kung kailangan mas malaki/maliit */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 0; /* para hindi mag-overflow */
 }
 
 .card:hover {
@@ -1735,4 +1738,14 @@
   font-weight: 500;
   margin-top: 4px;
   word-break: break-word;
+}
+@media (max-width: 480px) {
+  .dashboard-summary {
+    grid-template-columns: repeat(2, 1fr); /* 2 boxes per row sa maliit na screen */
+    gap: 6px;
+  }
+  .dashboard-summary .card {
+    padding: 18px;
+    font-size: 0.95rem;
+  }
 }
