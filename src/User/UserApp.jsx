@@ -71,6 +71,42 @@ const fetchMaintenance = async () => {
     setMaintenance([]);
   }
 };
+// Para ma-color code base sa status (pending, done, cancelled)
+const getMaintenanceColorByStatus = (status) => {
+  switch(status) {
+    case 'pending':
+      return '#fbbf24'; // yellow
+    case 'done':
+      return '#34d399'; // green
+    case 'cancelled':
+      return '#f87171'; // red
+    default:
+      return '#60a5fa'; // blue default
+  }
+};
+
+/// Para ma-color code base sa scheduled date
+const getMaintenanceColorByDate = (date) => {  // parameter renamed
+  const today = new Date();
+  const targetDate = new Date(date);           // local variable na ibang pangalan
+  const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return '#f87171'; // Red = Overdue
+  if (diffDays <= 7) return '#fbbf24'; // Yellow = Soon
+  return '#34d399'; // Green = Okay
+};
+
+// Para ipakita kung ilang araw na lang hanggang maintenance
+const calculateDaysRemaining = (date) => {   // parameter renamed
+  const today = new Date();
+  const targetDate = new Date(date);          // local variable na ibang pangalan
+  const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "Overdue";
+  if (diffDays === 0) return "Today";
+  return `${diffDays} days left`;
+};
+
 
 {/*const [maintenance, setMaintenance] = useState([
   { id: 1, service: 'AC Filter Cleaning', date: '2026-03-25', status: 'okay' },
@@ -748,7 +784,7 @@ if (existing) {
   <h3>🔔 Upcoming Preventive Maintenance</h3>
 
   {maintenance.length === 0 ? (
-    <p>No scheduled preventive maintenance</p>
+    <p>No upcoming maintenance. You're all good! ✅</p>
   ) : (
     maintenance.slice(0, 3).map(item => (
       <div
@@ -1289,24 +1325,27 @@ if (existing) {
       {maintenance.length === 0 && <p>No preventive maintenance scheduled.</p>}
 
       {maintenance.map((m) => (
-        <div
-          key={m.id}
-          className="maintenance-item"
-          style={{
-            backgroundColor: getMaintenanceColor(m.status),
-            padding: "1rem",
-            borderRadius: "10px",
-            marginBottom: "0.5rem",
-            cursor: "pointer",
-            color: "#fff",
-          }}
-          onClick={() => alert(`Maintenance Details:\nService: ${m.service}\nDate: ${m.date}\nStatus: ${m.status}`)}
-        >
-          <p>{m.service}</p>
-          <p>{m.date}</p>
-          <p>Status: {m.status.toUpperCase()}</p>
-        </div>
-      ))}
+  <div
+    key={m.id}
+    className="maintenance-item"
+    style={{
+      backgroundColor: getMaintenanceColorByDate(m.date),
+      padding: "0.5rem",
+      borderRadius: "8px",
+      marginBottom: "0.5rem",
+      display: "flex",
+      justifyContent: "space-between",
+      color: "#000",
+      fontWeight: "bold",
+      cursor: "pointer",
+    }}
+    onClick={() => alert(`Maintenance Details:\nService: ${m.service}\nDate: ${m.date}\nStatus: ${m.status}`)}
+  >
+    <span>{m.service}</span>
+    <span>{new Date(m.date).toLocaleDateString()}</span>
+    <span>⏳ {calculateDaysRemaining(m.date)}</span>
+  </div>
+))}
     </div>
   </main>
 )}
