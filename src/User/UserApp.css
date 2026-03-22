@@ -1762,3 +1762,63 @@
   gap: 3px; 
   margin: 20px 0;
 }
+/* User Home Dashboard Cards */
+.dashboard-summary .card.pending { background-color: #fbbf24; }   /* yellow */
+.dashboard-summary .card.confirmed { background-color: #34d399; } /* green */
+.dashboard-summary .card.assigned { background-color: #3b82f6; }  /* blue ✅ */
+.dashboard-summary .card.cancelled { background-color: #f87171; } /* red */
+
+/* Dashboard Cards */
+.dashboard-summary .card {
+  flex: 1;                /* adjust para pantay ang lapad */
+  padding: 10px;          /* dati 20-25px, puwede liitan */
+  min-height: 80px;       /* dati 100px, puwede liitan */
+  border-radius: 10px;
+  text-align: center;
+  font-size: 0.9rem;      /* liitan yung text */
+}
+
+/* Center Total Bookings */
+.total-bookings-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem; /* space sa grid sa ilalim */
+}
+
+/* 2x2 Grid for other status cards */
+.status-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem; /* space sa pagitan ng cards */
+  max-width: 400px; /* optional, para hindi masyadong malaki sa desktop */
+  margin: 0 auto; /* center grid horizontally */
+}
+
+/* Optional: make cards smaller */
+.status-cards-grid .card {
+  padding: 1rem;
+  text-align: center;
+}
+
+/* Total Bookings solo sa taas at center */
+.total-bookings-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem; /* space sa ilalim bago yung 2x2 grid */
+}
+
+/* Status cards 2x2 grid */
+.status-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 400px;  /* optional para hindi masyadong malaki */
+  margin: 0 auto;    /* center horizontally */
+}
+
+/* Style bawat card */
+.status-cards-grid .card {
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+}

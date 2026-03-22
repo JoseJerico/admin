@@ -40,6 +40,7 @@ export default function UserApp({ user, onLogout }) {
   const pending = bookingHistory.filter(b => b.status === "pending").length;
   const confirmed = bookingHistory.filter(b => b.status === "confirmed").length;
   const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
+  const assigned = bookingHistory.filter(b => b.status === "assigned").length;
   const [filter, setFilter] = useState('All'); // para sa category highlight
   const [maintenance, setMaintenance] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -728,50 +729,51 @@ if (existing) {
 
 
 
-  <div 
-    className="card total" 
-    onClick={() => {
-      setStatusFilter('All')
-      setScreen('history')
-    }}
-  >
-    <h3>{total}</h3>
-    <p>Total Bookings</p>
+  <div className="dashboard-summary">
+
+  {/* --- Total Bookings Centered --- */}
+  <div className="total-bookings-wrapper">
+    <div 
+      className="card total"
+      onClick={() => { setStatusFilter('All'); setScreen('history'); }}
+    >
+      <h3>{total}</h3>
+      <p>Total Bookings</p>
+    </div>
   </div>
 
-  <div 
-    className="card pending" 
-    onClick={() => {
-      setStatusFilter('pending')
-      setScreen('history')
-    }}
-  >
-    <h3>{pending}</h3>
-    <p>Pending</p>
+  {/* --- Status Cards 2x2 Grid --- */}
+  <div className="status-cards-grid">
+    <div 
+      className="card confirmed"
+      onClick={() => { setStatusFilter('confirmed'); setScreen('history'); }}
+    >
+      <h3>{confirmed}</h3>
+      <p>Confirmed</p>
+    </div>
+    <div 
+      className="card pending"
+      onClick={() => { setStatusFilter('pending'); setScreen('history'); }}
+    >
+      <h3>{pending}</h3>
+      <p>Pending</p>
+    </div>
+    <div 
+      className="card assigned"
+      onClick={() => { setStatusFilter('assigned'); setScreen('history'); }}
+    >
+      <h3>{assigned}</h3>
+      <p>Assigned</p>
+    </div>
+    <div 
+      className="card cancelled"
+      onClick={() => { setStatusFilter('cancelled'); setScreen('history'); }}
+    >
+      <h3>{cancelled}</h3>
+      <p>Cancelled</p>
+    </div>
   </div>
-
-  <div 
-    className="card confirmed" 
-    onClick={() => {
-      setStatusFilter('confirmed')
-      setScreen('history')
-    }}
-  >
-    <h3>{confirmed}</h3>
-    <p>Confirmed</p>
-  </div>
-
-  <div 
-    className="card cancelled" 
-    onClick={() => {
-      setStatusFilter('cancelled')
-      setScreen('history')
-    }}
-  >
-    <h3>{cancelled}</h3>
-    <p>Cancelled</p>
-  </div>
-
+</div>
 </div>
 
 
@@ -1089,12 +1091,13 @@ if (existing) {
 
       {/* 🔥 STATUS LEGEND */}
       <div className="legend">
-  <button onClick={() => setStatusFilter('All')}>All</button>
-  <button onClick={() => setStatusFilter('pending')}>Pending</button>
-  <button onClick={() => setStatusFilter('confirmed')}>Confirmed</button>
-  <button onClick={() => setStatusFilter('cancelled')}>Cancelled</button>
-  <button onClick={() => setStatusFilter('rejected')}>Rejected</button>
-</div>
+        <button onClick={() => setStatusFilter('All')}>All</button>
+        <button onClick={() => setStatusFilter('pending')}>Pending</button>
+        <button onClick={() => setStatusFilter('approved')}>Confirmed</button>
+        <button onClick={() => setStatusFilter('cancelled')}>Cancelled</button>
+        <button onClick={() => setStatusFilter('rejected')}>Rejected</button>
+        <button onClick={() => setStatusFilter('assigned')}>Assigned</button>
+      </div>
     </div>
 
     {/* 🔄 LOADING */}
@@ -1113,62 +1116,82 @@ if (existing) {
       </div>
     )}
 
-   {/* 📋 LIST */}
-<div className="history-list">
-  {bookingHistory
-    .filter((item) =>
-      item.service?.toLowerCase().includes(search.toLowerCase()) // 🔍 search filter
-    )
-    .filter((item) =>
-      statusFilter === 'All' ? true : item.status === statusFilter // 🟢 status filter
-    )
-    .map((item) => {
-      let statusClass = '';
-      if (item.status === 'pending') statusClass = 'history-pending';
-      if (item.status === 'confirmed') statusClass = 'history-confirmed';
-      if (item.status === 'cancelled') statusClass = 'history-cancelled';
-      if (item.status === 'rejected') statusClass = 'history-rejected';
+    {/* 📋 LIST */}
+    <div className="history-list">
+      {bookingHistory
+        // 🔍 SEARCH FILTER
+        .filter((item) =>
+          item.service?.toLowerCase().includes(search.toLowerCase())
+        )
 
-      return (
-        <div key={item.id} className={`history-item ${statusClass}`}>
-  <h3>{item.service}</h3>
-  <p>Date: {item.date} | Time: {item.time}</p>
+        // 🔥 STATUS FILTER (FIXED)
+        .filter((item) => {
+          if (statusFilter === 'All') return true;
 
-  {/* 🔹 Status Badge */}
-  <p>
-    Status: <span
-  className="status-badge"
-  style={{
-    backgroundColor:
-      item.status === "pending"
-        ? "#fbbf24"
-        : item.status === "approved"
-        ? "#34d399"
-        : item.status === "cancelled"
-        ? "#f87171"
-        : item.status === "rejected"
-        ? "#9ca3af"
-        : "#d1d5db",
-    color: "#fff",
-    padding: "4px 8px",
-    borderRadius: "6px",
-    fontWeight: "bold"
-  }}
->
-  {item.status.toUpperCase()}
-</span>
-  </p>
+          if (statusFilter === 'pending') return item.status === 'pending';
+          if (statusFilter === 'approved') return item.status === 'approved';
+          if (statusFilter === 'assigned') return item.status === 'assigned';
+          if (statusFilter === 'cancelled') return item.status === 'cancelled';
+          if (statusFilter === 'rejected') return item.status === 'rejected';
 
-  <p>Room Area: {item.room_area || 'N/A'} m²</p>
-  <p>Recommended AC: {item.recommended_hp || 'N/A'}</p>
+          return true;
+        })
 
-  <p>👤 {item.full_name}</p>
-  <p>📞 {item.mobile_number}</p>
-  <p>📧 {item.email}</p>
-  <p>📍 {item.address}</p>
+        .map((item) => {
+          let statusClass = '';
 
-  {item.notes && <p>📝 {item.notes}</p>}
+          if (item.status === 'pending') statusClass = 'history-pending';
+          if (item.status === 'approved') statusClass = 'history-confirmed';
+          if (item.status === 'assigned') statusClass = 'history-assigned';
+          if (item.status === 'cancelled') statusClass = 'history-cancelled';
+          if (item.status === 'rejected') statusClass = 'history-rejected';
 
+          return (
+            <div key={item.id} className={`history-item ${statusClass}`}>
+              <h3>{item.service}</h3>
+              <p>Date: {item.date} | Time: {item.time}</p>
+
+              {/* 🔹 Status Badge */}
+              <p>
+                Status:{" "}
+                <span
+                  className="status-badge"
+                  style={{
+                    backgroundColor:
+                      item.status === "pending"
+                        ? "#fbbf24"
+                        : item.status === "approved"
+                        ? "#34d399"
+                        : item.status === "assigned"
+                        ? "#3b82f6"
+                        : item.status === "cancelled"
+                        ? "#f87171"
+                        : item.status === "rejected"
+                        ? "#ef4444"
+                        : "#9ca3af",
+                    color: "#fff",
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    fontWeight: "bold"
+                  }}
+                >
+                  {item.status === "pending" && "⏳ Pending"}
+                  {item.status === "approved" && "✅ Confirmed"}
+                  {item.status === "assigned" && "👨‍🔧 Assigned"}
+                  {item.status === "cancelled" && "❌ Cancelled"}
+                  {item.status === "rejected" && "🚫 Rejected"}
+                </span>
+              </p>
+
+              <p>Room Area: {item.room_area || 'N/A'} m²</p>
+              <p>Recommended AC: {item.recommended_hp || 'N/A'}</p>
+
+              <p>👤 {item.full_name}</p>
+              <p>📞 {item.mobile_number}</p>
+              <p>📧 {item.email}</p>
+              <p>📍 {item.address}</p>
+
+              {item.notes && <p>📝 {item.notes}</p>}
               {/* 🔁 QUICK REBOOK */}
               <button
                 onClick={() =>
