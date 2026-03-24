@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './UserApp.css'
 import { supabase } from '../supabase'
+import RoomMeasurementAR from './RoomMeasurementAR';
 
 
 export default function UserApp({ user, onLogout }) {
@@ -36,11 +37,18 @@ export default function UserApp({ user, onLogout }) {
   const [statusFilter, setStatusFilter] = useState('All')
   const [search, setSearch] = useState('')
   // --- DASHBOARD SUMMARY LOGIC ---
+  const countStatus = (status) => {
+  return bookingHistory.filter(
+    b => b.status?.toLowerCase() === status
+  ).length;
+};
+
   const total = bookingHistory.length;
-  const pending = bookingHistory.filter(b => b.status === "pending").length;
-  const confirmed = bookingHistory.filter(b => b.status === "confirmed").length;
-  const cancelled = bookingHistory.filter(b => b.status === "cancelled").length;
-  const assigned = bookingHistory.filter(b => b.status === "assigned").length;
+  const pending = countStatus('pending');
+  const confirmed = countStatus('approved');
+  const assigned = countStatus('assigned');
+  const cancelled = countStatus('cancelled');
+  const rejected = countStatus('rejected');
   const [filter, setFilter] = useState('All'); // para sa category highlight
   const [maintenance, setMaintenance] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -195,6 +203,47 @@ useEffect(() => {
   }
 }
 
+async function handleConfirmBooking() {
+  if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
+    alert('Please complete all required fields');
+    return;
+  }
+
+  try {
+    // ✅ Check if any booking exists at the same date & time (same user or others)
+    const { data: existing, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('date', bookingDate)
+      .eq('time', bookingTime)
+      .eq('status', 'pending');
+
+    if (error) {
+      console.error(error);
+      alert("❌ Could not verify slot availability");
+      return;
+    }
+
+    if (existing && existing.length > 0) {
+      // Check if it's the same user or different user
+      const conflictWithUser = existing.some(b => b.user_id === user.id);
+      if (conflictWithUser) {
+        alert("⚠️ You already have a booking at this date and time!");
+        return;
+      } else {
+        alert("⚠️ Slot already booked by another customer!");
+        return;
+      }
+    }
+
+    // ✅ No conflict, puwede nang mag-proceed
+    setShowConfirm(true);
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Unexpected error occurred");
+  }
+}
 
   fetchMaintenance();
 }, [user]);
@@ -729,52 +778,65 @@ if (existing) {
 
 
 
-  <div className="dashboard-summary">
+ <div className="dashboard-summary">
 
-  {/* --- Total Bookings Centered --- */}
-  <div className="total-bookings-wrapper">
-    <div 
-      className="card total"
-      onClick={() => { setStatusFilter('All'); setScreen('history'); }}
-    >
-      <h3>{total}</h3>
-      <p>Total Bookings</p>
-    </div>
+  <div 
+    className="card total" 
+    onClick={() => {
+      setStatusFilter('All')
+      setScreen('history')
+    }}
+  >
+    <h3>{total}</h3>
+    <p>Total Bookings</p>
   </div>
 
-  {/* --- Status Cards 2x2 Grid --- */}
-  <div className="status-cards-grid">
-    <div 
-      className="card confirmed"
-      onClick={() => { setStatusFilter('confirmed'); setScreen('history'); }}
-    >
-      <h3>{confirmed}</h3>
-      <p>Confirmed</p>
-    </div>
-    <div 
-      className="card pending"
-      onClick={() => { setStatusFilter('pending'); setScreen('history'); }}
-    >
-      <h3>{pending}</h3>
-      <p>Pending</p>
-    </div>
-    <div 
-      className="card assigned"
-      onClick={() => { setStatusFilter('assigned'); setScreen('history'); }}
-    >
-      <h3>{assigned}</h3>
-      <p>Assigned</p>
-    </div>
-    <div 
-      className="card cancelled"
-      onClick={() => { setStatusFilter('cancelled'); setScreen('history'); }}
-    >
-      <h3>{cancelled}</h3>
-      <p>Cancelled</p>
-    </div>
+  <div 
+    className="card pending" 
+    onClick={() => {
+      setStatusFilter('pending')
+      setScreen('history')
+    }}
+  >
+    <h3>{pending}</h3>
+    <p>Pending</p>
+  </div>
+
+  <div 
+    className="card confirmed" 
+    onClick={() => {
+      setStatusFilter('approved')
+      setScreen('history')
+    }}
+  >
+    <h3>{confirmed}</h3>
+    <p>Confirmed</p>
+  </div>
+
+  <div 
+    className="card assigned" 
+    onClick={() => {
+      setStatusFilter('assigned')
+      setScreen('history')
+    }}
+  >
+    <h3>{assigned}</h3>
+    <p>Assigned</p>
+  </div>
+
+  <div 
+    className="card cancelled" 
+    onClick={() => {
+      setStatusFilter('cancelled')
+      setScreen('history')
+    }}
+  >
+    <h3>{cancelled}</h3>
+    <p>Cancelled</p>
   </div>
 </div>
 </div>
+
 
 
  <div  
@@ -918,67 +980,77 @@ if (existing) {
         </main>
       )}
 
-      {/* --- Room Analysis --- */}
-      {screen === 'measure' && roomMeasurements && (
-        <main className="user-main">
-          <div className="screen-header">
-            <h2>📏 Room Analysis</h2>
-          </div>
+     {/* --- Room Analysis --- */}
+{screen === 'measure' && roomMeasurements && (
+  <main className="user-main">
+    <div className="screen-header">
+      <h2>📏 Room Analysis</h2>
+    </div>
 
-          <div className="room-analysis-container">
-            <div className="result-card">
-              <h3>Room Dimensions</h3>
-              <div className="measurements">
-                <p>
-                  Length: <strong>{roomMeasurements.measurements.length} m</strong>
-                </p>
-                <p>
-                  Width: <strong>{roomMeasurements.measurements.width} m</strong>
-                </p>
-                <p>
-                  Area: <strong>{roomMeasurements.measurements.area} m²</strong>
-                </p>
-              </div>
-            </div>
+    <div className="room-analysis-container">
+      {/* --- Existing result card --- */}
+      <div className="result-card">
+        <h3>Room Dimensions</h3>
+        <div className="measurements">
+          <p>
+            Length: <strong>{roomMeasurements.measurements.length} m</strong>
+          </p>
+          <p>
+            Width: <strong>{roomMeasurements.measurements.width} m</strong>
+          </p>
+          <p>
+            Area: <strong>{roomMeasurements.measurements.area} m²</strong>
+          </p>
+        </div>
+      </div>
 
-            {recommendedProduct && (
-              <div
-                className="recommendation"
-                style={{ backgroundColor: '#000', color: '#fff' }}
-              >
-                <h3>🎯 Recommended AirCon</h3>
-                <p>{recommendedProduct.capacity}</p>
-              </div>
-            )}
-
-            <div className="actions">
-              <button
-                className="btn-remeasure"
-                onClick={() => {
-                  setManualLength('')
-                  setManualWidth('')
-                  setManualUnit('meters')
-                  setRoomMeasurements(null)
-                  setRecommendedProduct(null)
-                  setScreen('manual-measure')
-                }}
-              >
-                📐 Measure Again
-              </button>
-              {recommendedProduct && (
-                <button
-                  className="btn-book-service"
-                  onClick={() =>
-                    openBookingForm({ id: 1, name: 'AC Installation', price: 1500 })
-                  }
-                >
-                  📌 Book this Service
-                </button>
-              )}
-            </div>
-          </div>
-        </main>
+      {/* --- Recommended AC --- */}
+      {recommendedProduct && (
+        <div
+          className="recommendation"
+          style={{ backgroundColor: '#000', color: '#fff' }}
+        >
+          <h3>🎯 Recommended AirCon</h3>
+          <p>{recommendedProduct.capacity}</p>
+        </div>
       )}
+
+      {/* --- Room Results (AR integration) --- */}
+      <div className="room-results">
+        <p>Length: {roomMeasurements.measurements.length} m</p>
+        <p>Width: {roomMeasurements.measurements.width} m</p>
+        <p>Area: {roomMeasurements.measurements.area} m²</p>
+        <p>Recommended AC: {recommendedProduct.capacity}</p>
+      </div>
+
+      <div className="actions">
+        <button
+          className="btn-remeasure"
+          onClick={() => {
+            setManualLength('');
+            setManualWidth('');
+            setManualUnit('meters');
+            setRoomMeasurements(null);
+            setRecommendedProduct(null);
+            setScreen('manual-measure');
+          }}
+        >
+          📐 Measure Again
+        </button>
+        {recommendedProduct && (
+          <button
+            className="btn-book-service"
+            onClick={() =>
+              openBookingForm({ id: 1, name: 'AC Installation', price: 1500 })
+            }
+          >
+            📌 Book this Service
+          </button>
+        )}
+      </div>
+    </div>
+  </main>
+)}
 
       {/* --- Booking Form --- */}
       {screen === 'booking-form' && bookingService && (
@@ -1448,17 +1520,15 @@ if (existing) {
   </div>
 )}
 
-      {showCamera && (
-  <div className="camera-modal">
-    <div className="camera-box">
-      <h3>📷 Camera AR (Demo)</h3>
-      <p>Camera feature coming soon...</p>
-
-      <button onClick={() => setShowCamera(false)}>
-        Close
-      </button>
-    </div>
-  </div>
+     {showCamera && (
+  <RoomMeasurementAR
+    onMeasurementComplete={(data) => {
+      setRoomMeasurements({ measurements: data.measurements });
+      setRecommendedProduct({ capacity: data.recommended });
+      setShowCamera(false);
+      setScreen('measure');
+    }}
+  />
 )}
 
       {/* --- Profile Modal --- */}

@@ -17,21 +17,70 @@ export default function AdminApp({ user, onLogout }) {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedTechnician, setSelectedTechnician] = useState(null);
+  const [conflictIds, setConflictIds] = useState([]); // IDs ng bookings na may conflict
+
+  function groupConflicts(bookings) {
+  const map = {};
+
+  bookings.forEach(b => {
+    const key = `${b.date}|${b.time}`; // Group by date & time
+    if (!map[key]) map[key] = [];
+    map[key].push(b);
+  });
+
+  // Return only the groups with more than 1 booking
+  return Object.values(map).filter(group => group.length > 1);
+}
+
+  function findBookingConflicts(bookings) {
+  const conflicts = [];
+
+  for (let i = 0; i < bookings.length; i++) {
+    for (let j = i + 1; j < bookings.length; j++) {
+      if (
+        bookings[i].date === bookings[j].date && // field sa db mo
+        bookings[i].time === bookings[j].time    // field sa db mo
+      ) {
+        conflicts.push([bookings[i], bookings[j]]);
+      }
+    }
+  }
+
+  return conflicts;
+}
 
   useEffect(() => {
-    async function init() {
-      setLoading(true);
-      const { data: techs, error: techError } = await supabase.from('technicians').select('*');
-      if (techError) console.error('Error fetching technicians:', techError);
-      else setTechnicians(techs || []);
+  async function init() {
+    setLoading(true);
 
-      const { data: bookings, error: bookingError } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-      if (bookingError) console.error(bookingError);
-      else setSchedules(bookings || []);
-      setLoading(false);
+    const { data: techs, error: techError } = await supabase.from('technicians').select('*');
+    if (techError) console.error('Error fetching technicians:', techError);
+    else setTechnicians(techs || []);
+
+    const { data: bookings, error: bookingError } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (bookingError) console.error(bookingError);
+    else {
+      setSchedules(bookings || []);
+
+      const conflicts = groupConflicts(bookings || []);
+const conflictBookingIds = conflicts.flat().map(b => b.id); // Kunin lahat ng booking IDs na may conflict
+setConflictIds(conflictBookingIds);
+
+if (conflicts.length > 0) {
+  console.log("Conflicting bookings groups:", conflicts);
+  // Optional alert
+  alert(`⚠️ Mayroong ${conflictBookingIds.length} bookings na may conflict!`);
+}
     }
-    init();
-  }, []);
+
+    setLoading(false);
+  }
+  init();
+}, []);
 
   async function approve(id) {
     const { error } = await supabase.from('bookings').update({ status: 'approved' }).eq('id', id);
@@ -80,26 +129,68 @@ useEffect(() => {
 }, []);
 
   async function handleEditAppointment(updatedData) {
-    if (!editingAppointment) return;
-    const { error } = await supabase.from('bookings').update({
+  if (!editingAppointment) return;
+
+  // ✅ 1. Check for conflicts
+  const { data: conflicts, error: conflictError } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('date', updatedData.date)
+    .eq('time', updatedData.time)
+    .neq('id', editingAppointment.id); // exclude current booking
+
+  if (conflictError) {
+    console.error(conflictError);
+    alert('Error checking availability');
+    return;
+  }
+
+  if (conflicts.length > 0) {
+    return alert('Conflict detected! Another booking exists at this date and time.');
+  }
+
+  // ✅ 2. Update booking if no conflict
+  const { error } = await supabase
+    .from('bookings')
+    .update({
       full_name: updatedData.full_name,
       service: updatedData.service,
       date: updatedData.date,
       time: updatedData.time,
       mobile_number: updatedData.mobile_number,
       address: updatedData.address,
-      status: updatedData.status
-    }).eq('id', editingAppointment.id);
-    if (error) { console.error(error); alert('Error updating booking'); return }
-    setEditingAppointment(null);
-    refresh();
+      status: updatedData.status,
+      notes: updatedData.notes || '',
+      last_updated: new Date().toISOString()
+    })
+    .eq('id', editingAppointment.id);
+
+  if (error) {
+    console.error(error);
+    alert('Error updating booking');
+    return;
   }
+
+  alert('Booking updated successfully!');
+  setEditingAppointment(null);
+  refresh();
+}
 
   async function refresh() {
     setLoading(true);
     const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
     if (error) console.error(error);
     else setSchedules(data || []);
+
+    const conflicts = groupConflicts(bookings || []);
+const conflictBookingIds = conflicts.flat().map(b => b.id); // Kunin lahat ng booking IDs na may conflict
+setConflictIds(conflictBookingIds);
+
+if (conflicts.length > 0) {
+  console.log("Conflicting bookings groups:", conflicts);
+  // Optional alert
+  alert(`⚠️ Mayroong ${conflictBookingIds.length} bookings na may conflict!`);
+}
     setLoading(false);
   }
 
@@ -137,30 +228,40 @@ useEffect(() => {
 }
 
   function renderTable(data) {
-    return (
-      <table className="schedules-table">
-        <thead>
-          <tr>
-            <th>ID</th><th>Name</th><th>Service</th><th>Date & Time</th>
-            <th>Contact</th><th>Address</th><th>Technician</th>
-            <th>Scheduled Date</th><th>Status</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map(s => (
-            <ScheduleRow
-              key={s.id}
-              s={s}
-              onEdit={setEditingAppointment}
-              onApprove={approve}
-              onReject={reject}
-              onAssign={openAssignModal}
-            />
-          ))}
-        </tbody>
-      </table>
-    )
-  }
+  return (
+    <table className="schedules-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Service</th>
+          <th>Date & Time</th>
+          <th>Contact</th>
+          <th>Address</th>
+          <th>Technician</th>
+          <th>Scheduled Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map(s => (
+          <ScheduleRow
+            key={s.id}
+            s={s}
+            onEdit={setEditingAppointment}
+            onApprove={approve}
+            onReject={reject}
+            onAssign={openAssignModal}
+            style={{
+              backgroundColor: conflictIds.includes(s.id) ? '#ffe6e6' : 'transparent'
+            }}
+          />
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
   return (
     <div className="app">
@@ -248,6 +349,7 @@ useEffect(() => {
         appointment={editingAppointment}
         onSave={handleEditAppointment}
         onClose={() => setEditingAppointment(null)}
+        schedules={schedules} // ✅ dito
       />}
       <InstallPrompt />
     </div>

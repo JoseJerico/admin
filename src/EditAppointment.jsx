@@ -1,127 +1,115 @@
-import React, { useState, useEffect } from 'react'
-import './EditAppointment.css'
+import React, { useState } from 'react';
+import './EditAppointment.css';
 
-export default function EditAppointment({ appointment, onSave, onClose }) {
-  const [formData, setFormData] = useState({
-    customer_name: '',
-    requested_date: '',
-    status: 'pending',
-    notes: '',
-  })
-  const [loading, setLoading] = useState(false)
+export default function EditAppointment({ appointment, onSave, onClose, schedules }) {
+  // ✅ States para sa lahat ng fields
+  const [fullName, setFullName] = useState(appointment.full_name || '');
+  const [date, setDate] = useState(appointment.date || '');
+  const [time, setTime] = useState(appointment.time || '');
+  const [mobileNumber, setMobileNumber] = useState(appointment.mobile_number || appointment.contact || '');
+  const [address, setAddress] = useState(appointment.address || '');
+  const [status, setStatus] = useState(appointment.status || 'pending');
+  const [notes, setNotes] = useState(appointment.notes || '');
 
-  useEffect(() => {
-    if (appointment) {
-      setFormData({
-        customer_name: appointment.customer_name || '',
-        requested_date: appointment.requested_date ? appointment.requested_date.split('T')[0] : '',
-        status: appointment.status || 'pending',
-        notes: appointment.notes || '',
-      })
-    }
-  }, [appointment])
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+  // ✅ Save button handler
+  const handleSave = () => {
+  if (!fullName || !date || !time) {
+    return alert('Please fill in required fields: Customer Name, Date, and Time');
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    await onSave(formData)
-    setLoading(false)
+  // ✅ Availability check
+  const conflict = schedules.some(
+    (b) =>
+      b.id !== appointment.id && // exclude current booking
+      b.date === date &&
+      b.time === time &&
+      ['approved','assigned'].includes(b.status.toLowerCase()) // check only active bookings
+  );
+
+  if (conflict) {
+    return alert('⚠ Conflict detected! Another booking exists at this date and time.');
   }
+
+  // ✅ Save if no conflict
+  onSave({
+    full_name: fullName,
+    date,
+    time,
+    mobile_number: mobileNumber,
+    address,
+    status,
+    notes
+  });
+};
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Edit Appointment</h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Edit Appointment</h3>
+        <button className="modal-close" onClick={onClose}>X</button>
+
+        <div className="modal-content">
+          <label>Customer Name *</label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Enter customer name"
+          />
+
+          <label>Requested Date *</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+
+          <label>Requested Time *</label>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+          />
+
+          <label>Mobile Number</label>
+          <input
+            type="text"
+            value={mobileNumber}
+            onChange={(e) => setMobileNumber(e.target.value)}
+            placeholder="Enter mobile number"
+          />
+
+          <label>Address</label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Enter address"
+          />
+
+          <label>Status *</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="assigned">Assigned</option>
+            <option value="rejected">Rejected</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+
+          {/* ✅ Notes Field */}
+          <label>Notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add reason for change (optional)"
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="edit-form">
-          <div className="form-group">
-            <label htmlFor="customer_name">Customer Name *</label>
-            <input
-              id="customer_name"
-              type="text"
-              name="customer_name"
-              value={formData.customer_name}
-              onChange={handleChange}
-              placeholder="Enter customer name"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="requested_date">Requested Date *</label>
-              <input
-                id="requested_date"
-                type="date"
-                name="requested_date"
-                value={formData.requested_date}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="status">Status *</label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                disabled={loading}
-              >
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="assigned">Assigned</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="notes">Notes</label>
-            <textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              placeholder="Add any additional notes..."
-              rows={4}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="modal-actions">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-cancel"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-submit"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+        <div className="modal-actions">
+          <button onClick={handleSave} className="btn-save">Save Changes</button>
+          <button onClick={onClose} className="btn-cancel">Cancel</button>
+        </div>
       </div>
     </div>
-  )
+  );
 }
