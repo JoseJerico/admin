@@ -455,7 +455,7 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
 
         {roomMeasurements && recommendedProduct && (
           <p>
-            Room Area: {roomMeasurements.measurements.area} m² | Recommended AC: {recommendedProduct.capacity}
+            Room Area: {roomMeasurements.measurements.area} m² | Recommended AC: {recommendedProduct?.capacity}
           </p>
         )}
 
@@ -938,7 +938,12 @@ if (existing) {
   <RoomMeasurementAR
     onMeasureComplete={(measurements) => {
       setRoomMeasurements(measurements);
-      setShowAR(false); // hide AR camera kapag tapos na
+
+      // 🔹 Calculate recommended HP for AR measurements
+      const recommendedHP = getAirconHP(measurements.area);
+      setRecommendedProduct({ capacity: recommendedHP });
+
+      setShowAR(false); // hide AR camera
       setScreen('measure'); // show results
     }}
   />
@@ -1022,17 +1027,12 @@ if (existing) {
           style={{ backgroundColor: '#000', color: '#fff' }}
         >
           <h3>🎯 Recommended AirCon</h3>
-          <p>{recommendedProduct.capacity}</p>
+          <p>{recommendedProduct?.capacity}</p>
         </div>
       )}
 
-      {/* --- Room Results (AR integration) --- */}
-      <div className="room-results">
-        <p>Length: {roomMeasurements.measurements.length} m</p>
-        <p>Width: {roomMeasurements.measurements.width} m</p>
-        <p>Area: {roomMeasurements.measurements.area} m²</p>
-        <p>Recommended AC: {recommendedProduct.capacity}</p>
-      </div>
+      
+      
 
       <div className="actions">
         <button
@@ -1071,7 +1071,7 @@ if (existing) {
             {roomMeasurements && recommendedProduct && (
               <p>
                 Room Area: {roomMeasurements.measurements.area} m² | Recommended AC:{' '}
-                {recommendedProduct.capacity}
+                {recommendedProduct?.capacity}
               </p>
             )}
           </div>
@@ -1337,7 +1337,7 @@ if (existing) {
             <p>Price: ₱{service.price}</p>
             <p>Duration: {service.duration}</p>
             {roomMeasurements && recommendedProduct && (
-              <p>Recommended AC: {recommendedProduct.capacity}</p>
+              <p>Recommended AC: {recommendedProduct?.capacity}</p>
             )}
             <button onClick={() => openBookingForm(service)}>
               Book this Service
@@ -1533,10 +1533,34 @@ if (existing) {
 
      {showCamera && (
   <RoomMeasurementAR
-    onMeasurementComplete={(data) => {
-      setRoomMeasurements({ measurements: data.measurements });
-      setRecommendedProduct({ capacity: data.recommended });
-      setShowCamera(false);
+    onMeasureComplete={(measurements) => {
+      // I-check kung tama yung structure ng measurements
+      console.log('AR measurements:', measurements);
+
+      // Kunin ang area (pwede rin length*width kung walang area property)
+      const area = measurements.area ?? (measurements.length * measurements.width);
+      console.log('Area:', area);
+
+      // Compute recommended HP
+      const getAirconHP = (area) => {
+        if (area <= 4) return '0.5 HP';
+        if (area <= 9) return '1 HP';
+        if (area <= 16) return '1.5 HP';
+        if (area <= 25) return '2 HP';
+        if (area <= 36) return '2.5 HP';
+        if (area <= 49) return '3 HP';
+        return '3.5 HP';
+      };
+
+      const hp = getAirconHP(area);
+      console.log('Recommended HP:', hp);
+
+      // I-set sa state para lumabas sa screen
+      setRoomMeasurements(measurements);
+      setRecommendedProduct({ capacity: hp });
+
+      // Isara AR at pumunta sa measure screen
+      setShowAR(false);
       setScreen('measure');
     }}
   />

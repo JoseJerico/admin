@@ -1,111 +1,125 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
+import React, { useEffect, useRef, useState } from "react";
 
 export default function RoomMeasurementAR({ onMeasureComplete }) {
-  const mountRef = useRef(null);
+  const videoRef = useRef(null);
+
   const [points, setPoints] = useState([]);
-  const maxPoints = 4;
+  const [length, setLength] = useState(null);
+  const [width, setWidth] = useState(null);
+  const [step, setStep] = useState("length"); // length → width
 
+  // 📷 Open Camera
   useEffect(() => {
-    let scene, camera, renderer;
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
-    let pointSpheres = [];
-
-    // Scene
-    scene = new THREE.Scene();
-
-    // Camera
-    camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.01,
-      1000
-    );
-
-    // Renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
-    mountRef.current.appendChild(renderer.domElement);
-
-    // AR Button
-    document.body.appendChild(ARButton.createButton(renderer));
-
-    // Light
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-    scene.add(light);
-
-    // Floor reference plane (for raycasting)
-    const planeGeometry = new THREE.PlaneGeometry(100, 100);
-    const planeMaterial = new THREE.MeshBasicMaterial({ visible: false });
-    const floorPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-    floorPlane.rotation.x = -Math.PI / 2;
-    scene.add(floorPlane);
-
-    // Click handler
-    const handleClick = (event) => {
-      if (points.length >= maxPoints) return;
-
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(floorPlane);
-
-      if (intersects.length > 0) {
-        const intersectPoint = intersects[0].point.clone();
-
-        // Add small sphere to visualize point
-        const sphereGeom = new THREE.SphereGeometry(0.05, 16, 16);
-        const sphereMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const sphere = new THREE.Mesh(sphereGeom, sphereMat);
-        sphere.position.copy(intersectPoint);
-        scene.add(sphere);
-        pointSpheres.push(sphere);
-
-        const newPoints = [...points, intersectPoint];
-        setPoints(newPoints);
-
-        if (newPoints.length === maxPoints) {
-          calculateMeasurements(newPoints);
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
         }
+      } catch (err) {
+        alert("Camera access denied or not supported");
+      }
+    }
+
+    startCamera();
+
+    return () => {
+      // stop camera
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
+  }, []);
 
-    const calculateMeasurements = (pts) => {
-      // Simple bounding rectangle (assuming roughly rectangular room)
-      const xs = pts.map((p) => p.x);
-      const zs = pts.map((p) => p.z);
-      const length = Math.max(...xs) - Math.min(...xs);
-      const width = Math.max(...zs) - Math.min(...zs);
-      const area = length * width;
+  // 👉 Handle Tap
+  function handleTap(e) {
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-      // Callback to parent
+    const newPoints = [...points, { x, y }];
+    setPoints(newPoints);
+
+    // kapag 2 points → compute
+    if (newPoints.length === 2) {
+      const dx = newPoints[1].x - newPoints[0].x;
+      const dy = newPoints[1].y - newPoints[0].y;
+
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // 🔥 FAKE SCALE (adjust mo kung gusto mo)
+      const meters = (distance / 100).toFixed(2);
+
+      if (step === "length") {
+        setLength(meters);
+        setPoints([]);
+        setStep("width");
+      } else {
+        setWidth(meters);
+        setPoints([]);
+      }
+    }
+  }
+
+  // 👉 Kapag kumpleto na
+  useEffect(() => {
+    if (length && width) {
+      const area = (length * width).toFixed(2);
+
       onMeasureComplete({
-        length: length.toFixed(2),
-        width: width.toFixed(2),
-        area: area.toFixed(2),
+        measurements: {
+          length,
+          width,
+          area
+        },
+        recommended:
+          area <= 9 ? "0.5 HP" :
+          area <= 18 ? "1.0 HP" :
+          area <= 25 ? "1.5 HP" :
+          area <= 35 ? "2.0 HP" :
+          area <= 45 ? "2.5 HP" :
+          area <= 60 ? "3.0 HP" :
+          area <= 80 ? "4.0 HP" :
+          "5.0 HP or higher"
       });
-    };
+    }
+  }, [length, width]);
 
-    renderer.domElement.addEventListener('click', handleClick);
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000" }}>
+      
+      {/* 📷 Camera */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        onClick={handleTap}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover"
+        }}
+      />
 
-    const animate = () => {
-      renderer.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
-    };
-    animate();
+      {/* 🟢 Overlay UI */}
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          color: "#fff",
+          background: "rgba(0,0,0,0.5)",
+          padding: "10px",
+          borderRadius: "10px"
+        }}
+      >
+        {step === "length" && !length && "Tap 2 points for LENGTH"}
+        {step === "width" && !width && "Tap 2 points for WIDTH"}
+        {length && !width && `Length: ${length} m`}
+      </div>
 
-    // Cleanup
-    return () => {
-      renderer.domElement.removeEventListener('click', handleClick);
-      mountRef.current.removeChild(renderer.domElement);
-      pointSpheres.forEach((s) => scene.remove(s));
-    };
-  }, [points, onMeasureComplete]);
-
-  return <div ref={mountRef} style={{ width: '100vw', height: '100vh' }} />;
+    </div>
+  );
 }
