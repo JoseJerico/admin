@@ -12,12 +12,17 @@ export default function UserApp({ user, onLogout }) {
   const [showProfile, setShowProfile] = useState(false)
   const [services, setServices] = useState([])
   const [showAR, setShowAR] = useState(false);
+  const [markers, setMarkers] = useState([]);  // tap points
+  const [roomData, setRoomData] = useState(null);
+  const [resetCounter, setResetCounter] = useState(0);
 
   // Manual measurement states
   const [manualLength, setManualLength] = useState('')
   const [manualWidth, setManualWidth] = useState('')
   const [manualUnit, setManualUnit] = useState('meters')
-  const [showCamera, setShowCamera] = useState(false)
+  // Sa taas ng UserApp function/component
+
+ 
 
   // Booking form states
   const [bookingService, setBookingService] = useState(null)
@@ -37,6 +42,33 @@ export default function UserApp({ user, onLogout }) {
   const [errorMsg, setErrorMsg] = useState(null)
   const [statusFilter, setStatusFilter] = useState('All')
   const [search, setSearch] = useState('')
+
+  const handleMeasureComplete = (result) => {
+    setRoomMeasurements(result.measurements);
+    setRecommendedProduct({ capacity: result.recommended });
+    setShowAR(false);
+    setScreen("room-analysis");
+  };
+
+  const handleARTap = (position) => {
+  setMarkers((prev) => [...prev, position]);
+};
+const calculateRoomMeasurements = (points) => {
+  if (!points || points.length < 2) return { length: 0, width: 0, area: 0 };
+
+  const xs = points.map(p => p.x);
+  const zs = points.map(p => p.z);
+
+  const length = Math.max(...xs) - Math.min(...xs);
+  const width  = Math.max(...zs) - Math.min(...zs);
+  const area   = length * width;
+
+  return {
+    length: length.toFixed(2),
+    width: width.toFixed(2),
+    area: area.toFixed(2)
+  };
+};
   // --- DASHBOARD SUMMARY LOGIC ---
   const countStatus = (status) => {
   return bookingHistory.filter(
@@ -565,6 +597,21 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
     return '5.0 HP or higher'
   }
 
+  function parseARResult(result) {
+  if (!result) return { length: 0, width: 0, area: 0 };
+
+  // Subukan hanapin ang tamang property kahit iba-iba ang pangalan
+  const length = result.length || result.lengthMeters || result.xDiff || 0;
+  const width  = result.width  || result.widthMeters  || result.zDiff || 0;
+  const area   = result.area   || length * width;
+
+  return {
+    length: length.toFixed(2),
+    width: width.toFixed(2),
+    area: area.toFixed(2)
+  };
+}
+
   function openBookingForm(service) {
     setBookingService(service)
     setBookingNotes('')
@@ -928,23 +975,41 @@ if (existing) {
         <div className="measure-text">
           <h3>Use Camera AR</h3>
           <p>Scan your room using camera</p>
+          <small style={{ display: 'block', marginTop: '0.5rem', color: '#fbbf24' }}>
+            ⚠️ Tap at least 2 corners of your room to measure
+          </small>
         </div>
       </button>
     </div>
   </main>
 )}
 
-    {showAR && !roomMeasurements && (
+  {showAR && (
   <RoomMeasurementAR
-    onMeasureComplete={(measurements) => {
-      setRoomMeasurements(measurements);
+    resetTrigger={resetCounter}
+    onMeasureComplete={(result) => {
+      console.log("AR Result raw:", result);
 
-      // 🔹 Calculate recommended HP for AR measurements
-      const recommendedHP = getAirconHP(measurements.area);
+      if (!result || !result.points || result.points.length < 2) {
+        return alert("⚠️ Tap at least 2 corners of your room!");
+      }
+
+      // 1️⃣ Kalkulahin ang measurements
+      const measurements = calculateRoomMeasurements(result.points); // return {length, width}
+      console.log("Calculated measurements:", measurements);
+
+      const length = parseFloat(measurements.length);
+      const width = parseFloat(measurements.width);
+      const area = (length * width).toFixed(2); // Area sa m²
+      const recommendedHP = getAirconHP(area);   // function mo para sa HP
+
+      // 2️⃣ I-save sa state para magamit sa Room Analysis page
+      setRoomMeasurements({ length, width, area });
       setRecommendedProduct({ capacity: recommendedHP });
 
-      setShowAR(false); // hide AR camera
-      setScreen('measure'); // show results
+      // 3️⃣ Ipakita sa screen
+      setShowAR(false);
+      setScreen('measure'); // punta sa Room Analysis page
     }}
   />
 )}
@@ -1004,46 +1069,34 @@ if (existing) {
     </div>
 
     <div className="room-analysis-container">
-      {/* --- Existing result card --- */}
       <div className="result-card">
         <h3>Room Dimensions</h3>
         <div className="measurements">
-          <p>
-            Length: <strong>{roomMeasurements.measurements.length} m</strong>
-          </p>
-          <p>
-            Width: <strong>{roomMeasurements.measurements.width} m</strong>
-          </p>
-          <p>
-            Area: <strong>{roomMeasurements.measurements.area} m²</strong>
-          </p>
+          <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
+          <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
+          <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
         </div>
       </div>
 
-      {/* --- Recommended AC --- */}
       {recommendedProduct && (
-        <div
-          className="recommendation"
-          style={{ backgroundColor: '#000', color: '#fff' }}
-        >
+        <div className="recommendation" style={{ backgroundColor: '#000', color: '#fff', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
           <h3>🎯 Recommended AirCon</h3>
-          <p>{recommendedProduct?.capacity}</p>
+          <p>{recommendedProduct.capacity}</p>
         </div>
       )}
-
-      
-      
 
       <div className="actions">
         <button
           className="btn-remeasure"
           onClick={() => {
-            setManualLength('');
-            setManualWidth('');
-            setManualUnit('meters');
             setRoomMeasurements(null);
             setRecommendedProduct(null);
             setScreen('manual-measure');
+
+            setManualLength('');
+            setManualWidth('');
+            setManualUnit('Meters');
+            
           }}
         >
           📐 Measure Again
@@ -1531,41 +1584,7 @@ if (existing) {
   </div>
 )}
 
-     {showCamera && (
-  <RoomMeasurementAR
-    onMeasureComplete={(measurements) => {
-      // I-check kung tama yung structure ng measurements
-      console.log('AR measurements:', measurements);
-
-      // Kunin ang area (pwede rin length*width kung walang area property)
-      const area = measurements.area ?? (measurements.length * measurements.width);
-      console.log('Area:', area);
-
-      // Compute recommended HP
-      const getAirconHP = (area) => {
-        if (area <= 4) return '0.5 HP';
-        if (area <= 9) return '1 HP';
-        if (area <= 16) return '1.5 HP';
-        if (area <= 25) return '2 HP';
-        if (area <= 36) return '2.5 HP';
-        if (area <= 49) return '3 HP';
-        return '3.5 HP';
-      };
-
-      const hp = getAirconHP(area);
-      console.log('Recommended HP:', hp);
-
-      // I-set sa state para lumabas sa screen
-      setRoomMeasurements(measurements);
-      setRecommendedProduct({ capacity: hp });
-
-      // Isara AR at pumunta sa measure screen
-      setShowAR(false);
-      setScreen('measure');
-    }}
-  />
-)}
-
+     
       {/* --- Profile Modal --- */}
       {showProfile && (
         <div className="profile-modal-overlay" onClick={() => setShowProfile(false)}>
