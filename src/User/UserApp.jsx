@@ -11,6 +11,7 @@ export default function UserApp({ user, onLogout }) {
   const [recommendedProduct, setRecommendedProduct] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
   const [services, setServices] = useState([])
+  const [showAR, setShowAR] = useState(false);
 
   // Manual measurement states
   const [manualLength, setManualLength] = useState('')
@@ -921,7 +922,7 @@ if (existing) {
 
       <button
         className="measure-option ar"
-        onClick={() => setShowCamera(true)}
+        onClick={() => setShowAR(true)}
       >
         <div className="measure-icon">📷</div>
         <div className="measure-text">
@@ -931,6 +932,16 @@ if (existing) {
       </button>
     </div>
   </main>
+)}
+
+    {showAR && !roomMeasurements && (
+  <RoomMeasurementAR
+    onMeasureComplete={(measurements) => {
+      setRoomMeasurements(measurements);
+      setShowAR(false); // hide AR camera kapag tapos na
+      setScreen('measure'); // show results
+    }}
+  />
 )}
 
       {/* --- Manual Measurement --- */}
