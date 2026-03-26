@@ -15,6 +15,8 @@ export default function UserApp({ user, onLogout }) {
   const [markers, setMarkers] = useState([]);  // tap points
   const [roomData, setRoomData] = useState(null);
   const [resetCounter, setResetCounter] = useState(0);
+  const [fullName, setFullName] = useState("");
+  const [roleName, setRoleName] = useState("");
 
   // Manual measurement states
   const [manualLength, setManualLength] = useState('')
@@ -72,7 +74,7 @@ const calculateRoomMeasurements = (points) => {
   // --- DASHBOARD SUMMARY LOGIC ---
   const countStatus = (status) => {
   return bookingHistory.filter(
-    b => b.status?.toLowerCase() === status
+    b => b.status?.trim().toLowerCase() === status.toLowerCase()
   ).length;
 };
 
@@ -288,6 +290,35 @@ useEffect(() => {
 }, [user]);
 
 useEffect(() => {
+  async function fetchProfile() {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name, role_id")
+      .eq("id", user.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+    } else {
+      setFullName(data?.full_name || user.email);
+
+      // Optional: kunin role name galing sa role_id
+      const { data: roleData } = await supabase
+        .from("roles") // kung meron kang roles table
+        .select("role_name")
+        .eq("id", data.role_id)
+        .single();
+      
+      setRoleName(roleData?.role_name || "Customer");
+    }
+  }
+
+  fetchProfile();
+}, [user]);
+
+useEffect(() => {
   const getSession = async () => {
     const { data, error } = await supabase.auth.getSession();
 
@@ -432,10 +463,13 @@ const handleUpdate = async (e) => {
   try {
     const { data, error } = await supabase
       .from('bookings')
-      .select('*')
-      .eq('user_id', user.id.trim())
+      .select(`
+        *,
+        technicians(name, contact)  -- join sa technician table
+      `)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .range(0, 9); // 🔥 pagination (top 10 only)
+      .range(0, 9);
 
     if (error) {
       console.error(error)
@@ -546,9 +580,7 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
               ❌ Cancel
             </button>
 
-            <button className="btn-header-style" onClick={() => setScreen('services')}>
-              ← Back to Services
-            </button>
+            
           </div>
         </div>
       </div>
@@ -749,7 +781,7 @@ if (existing) {
               className="user-info"
               title="View profile"
             >
-              👤 {user?.name || 'Guest'}
+              👤 {fullName || "User"}
             </button>
             <button
   onClick={() => setScreen('cart')}
@@ -882,6 +914,17 @@ if (existing) {
     <h3>{cancelled}</h3>
     <p>Cancelled</p>
   </div>
+
+  <div 
+  className="card rejected" 
+  onClick={() => {
+    setStatusFilter('rejected')
+    setScreen('history')
+  }}
+>
+  <h3>{rejected}</h3>
+  <p>Rejected</p>
+</div>
 </div>
 </div>
 
@@ -1044,15 +1087,16 @@ if (existing) {
             </div>
 
             <div className="form-group">
-              <label>Unit</label>
-              <select
-                value={manualUnit}
-                onChange={(e) => setManualUnit(e.target.value)}
-              >
-                <option value="meters">Meters</option>
-                <option value="feet">Feet</option>
-              </select>
-            </div>
+  <label>Unit</label>
+  <select
+    className="unit-dropdown" // ✅ add lang
+    value={manualUnit}
+    onChange={(e) => setManualUnit(e.target.value)}
+  >
+    <option value="meters">Meters</option>
+    <option value="feet">Feet</option>
+  </select>
+</div>
 
             <button className="btn-calculate" onClick={handleManualCalculate}>
               Calculate
@@ -1286,6 +1330,12 @@ if (existing) {
             <div key={item.id} className={`history-item ${statusClass}`}>
               <h3>{item.service}</h3>
               <p>Date: {item.date} | Time: {item.time}</p>
+    {item.status === 'assigned' && item.technicians && (
+  <div className="assigned-info">
+    <p>Technician: {item.technicians.name}</p>
+    <p>Contact: {item.technicians.contact}</p>
+  </div>
+)}
 
               {/* 🔹 Status Badge */}
               <p>
@@ -1409,6 +1459,7 @@ if (existing) {
   <BookingForm
     service={bookingService}
     onCancel={() => setBookingService(null)}
+    setScreen={setScreen} // ✅ ADD THIS
     onConfirm={(data, localMeasurements, localRecommendation) => {
       const newItem = {
         cartId: Date.now(),
@@ -1586,37 +1637,37 @@ if (existing) {
 
      
       {/* --- Profile Modal --- */}
-      {showProfile && (
-        <div className="profile-modal-overlay" onClick={() => setShowProfile(false)}>
-          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>👤 My Profile</h2>
-              <button onClick={() => setShowProfile(false)} className="btn-close-modal">
-                ✕
-              </button>
-            </div>
-            <div className="profile-content">
-              <div className="profile-item">
-                <span className="label">Name:</span>
-                <span>{user?.name || 'Guest'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="label">Email:</span>
-                <span>{user?.email || 'N/A'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="label">Role:</span>
-                <span>Customer</span>
-              </div>
-            </div>
-            <div className="modal-actions">
-              <button onClick={() => setShowProfile(false)} className="btn-close">
-                Close
-              </button>
-            </div>
-          </div>
+{showProfile && (
+  <div className="profile-modal-overlay" onClick={() => setShowProfile(false)}>
+    <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <h2>👤 My Profile</h2>
+        <button onClick={() => setShowProfile(false)} className="btn-close-modal">
+          ✕
+        </button>
+      </div>
+      <div className="profile-content">
+        <div className="profile-item">
+          <span className="label">Name:</span>
+          <span>{fullName || 'User'}</span>
         </div>
-      )}
+        <div className="profile-item">
+          <span className="label">Email:</span>
+          <span>{user?.email || 'N/A'}</span>
+        </div>
+        <div className="profile-item">
+          <span className="label">Role:</span>
+          <span>{roleName || 'Customer'}</span>
+        </div>
+      </div>
+      <div className="modal-actions">
+        <button onClick={() => setShowProfile(false)} className="btn-close">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }

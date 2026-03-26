@@ -12,19 +12,22 @@ export default function EditAppointment({ appointment, onSave, onClose, schedule
   const [notes, setNotes] = useState(appointment.notes || '');
 
   // ✅ Save button handler
-  const handleSave = () => {
+const handleSave = () => {
   if (!fullName || !date || !time) {
     return alert('Please fill in required fields: Customer Name, Date, and Time');
   }
 
   // ✅ Availability check
-  const conflict = schedules.some(
-    (b) =>
-      b.id !== appointment.id && // exclude current booking
-      b.date === date &&
-      b.time === time &&
-      ['approved','assigned'].includes(b.status.toLowerCase()) // check only active bookings
-  );
+  const conflict = schedules.some((b) => {
+    if (b.id === appointment.id) return false; // skip current booking
+    if (b.date !== date || b.time !== time) return false; // different date/time
+    const bTech = b.technician_id || null;
+    const currentTech = appointment.technician_id || null;
+    // conflict only if BOTH bookings have no technician OR same technician
+    if (!bTech && !currentTech) return true;
+    if (bTech && currentTech && bTech === currentTech) return true;
+    return false; // otherwise, no conflict
+  });
 
   if (conflict) {
     return alert('⚠ Conflict detected! Another booking exists at this date and time.');
@@ -101,7 +104,7 @@ export default function EditAppointment({ appointment, onSave, onClose, schedule
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add reason for change (optional)"
+            placeholder="Add reason or message (optional)"
           />
         </div>
 
