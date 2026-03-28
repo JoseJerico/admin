@@ -3,124 +3,165 @@ import Camera from '../shared/Camera'
 import { supabase } from '../supabase'
 import './TechnicianApp.css'
 
+// Stats Grid Component
+function StatsGrid({ appointments }) {
+  const statusList = ['assigned','in_progress','completed']
+  const STATUS_COLORS = {
+    assigned: '#f59e0b',
+    in_progress: '#3b82f6',
+    completed: '#10b981'
+  }
+
+  return (
+    <div className="stats-grid-tech">
+      <div className="stat-card-tech">
+        <div className="stat-value-tech">{appointments.length}</div>
+        <div className="stat-label-tech">Total Jobs</div>
+      </div>
+      {statusList.map(status => (
+        <div
+          className="stat-card-tech"
+          key={status} // ✅ unique key sa bawat status
+          style={{backgroundColor: STATUS_COLORS[status]}}
+        >
+          <div className="stat-value-tech">
+            {appointments.filter(a => a.status === status).length}
+          </div>
+          <div className="stat-label-tech">{status.replace('_',' ').toUpperCase()}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function TechnicianApp({ user, onLogout }) {
   const [screen, setScreen] = useState('appointments')
   const [appointments, setAppointments] = useState([])
   const [selectedAppointment, setSelectedAppointment] = useState(null)
-
   const [showCamera, setShowCamera] = useState(false)
   const [workPhotos, setWorkPhotos] = useState([])
   const [notes, setNotes] = useState('')
   const [cameraMode, setCameraMode] = useState('before')
   const [activeFilter, setActiveFilter] = useState('all')
 
+  let subscription = null
+
   useEffect(() => {
     if (user?.id) {
-      loadJobs()
+      loadAppointments()
+      setupRealtime()
+    }
+    return () => {
+      if (subscription) subscription.unsubscribe()
     }
   }, [user])
 
-  async function loadJobs() {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select(`
-        id,
-        status,
-        notes,
-        work_photos,
-        schedules (
-          id,
-          customer_name,
-          address,
-          phone,
-          service,
-          requested_date,
-          requested_time,
-          unit,
-          notes
-        )
-      `)
-      .eq('technician_id', user.id)
-      .order('id', { ascending: false })
+  async function loadAppointments() {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('technician_id', user.id)
+        .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error(error)
-      return
+      if (error) return console.error(error)
+
+      setAppointments(data.map(a => ({ ...a, photos: a.photos || [] })))
+    } catch (err) {
+      console.error(err)
     }
+  }
 
-    const mapped = data.map(j => ({
-      job_id: j.id,
-      status: j.status,
-      notes: j.notes,
-      work_photos: j.work_photos || [],
-      schedule: j.schedules
-    }))
-
-    setAppointments(mapped)
+  function setupRealtime() {
+    if (subscription) subscription.unsubscribe();
+    subscription = supabase
+      .channel('public:bookings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        payload => {
+          if (payload.new.technician_id === user.id) loadAppointments();
+        }
+      )
+      .subscribe();
   }
 
   function handleAppointmentClick(apt) {
     setSelectedAppointment(apt)
-    setWorkPhotos(apt.work_photos || [])
-    setNotes(apt.notes || '')
+    setWorkPhotos(apt.photos || [])
+    setNotes(apt.work_notes || '')
     setScreen('details')
   }
 
   async function startWork(apt) {
-    await supabase
-      .from('jobs')
-      .update({ status: 'in_progress' })
-      .eq('id', apt.job_id)
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'in_progress', service_status: 'in_progress' })
+      .eq('id', apt.id)
+    if (error) return console.error(error)
 
-    setSelectedAppointment({
-      ...apt,
-      status: 'in_progress'
-    })
-
+    setSelectedAppointment({ ...apt, status: 'in_progress' })
     setCameraMode('before')
     setShowCamera(true)
-    loadJobs()
+    loadAppointments()
   }
 
-  function handlePhotoCapture(data) {
+  async function handlePhotoCapture(photoUrl) {
+    if (!selectedAppointment) return
+
     const photo = {
-      id: Date.now(),
+      id: Date.now(), // ✅ unique key for map
       type: cameraMode,
-      url: data.photo,
+      url: photoUrl,
       timestamp: new Date().toISOString()
     }
 
-    const updated = [...workPhotos, photo]
-    setWorkPhotos(updated)
+    const updatedPhotos = [...workPhotos.filter(p => p.type !== cameraMode), photo]
+    setWorkPhotos(updatedPhotos)
 
-    if (cameraMode === 'before') setCameraMode('during')
-    else if (cameraMode === 'during') setCameraMode('after')
-    else setShowCamera(false)
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ photos: updatedPhotos })
+        .eq('id', selectedAppointment.id)
+      if (error) throw error
+    } catch (err) {
+      console.error("Failed to save photo:", err)
+      alert("❌ Failed to save photo")
+    }
+
+    setShowCamera(false)
   }
 
   async function completeJob() {
     if (!selectedAppointment) return
 
-    const { error } = await supabase
-      .from('jobs')
-      .update({
-        status: 'completed',
-        notes,
-        work_photos: workPhotos
-      })
-      .eq('id', selectedAppointment.job_id)
-
-    if (error) {
-      console.error(error)
-      alert('Failed to complete job')
-      return
+    if (!workPhotos.find(p => p.type === 'before') || !workPhotos.find(p => p.type === 'after')) {
+      return alert('📸 You must capture BOTH start and end photos before completing the job.')
     }
 
-    setSelectedAppointment(null)
-    setWorkPhotos([])
-    setNotes('')
-    setScreen('appointments')
-    loadJobs()
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'completed',
+          service_status: 'completed',
+          work_notes: notes,
+          photos: workPhotos
+        })
+        .eq('id', selectedAppointment.id)
+      if (error) throw error
+
+      setSelectedAppointment(null)
+      setWorkPhotos([])
+      setNotes('')
+      setScreen('appointments')
+      loadAppointments()
+      alert('✅ Job completed successfully!')
+    } catch (err) {
+      console.error("Failed to complete job:", err)
+      alert('❌ Failed to complete job: ' + err.message)
+    }
   }
 
   function getFilteredAppointments() {
@@ -143,14 +184,8 @@ export default function TechnicianApp({ user, onLogout }) {
         <Camera
           onCapture={handlePhotoCapture}
           title={`📸 ${cameraMode.toUpperCase()} PHOTO`}
-          mode="photo"
+          onClose={() => setShowCamera(false)}
         />
-        <button
-          onClick={() => setShowCamera(false)}
-          className="btn-close-camera"
-        >
-          ✕
-        </button>
       </div>
     )
   }
@@ -158,12 +193,15 @@ export default function TechnicianApp({ user, onLogout }) {
   return (
     <div className="tech-app">
       <header className="tech-header">
-        <h1>🔧 Technician Portal</h1>
+        <h1>🔧 Technician Dashboard</h1>
         <div className="tech-info">
-          <span className="tech-name">👤 {user?.name}</span>
+          <img src={user?.avatar_url || '/default-avatar.png'} className="tech-avatar" />
+          <span className="tech-name">👤 {user?.full_name || 'Technician'}</span>
           <button onClick={onLogout} className="btn-logout-tech">🚪 Logout</button>
         </div>
       </header>
+
+      <StatsGrid appointments={appointments} />
 
       {screen === 'appointments' && (
         <main className="tech-main">
@@ -173,13 +211,13 @@ export default function TechnicianApp({ user, onLogout }) {
           </div>
 
           <div className="status-filter">
-            {['all', 'assigned', 'in_progress', 'completed'].map(s => (
+            {['all','assigned','in_progress','completed'].map(s => (
               <button
-                key={s}
+                key={s} // ✅ unique key
                 className={`filter-btn ${activeFilter === s ? 'active' : ''}`}
                 onClick={() => setActiveFilter(s)}
               >
-                {s.replace('_', ' ')}
+                {s.replace('_',' ')}
               </button>
             ))}
           </div>
@@ -187,12 +225,12 @@ export default function TechnicianApp({ user, onLogout }) {
           <div className="appointments-list">
             {getFilteredAppointments().map(apt => (
               <div
-                key={apt.job_id}
+                key={apt.id} // ✅ unique key sa bawat appointment
                 className="appointment-card"
                 onClick={() => handleAppointmentClick(apt)}
               >
                 <div className="apt-header">
-                  <h3>{apt.schedule?.service}</h3>
+                  <h3>{apt.service}</h3>
                   <span
                     className="status-badge"
                     style={{ backgroundColor: getStatusColor(apt.status) }}
@@ -202,26 +240,15 @@ export default function TechnicianApp({ user, onLogout }) {
                 </div>
 
                 <div className="apt-details">
-                  <div className="detail-row">
-                    👤 {apt.schedule?.customer_name}
-                  </div>
-                  <div className="detail-row">
-                    📅 {apt.schedule?.requested_date} @ {apt.schedule?.requested_time}
-                  </div>
-                  <div className="detail-row">
-                    📍 {apt.schedule?.address}
-                  </div>
-                  <div className="detail-row">
-                    ❄️ {apt.schedule?.unit}
-                  </div>
+                  <div className="detail-row">👤 {apt.full_name}</div>
+                  <div className="detail-row">📅 {apt.date} @ {apt.time}</div>
+                  <div className="detail-row">📍 {apt.address}</div>
+                  <div className="detail-row">❄️ {apt.room_area} m²</div>
                 </div>
 
                 {apt.status !== 'completed' && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startWork(apt)
-                    }}
+                    onClick={(e) => { e.stopPropagation(); startWork(apt) }}
                     className="btn-start-work"
                   >
                     🚀 Start Work
@@ -238,23 +265,21 @@ export default function TechnicianApp({ user, onLogout }) {
           <button onClick={() => setScreen('appointments')} className="btn-back">← Back</button>
 
           <div className="apt-full-details">
-            <h2>{selectedAppointment.schedule?.service}</h2>
-            <p>{selectedAppointment.schedule?.address}</p>
+            <h2>{selectedAppointment.service}</h2>
+            <p>{selectedAppointment.address}</p>
 
             <div className="detail-card">
-              <p><b>Customer:</b> {selectedAppointment.schedule?.customer_name}</p>
-              <p><b>Phone:</b> {selectedAppointment.schedule?.phone}</p>
-              <p><b>Date:</b> {selectedAppointment.schedule?.requested_date}</p>
-              <p><b>Time:</b> {selectedAppointment.schedule?.requested_time}</p>
-              <p><b>Unit:</b> {selectedAppointment.schedule?.unit}</p>
-              <p><b>Notes:</b> {selectedAppointment.schedule?.notes}</p>
+              <p><b>Customer:</b> {selectedAppointment.full_name}</p>
+              <p><b>Phone:</b> {selectedAppointment.mobile_number}</p>
+              <p><b>Date:</b> {selectedAppointment.date}</p>
+              <p><b>Time:</b> {selectedAppointment.time}</p>
+              <p><b>Unit Area:</b> {selectedAppointment.room_area} m²</p>
+              <p><b>Notes:</b> {selectedAppointment.notes}</p>
             </div>
 
             {selectedAppointment.status !== 'completed' && (
               <button
-                onClick={() => {
-                  setScreen('photos')
-                }}
+                onClick={() => setScreen('photos')}
                 className="btn-start-work-full"
               >
                 📸 Work Photos & Notes
@@ -273,19 +298,24 @@ export default function TechnicianApp({ user, onLogout }) {
 
             <div className="photos-grid">
               {workPhotos.map(p => (
-                <div key={p.id} className="photo-item">
+                <div key={p.id} className="photo-item"> {/* ✅ key para sa bawat photo */}
                   <img src={p.url} alt="" />
                   <div className="photo-label">{p.type}</div>
                 </div>
               ))}
             </div>
 
-            <button
-              onClick={() => setShowCamera(true)}
-              className="btn-add-photo"
-            >
-              ➕ Add Photo
-            </button>
+            <div className="actions">
+              {!workPhotos.find(p=>p.type==='before') && (
+                <button onClick={()=>{ setCameraMode('before'); setShowCamera(true) }} className="btn-add-photo">📸 Start Work Photo</button>
+              )}
+              {workPhotos.find(p=>p.type==='before') && !workPhotos.find(p=>p.type==='after') && (
+                <button onClick={()=>{ setCameraMode('after'); setShowCamera(true) }} className="btn-end-work">🛑 End Work Photo</button>
+              )}
+              {workPhotos.find(p=>p.type==='before') && workPhotos.find(p=>p.type==='after') && (
+                <button onClick={completeJob} className="btn-complete-job">✓ Complete Job</button>
+              )}
+            </div>
 
             <div className="notes-section">
               <h3>📝 Notes</h3>
@@ -294,16 +324,6 @@ export default function TechnicianApp({ user, onLogout }) {
                 onChange={e => setNotes(e.target.value)}
                 className="notes-input"
               />
-            </div>
-
-            <div className="actions">
-              <button
-                onClick={completeJob}
-                disabled={!notes.trim() || workPhotos.length === 0}
-                className="btn-complete-job"
-              >
-                ✓ Complete Job
-              </button>
             </div>
           </div>
         </main>

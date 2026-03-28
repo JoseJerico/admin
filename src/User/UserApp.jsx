@@ -100,20 +100,19 @@ const calculateRoomMeasurements = (points) => {
 const fetchMaintenance = async () => {
   if (!user?.id) return;
 
-  try {
-    const { data, error } = await supabase
-      .from('maintenance')
-      .select('*')
-      .eq('user_id', user.id)          // filter by current user
-      .order('date', { ascending: true });
+  const { data, error } = await supabase
+    .from("maintenance")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("date", { ascending: true }); // ✅ FIXED
 
-    if (error) throw error;
-
-    setMaintenance(data || []);
-  } catch (error) {
-    console.error("Error fetching maintenance:", error);
+  if (error) {
+    console.error(error);
     setMaintenance([]);
+    return;
   }
+
+  setMaintenance(data || []);
 };
 // Para ma-color code base sa status (pending, done, cancelled)
 const getMaintenanceColorByStatus = (status) => {
@@ -130,14 +129,14 @@ const getMaintenanceColorByStatus = (status) => {
 };
 
 /// Para ma-color code base sa scheduled date
-const getMaintenanceColorByDate = (date) => {  // parameter renamed
+const getMaintenanceColorByDate = (date) => {
   const today = new Date();
-  const targetDate = new Date(date);           // local variable na ibang pangalan
-  const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+  const target = new Date(date);
+  const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return '#f87171'; // Red = Overdue
-  if (diffDays <= 7) return '#fbbf24'; // Yellow = Soon
-  return '#34d399'; // Green = Okay
+  if (diffDays < 0) return '#f87171';
+  if (diffDays <= 3) return '#fbbf24';
+  return '#34d399';
 };
 
 // Para ipakita kung ilang araw na lang hanggang maintenance
@@ -201,18 +200,18 @@ useEffect(() => {
     setMaintenance(data || []);
   }
 
-  async function createMaintenance(booking) {
+ async function createMaintenance(booking) {
   try {
-    // 👉 add 30 days
+    const intervalDays = booking.interval_days || 30;
     const nextDate = new Date(booking.date);
-    nextDate.setDate(nextDate.getDate() + 30);
+    nextDate.setDate(nextDate.getDate() + intervalDays);
 
-    // 🔍 check muna kung may existing na (para di duplicate)
+    // 🔍 prevent duplicate
     const { data: existing } = await supabase
-      .from("maintenance")
-      .select("*")
-      .eq("user_id", booking.user_id)
-      .eq("notes", `Auto maintenance for ${booking.service}`);
+  .from("maintenance")
+  .select("*")
+  .eq("user_id", booking.user_id)
+  .eq("date", nextDate.toISOString()); // ✅ check by date
 
     if (existing && existing.length > 0) return;
 
@@ -222,63 +221,23 @@ useEffect(() => {
         {
           user_id: booking.user_id,
           service_id: booking.service_id || null,
-          scheduled_date: nextDate.toISOString(),
+          date: nextDate.toISOString(), // ✅ USE THIS
           status: "pending",
           notes: `Auto maintenance for ${booking.service}`,
+          technician_id: booking.technician_id || null,
+          technician_name: booking.technician_name || null,
+          reminder_days: booking.reminder_days || 3,
         },
       ]);
 
-    if (error) {
-      console.error("❌ Maintenance insert error:", error);
-    } else {
-      console.log("✅ Maintenance auto-created!");
-    }
+    if (error) console.error("❌ Maintenance insert error:", error);
+    else console.log("✅ Maintenance auto-created!");
+
   } catch (err) {
     console.error("❌ Unexpected error:", err);
   }
 }
 
-async function handleConfirmBooking() {
-  if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
-    alert('Please complete all required fields');
-    return;
-  }
-
-  try {
-    // ✅ Check if any booking exists at the same date & time (same user or others)
-    const { data: existing, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('date', bookingDate)
-      .eq('time', bookingTime)
-      .eq('status', 'pending');
-
-    if (error) {
-      console.error(error);
-      alert("❌ Could not verify slot availability");
-      return;
-    }
-
-    if (existing && existing.length > 0) {
-      // Check if it's the same user or different user
-      const conflictWithUser = existing.some(b => b.user_id === user.id);
-      if (conflictWithUser) {
-        alert("⚠️ You already have a booking at this date and time!");
-        return;
-      } else {
-        alert("⚠️ Slot already booked by another customer!");
-        return;
-      }
-    }
-
-    // ✅ No conflict, puwede nang mag-proceed
-    setShowConfirm(true);
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Unexpected error occurred");
-  }
-}
 
   fetchMaintenance();
 }, [user]);
@@ -306,12 +265,12 @@ useEffect(() => {
 
       // Optional: kunin role name galing sa role_id
       const { data: roleData } = await supabase
-        .from("roles") // kung meron kang roles table
-        .select("role_name")
-        .eq("id", data.role_id)
-        .single();
-      
-      setRoleName(roleData?.role_name || "Customer");
+  .from("roles")
+  .select("name") // ✅ tama na
+  .eq("id", data.role_id)
+  .single();
+
+setRoleName(roleData?.name || "Customer");
     }
   }
 
@@ -384,26 +343,30 @@ useEffect(() => {
   const now = new Date();
 
   maintenance.forEach((m) => {
-    const schedDate = new Date(m.scheduled_date); // importante: scheduled_date
+    const schedDate = new Date(m.date);
+    const diffDays = Math.ceil((schedDate - now) / (1000 * 60 * 60 * 24));
 
-    const diffTime = schedDate - now;
-    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    const reminderDays = m.reminder_days || 3;
 
-    // 🔔 3 days before reminder
-    if (diffDays <= 3 && diffDays > 0 && m.status === "pending") {
+    // 🔔 Reminder
+    if (diffDays <= reminderDays && diffDays > 0 && m.status === "pending") {
       setNotification(
-        `🛠️ Reminder: Your maintenance "${m.notes}" is scheduled on ${schedDate.toLocaleDateString()}`
+        `🛠️ Reminder: "${m.notes}" on ${schedDate.toLocaleDateString()}`
       );
     }
 
-    // ❗ overdue
+    // ⚠️ Overdue
     if (diffDays < 0 && m.status === "pending") {
       setNotification(
-        `⚠️ Maintenance overdue: "${m.notes}" scheduled last ${schedDate.toLocaleDateString()}`
+        `⚠️ Overdue: "${m.notes}" scheduled last ${schedDate.toLocaleDateString()}`
       );
     }
-  });
 
+    // 👨‍🔧 Technician alert
+    if (m.technician_id && diffDays <= reminderDays && diffDays > 0) {
+      console.log(`🚨 Notify tech ${m.technician_name}`);
+    }
+  });
 }, [maintenance, user]);
 
 const handleCancel = async (id) => {
@@ -652,7 +615,7 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
     setScreen('booking-form')
   }
 
-  function handleConfirmBooking() {
+  {/*function handleConfirmBooking() {
     if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
       alert('Please complete all required fields')
       return
@@ -668,6 +631,51 @@ if (existing) {
 }
     setShowConfirm(true)
   }
+  */}
+
+  async function handleConfirmBooking() {
+  if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
+    alert('Please complete all required fields');
+    return;
+  }
+
+  console.log("DEBUG:");
+  console.log("Date:", bookingDate);
+  console.log("Time:", bookingTime);
+
+  try {
+    const { data: existing, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('date', bookingDate)
+      .eq('time', bookingTime) // ✅ WALANG dagdag
+      .in('status', ['pending', 'approved', 'assigned']);
+
+    if (error) {
+      console.error("❌ Supabase error:", error);
+      alert("Error: " + error.message);
+      return;
+    }
+
+    if (existing && existing.length > 0) {
+      const conflictWithUser = existing.some(b => b.user_id === user.id);
+
+      if (conflictWithUser) {
+        alert("⚠️ You already have a booking at this date and time!");
+      } else {
+        alert("⚠️ Slot already booked!");
+      }
+      return;
+    }
+
+    // ✅ OK NA
+    setShowConfirm(true);
+
+  } catch (err) {
+    console.error("❌ Unexpected error:", err);
+    alert("Unexpected error occurred");
+  }
+}
 
   function addToCart() {
     const newItem = {

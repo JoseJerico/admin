@@ -1,12 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import './Camera.css'
 
-export default function Camera({ title, onClose, onMeasured }) {
+export default function Camera({ title, onClose, onCapture }) {
   const videoRef = useRef(null)
+  const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
-  const [captured, setCaptured] = useState(false)
-  const [length, setLength] = useState('')
-  const [width, setWidth] = useState('')
+  const [capturedPhoto, setCapturedPhoto] = useState(null)
 
   useEffect(() => {
     async function startCamera() {
@@ -15,84 +14,57 @@ export default function Camera({ title, onClose, onMeasured }) {
         videoRef.current.srcObject = mediaStream
         setStream(mediaStream)
       } catch (err) {
-        console.error('Error accessing camera:', err)
-        alert('Cannot access camera. Please use manual input.')
+        console.error('Cannot access camera:', err)
+        alert('Cannot access camera.')
         onClose()
       }
     }
-
     startCamera()
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
+      if (stream) stream.getTracks().forEach(track => track.stop())
     }
   }, [])
 
   function handleCapture() {
-    setCaptured(true)
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const photoData = canvas.toDataURL('image/png')
+    setCapturedPhoto(photoData)
   }
 
   function handleSubmit() {
-    if (!length || !width) {
-      alert('Please enter both length and width')
-      return
-    }
-
-    const lengthNum = parseFloat(length)
-    const widthNum = parseFloat(width)
-    const area = lengthNum * widthNum
-
-    const recommendedHP = getAirconHP(area)
-
-    onMeasured({
-      length: lengthNum.toFixed(2),
-      width: widthNum.toFixed(2),
-      area: area.toFixed(2),
-      recommendedHP
-    })
+    if (capturedPhoto) onCapture(capturedPhoto)
+    onClose()
   }
 
-  function getAirconHP(area) {
-    const areaNum = parseFloat(area)
-    if (areaNum <= 9) return "0.5 HP"
-    if (areaNum <= 18) return "1.0 HP"
-    if (areaNum <= 25) return "1.5 HP"
-    if (areaNum <= 35) return "2.0 HP"
-    if (areaNum <= 45) return "2.5 HP"
-    if (areaNum <= 60) return "3.0 HP"
-    if (areaNum <= 80) return "4.0 HP"
-    return "5.0 HP or higher"
+  function handleRetake() {
+    setCapturedPhoto(null)
   }
 
   return (
     <div className="camera-modal-overlay" onClick={onClose}>
       <div className="camera-modal" onClick={e => e.stopPropagation()}>
-        <div className="camera-header">
-          <h2>{title}</h2>
-          <button className="btn-close-modal" onClick={onClose}>✕</button>
-        </div>
-
-        {!captured ? (
-          <div className="camera-preview">
+        <h2>{title}</h2>
+        {!capturedPhoto ? (
+          <div>
             <video ref={videoRef} autoPlay playsInline />
-            <button className="btn-capture" onClick={handleCapture}>📸 Capture</button>
+            <button onClick={handleCapture}>📸 Capture</button>
           </div>
         ) : (
-          <div className="camera-inputs">
-            <p>Enter captured room dimensions:</p>
-            <div className="form-group">
-              <label>Length (m)</label>
-              <input type="number" value={length} onChange={e => setLength(e.target.value)} />
+          <div>
+            <img src={capturedPhoto} alt="Captured" className="captured-preview"/>
+            <div>
+              <button onClick={handleRetake}>🔄 Retake</button>
+              <button onClick={handleSubmit}>✅ Submit</button>
             </div>
-            <div className="form-group">
-              <label>Width (m)</label>
-              <input type="number" value={width} onChange={e => setWidth(e.target.value)} />
-            </div>
-            <button className="btn-submit" onClick={handleSubmit}>✅ Submit</button>
           </div>
         )}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
     </div>
   )
