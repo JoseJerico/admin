@@ -236,7 +236,7 @@ export default function AdminApp({ user, onLogout }) {
       technician_id:selectedTechnician.id,
       technician_name:selectedTechnician.name,
       technician_contact:selectedTechnician.contact,
-      technician_specialty:selectedTechnician.specialty,
+      technician_speciality:selectedTechnician.speciality,
       status:"assigned"
       
     }).eq("id",selectedBooking.id);

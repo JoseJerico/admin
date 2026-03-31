@@ -240,7 +240,14 @@ const getMaintenanceAction = (service_id) => {
   return `Scheduled maintenance in ${days} day(s)`;
 };
 
-
+useEffect(() => {
+  // cleanup function kapag nag-unmount ang manual-measure screen
+  return () => {
+    setManualLength("");
+    setManualWidth("");
+    setManualUnit("meters");
+  };
+}, []);
 
 
 useEffect(() => {
@@ -682,25 +689,6 @@ function calculateNextActionDate(date) {
 }
 
 
-
-  {/*function handleConfirmBooking() {
-    if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
-      alert('Please complete all required fields')
-      return
-    }
-
-    const existing = bookings.find(
-  (b) => b.date === bookingDate && b.time === bookingTime
-)
-
-if (existing) {
-  alert("⚠️ You already have a booking at this time!")
-  return
-}
-    setShowConfirm(true)
-  }
-  */}
-
   async function handleConfirmBooking() {
   if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
     alert('Please complete all required fields');
@@ -745,30 +733,37 @@ if (existing) {
   }
 }
 
-  function addToCart() {
-    const newItem = {
-      cartId: Date.now(),
-      serviceId: bookingService.id,
-      serviceName: bookingService.name,
-      price: bookingService.price,
-      roomMeasurements: roomMeasurements?.measurements,
-      recommendedProduct: recommendedProduct?.capacity,
-      bookingDetails: {
-        fullName: bookingName,
-        mobileNumber: bookingContact,
-        email: bookingEmail,
-        address: bookingAddress,
-        date: bookingDate,
-        time: bookingTime,
-        notes: bookingNotes,
-      },
-    }
-    setCart([...cart, newItem])
-    alert(`Booking for ${bookingService.name} added to cart`)
-    setBookingService(null)
-    setShowConfirm(false)
-    setScreen('services')
+ function addToCart() {
+  if (!bookingService || !bookingService.id) {
+    alert(`❌ Invalid service selected! Please choose a valid service.`);
+    return;
   }
+
+  const newItem = {
+    cartId: Date.now(),
+    serviceId: bookingService.id, // siguraduhing defined
+    serviceName: bookingService.name || "Unknown Service",
+    price: bookingService.price || 0,
+    roomMeasurements: roomMeasurements?.measurements || null,
+    recommendedProduct: recommendedProduct?.capacity || null,
+    bookingDetails: {
+      fullName: bookingName || "",
+      mobileNumber: bookingContact || "",
+      email: bookingEmail || "",
+      address: bookingAddress || "",
+      date: bookingDate || "",
+      time: bookingTime || "",
+      notes: bookingNotes || "",
+    },
+  };
+
+  setCart([...cart, newItem]);
+  alert(`✅ Booking for ${bookingService.name} added to cart`);
+  
+  setBookingService(null);
+  setShowConfirm(false);
+  setScreen('services');
+}
 
    function handleRebook(item) {
     setBookingService({ id: item.id, name: item.service, price: 1500 });
@@ -795,7 +790,7 @@ if (existing) {
     return cart.reduce((acc, item) => acc + (item.price || 0), 0)
   }
 
-  async function submitAllBookings() {
+ async function submitAllBookings() {
   if (cart.length === 0) {
     alert("Cart is empty");
     return;
@@ -806,23 +801,51 @@ if (existing) {
     return;
   }
 
+  // Simple UUID validation function
+  const isUUID = (val) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(val);
+  };
+
+  if (!isUUID(user.id)) {
+    console.error("Invalid user.id:", user.id);
+    alert("❌ Invalid user ID. Please log in again.");
+    return;
+  }
+
   try {
-    const bookingsToInsert = cart.map(item => ({
-  user_id: user.id,
-  service_id: item.serviceId, // ✅ ADD THIS (IMPORTANT)
-  full_name: item.bookingDetails.fullName,
-  email: item.bookingDetails.email,
-  mobile_number: item.bookingDetails.mobileNumber,
-  address: item.bookingDetails.address,
-  service: item.serviceName,
-  room_area: parseFloat(item.roomMeasurements?.area) || null,
-  recommended_hp: item.recommendedProduct,
-  date: item.bookingDetails.date,
-  time: item.bookingDetails.time,
-  notes: item.bookingDetails.notes,
-  status: "pending",
-  created_at: new Date()
-}));
+    const bookingsToInsert = [];
+
+    for (const item of cart) {
+      // Validate service_id
+      if (!isUUID(item.serviceId)) {
+        console.error("Invalid serviceId for item:", item);
+        alert(`❌ Invalid service ID for service "${item.serviceName}"`);
+        continue; // skip this item
+      }
+
+      bookingsToInsert.push({
+        user_id: user.id,
+        service_id: item.serviceId,          // ✅ Dapat UUID galing sa services table
+        full_name: item.bookingDetails.fullName,
+        email: item.bookingDetails.email,
+        mobile_number: item.bookingDetails.mobileNumber,
+        address: item.bookingDetails.address,
+        service: item.serviceName,
+        room_area: parseFloat(item.roomMeasurements?.area) || null,
+        recommended_hp: item.recommendedProduct,
+        date: item.bookingDetails.date,
+        time: item.bookingDetails.time,
+        notes: item.bookingDetails.notes,
+        status: "pending",
+        created_at: new Date()
+      });
+    }
+
+    if (bookingsToInsert.length === 0) {
+      alert("No valid bookings to submit.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("bookings")
@@ -998,70 +1021,28 @@ if (existing) {
 
  <div  
   style={{
-    backgroundColor: "#1e293b", // dark para premium look
+    backgroundColor: "#1e293b",
     color: "#fff",
     padding: "1rem",
     borderRadius: "12px",
     marginBottom: "1rem",
     cursor: "pointer"
   }}  
-
-  
-  
   className="card maintenance-preview"
-onClick={() => setScreen('maintenance')}
+  onClick={() => setScreen('preventive')}
 >
-  <h3>🔔 Upcoming Preventive Maintenance</h3>
-
-  {/* ✅ LEGEND */}
-  <div style={{
-    display: "flex",
-    gap: "10px",
-    marginBottom: "10px",
-    fontSize: "0.9rem"
-  }}>
-    <span>🟢 You're all good! ✅</span>
-    <span>🟡 Due Soon</span>
-    <span>🔴 Overdue</span>
-  </div>
+  <h3>🔔 Preventive Maintenance ({maintenance.length})</h3>
 
   {maintenance.length === 0 ? (
-    <p>No upcoming preventive maintenance. You're all good! ✅</p>
+    <p>✅ No upcoming maintenance. You're all good!</p>
   ) : (
-    maintenance.map((item) => {
-      const serviceName = item.service;
-      const interval = preventiveIntervals[item.service_id] || 30;
-      const completedDate = new Date(item.date);
-
-      const daysLeft = interval;
-
-      const nextAction =
-        item.status === "completed"
-          ? `No action needed ✅`
-          : `Scheduled maintenance in ${interval} day(s)`;
-
-      return (
-        <div
-          key={item.id}
-          style={{
-            backgroundColor: getMaintenanceColorByDate(completedDate),
-            padding: "0.5rem",
-            borderRadius: "8px",
-            marginBottom: "0.5rem",
-            color: "#000",
-            fontWeight: "bold",
-          }}
-        >
-          <p>{serviceName} – {item.status}</p>
-          <p>Date: {completedDate.toLocaleDateString()}</p>
-          <p>⏳ {daysLeft} days left</p>
-          <p>Next Action: {nextAction}</p>
-        </div>
-      );
-    })
+    <p style={{ color: "#fbbf24", fontWeight: "bold" }}>
+      ⚠️ You have upcoming preventive maintenance.
+      <br />
+      👉 Click here to view details
+    </p>
   )}
 </div>
-
      
 
           <div className="quick-actions">
@@ -1096,9 +1077,14 @@ onClick={() => setScreen('maintenance')}
 
     <div className="measure-options">
       <button
-        className="measure-option manual"
-        onClick={() => setScreen('manual-measure')}
-      >
+  className="measure-option manual"
+  onClick={() => {
+    setManualLength('');   // ✅ Reset length
+    setManualWidth('');    // ✅ Reset width
+    setManualUnit('Meters'); // ✅ Reset unit
+    setScreen('manual-measure');
+  }}
+>
         <div className="measure-icon">📏</div>
         <div className="measure-text">
           <h3>Manual Measurement</h3>
@@ -1212,9 +1198,9 @@ onClick={() => setScreen('maintenance')}
       <div className="result-card">
         <h3>Room Dimensions</h3>
         <div className="measurements">
-          <p>Length: <strong>{roomMeasurements.measurements.length} m</strong></p>
-          <p>Width: <strong>{roomMeasurements.measurements.width} m</strong></p>
-          <p>Area: <strong>{roomMeasurements.measurements.area} m²</strong></p>
+          <p>Length: <strong>{roomMeasurements.measurements.length || 0} m</strong></p>
+          <p>Width: <strong>{roomMeasurements.measurements.width || 0} m</strong></p>
+          <p>Area: <strong>{roomMeasurements.measurements.area || 0} m²</strong></p>
         </div>
       </div>
 
@@ -1241,16 +1227,17 @@ onClick={() => setScreen('maintenance')}
         >
           📐 Measure Again
         </button>
-        {recommendedProduct && (
-          <button
-            className="btn-book-service"
-            onClick={() =>
-              openBookingForm({ id: 1, name: 'AC Installation', price: 1500 })
-            }
-          >
-            📌 Book this Service
-          </button>
-        )}
+  {recommendedProduct && (
+  <button
+    className="btn-choose-aircon"
+    onClick={() => {
+      setFilter('Installation'); // para automatic na naka-installation yung services screen
+      setScreen('services');      // lilipat sa services screen
+    }}
+  >
+    🎯 Choose Aircon Type to Install
+  </button>
+)}
       </div>
     </div>
   </main>
@@ -1264,21 +1251,47 @@ onClick={() => setScreen('maintenance')}
       <p>No maintenance records yet.</p>
     ) : (
       <div className="maintenance-items">
-        {maintenance.map((m) => (
-          <div key={m.id} className="maintenance-item">
-            <h3>{m.service} – {m.status === "completed" ? "Completed" : m.status}</h3>
-            <p>Next Action: {m.nextAction} ✅</p>
-            <p>Date: {m.formattedDate}</p>
-            <p>⏳ {m.daysLeft} days left</p>
-          </div>
-        ))}
+        {maintenance.map((m) => {
+          const interval = preventiveIntervals[m.service_id] || 30;
+
+          // ✅ Compute next maintenance date from TODAY (pareho sa dashboard)
+          const today = new Date();
+          const nextDate = new Date(today);
+          nextDate.setDate(nextDate.getDate() + interval);
+
+          // ✅ Compute days left
+          const daysLeft = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+
+          const nextAction =
+            m.status === "completed"
+              ? "No action needed ✅"
+              : `Scheduled maintenance in ${interval} day(s)`;
+
+          return (
+            <div
+              key={m.id}
+              style={{
+                backgroundColor: getMaintenanceColorByDate(nextDate),
+                padding: "0.5rem",
+                borderRadius: "8px",
+                marginBottom: "0.5rem",
+                color: "#000",
+                fontWeight: "bold",
+              }}
+            >
+              <h3>{m.service} – {m.status === "completed" ? "Completed" : m.status}</h3>
+              <p>Date: {nextDate.toLocaleDateString()}</p>
+              <p>⏳ {daysLeft} days left</p>
+              <p>Next Action: {nextAction}</p>
+            </div>
+          );
+        })}
       </div>
     )}
 
     <button onClick={() => setScreen("home")}>⬅️ Back</button>
   </div>
 )}
-
       {/* --- Booking Form --- */}
       {screen === 'booking-form' && bookingService && (
         <main className="user-main">
@@ -1532,7 +1545,7 @@ onClick={() => setScreen('maintenance')}
   </main>
 )}
     
-  {/* --- Services Catalog --- */}
+{/* --- Services Catalog --- */}
 {screen === 'services' && (
   <main className="user-main">
     <div className="screen-header">
@@ -1572,17 +1585,6 @@ onClick={() => setScreen('maintenance')}
           </div>
         ))}
 
-        <div className="maintenance-list">
-  {maintenance.map((m) => (
-    <div key={m.id} className="maintenance-item" style={{ backgroundColor: getMaintenanceColorByStatus(m.status) }}>
-      <h4>{m.notes}</h4>
-      <p>Date: {new Date(m.date).toLocaleDateString()}</p>
-      <p>Status: {m.status}</p>
-      <p>{calculateDaysRemaining(m.date)}</p>
-    </div>
-  ))}
-</div>
-
       {/* --- No Services Message --- */}
       {services.filter((s) => s.category.toLowerCase() === filter.toLowerCase()).length === 0 && (
         <p>No services available in this category yet.</p>
@@ -1596,22 +1598,32 @@ onClick={() => setScreen('maintenance')}
   <BookingForm
     service={bookingService}
     onCancel={() => setBookingService(null)}
-    setScreen={setScreen} // ✅ ADD THIS
+    setScreen={setScreen}
     onConfirm={(data, localMeasurements, localRecommendation) => {
-      const newItem = {
-        cartId: Date.now(),
-        serviceId: bookingService.id,
-        serviceName: bookingService.name,
-        price: bookingService.price,
-        roomMeasurements: localMeasurements,
-        recommendedProduct: localRecommendation?.capacity,
-        bookingDetails: data,
+      // Siguraduhin serviceId ay string o number
+      const validServiceId =
+        typeof bookingService.id === 'object'
+          ? bookingService.id.value || bookingService.id.key // depende sa structure
+          : bookingService.id;
+
+      if (!validServiceId) {
+        alert(`❌ Invalid service ID for service "${bookingService.name}"`);
+        return;
       }
 
-      setCart([...cart, newItem])
-      setBookingService(null)
+      const newItem = {
+        cartId: Date.now(),
+        serviceId: validServiceId,
+        serviceName: bookingService.name,
+        price: bookingService.price || 0,
+        roomMeasurements: localMeasurements || null,
+        recommendedProduct: localRecommendation?.capacity || null,
+        bookingDetails: data,
+      };
 
-      alert(`Booking for ${bookingService.name} added to cart`)
+      setCart(prev => [...prev, newItem]);
+      setBookingService(null);
+      alert(`Booking for ${bookingService.name} added to cart`);
     }}
   />
 )}
@@ -1664,42 +1676,61 @@ onClick={() => setScreen('maintenance')}
         </main>
       )}
 
-  
-{screen === "preventive" && (
+  {screen === "preventive" && (
   <div className="maintenance-list">
     <h2>🛠️ Preventive Maintenance Schedule</h2>
 
-    {maintenance.length === 0 ? (
-      <p>No preventive maintenance scheduled.</p>
-    ) : (
-      maintenance.map((m) => (
-        <div
-          key={m.id}
-          className="maintenance-item"
-          style={{
-            backgroundColor: getMaintenanceColorByDate(m.date),
-            padding: "0.5rem",
-            borderRadius: "8px",
-            marginBottom: "0.5rem",
-            display: "flex",
-            justifyContent: "space-between",
-            color: "#000",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-          onClick={() => alert(`Maintenance Details:\nService: ${m.service}\nDate: ${m.date}\nStatus: ${m.status}`)}
-        >
-          <span>{m.service}</span>
-          <span>{m.date}</span>
-          <span>⏳ {m.daysLeft} days left</span>
-        </div>
-      ))
-    )}
+    {/* --- Legend --- */}
+    <div className="legend" style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+        <div style={{ width: "20px", height: "20px", backgroundColor: "#4caf50" }}></div>
+        <span>✅ Upcoming (More than 5 days left)</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+        <div style={{ width: "20px", height: "20px", backgroundColor: "#ff9800" }}></div>
+        <span>⚠️ Due Soon (1-5 days left)</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+        <div style={{ width: "20px", height: "20px", backgroundColor: "#f44336" }}></div>
+        <span>❌ Overdue (0 days left)</span>
+      </div>
+    </div>
 
-    <button onClick={() => setScreen("home")}>⬅️ Back</button>
+    {maintenance.length === 0 ? (
+      <p>✅ No upcoming maintenance. You're all good!.</p>
+    ) : (
+      maintenance.map((m) => {
+        const interval = preventiveIntervals[m.service_id] || 30; // ✅ TODAY BASED
+        const today = new Date();
+        const nextDate = new Date(today);
+        nextDate.setDate(today.getDate() + interval); // ✅ FIX NaN
+        const diffTime = nextDate - today;
+        const daysLeft = isNaN(diffTime) ? 0 : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return (
+          <div
+            key={m.id}
+            className="maintenance-item"
+            style={{
+              backgroundColor: getMaintenanceColorByDate(nextDate),
+              padding: "0.5rem",
+              borderRadius: "8px",
+              marginBottom: "0.5rem",
+              color: "#000",
+              fontWeight: "bold",
+            }}
+          >
+            <h3>{m.service}</h3>
+            <p>Date: {nextDate.toLocaleDateString()}</p>
+            <p>⏳ {daysLeft} days left</p>
+            <p>Next Action: Scheduled maintenance in {interval} day(s)</p>
+          </div>
+        );
+      })
+    )}
+    
   </div>
 )}
-
     {/* --- Edit Modal --- */}
 {editingId && (
   <div className="edit-modal-overlay" onClick={() => setEditingId(null)}>
