@@ -17,7 +17,8 @@ export default function UserApp({ user, onLogout }) {
   const [resetCounter, setResetCounter] = useState(0);
   const [fullName, setFullName] = useState("");
   const [roleName, setRoleName] = useState("");
-
+  
+ 
   // Manual measurement states
   const [manualLength, setManualLength] = useState('')
   const [manualWidth, setManualWidth] = useState('')
@@ -44,6 +45,32 @@ export default function UserApp({ user, onLogout }) {
   const [errorMsg, setErrorMsg] = useState(null)
   const [statusFilter, setStatusFilter] = useState('All')
   const [search, setSearch] = useState('')
+
+const preventiveIntervals = {
+  "4d376ac8-2b4e-4918-b3d3-7f026cb99ba7": 60, // AC Installation Basic
+  "01a76081-771d-463b-9508-1ae2410dde47": 45, // AC Repair
+  "1dd16c71-7392-48a0-926d-5b0fcc1818ec": 30, // AC Maintenance
+  "0935c1b6-ca4f-4d76-b9eb-4d67df5d227f": 60, // Split-type AC Installation
+  "82091676-9819-44a5-9784-45c0642082a1": 60, // Window-type AC Installation
+  "4d802600-9ec2-4893-8674-8c78bc6ecb14": 60, // Ceiling Cassette AC Installation
+  "dc6fb40e-32b9-45bb-a295-beff8f6072c8": 30, // Portable AC Setup
+  "745185be-b8d9-4e69-8b81-69a45b42fd13": 60, // Ducted AC Installation
+  "cf0c1e3a-86ca-49e3-ade0-fbac6307c5a9": 45, // AC Not Cooling
+  "8a6eebcb-727c-4fb9-af39-18fd692ad86e": 30, // Water Leakage Fix
+  "d3adddb7-13ee-413f-9045-11f311491bfe": 45, // AC Compressor Replacement
+  "3f04cce4-e0a6-41d2-9527-e499af381c89": 45, // AC Electrical Fault
+  "7d83399d-f639-4633-aecb-0112831a159f": 30, // Strange AC Noise Repair
+  "3f049aca-f623-4a9c-8b15-4f52af6db177": 60, // AC Coil Cleaning
+  "48352c7f-6ca3-445f-8597-7fb7958fd98d": 30, // Filter Cleaning/Replacement
+  "32128b70-c635-4419-b1cf-c6ea6cecab15": 60, // Full AC Check-up
+  "7ecce893-74cf-4b7b-936d-0a285e4b6d09": 30, // Gas Top-up
+  "e2692bd6-5e65-48a2-a61c-ff091d812789": 45, // Thermostat Calibration
+  "c1e524c8-64f5-4922-8537-19ffcc41a18b": 60, // Split-type AC Installation (duplicate)
+  "19a6029e-a206-423d-8088-09ad2cb22a90": 60, // Window-type AC Installation (duplicate)
+  "82cc28a6-f812-4f5c-8cb0-f0ff242e8c9a": 60, // Ceiling Cassette AC Installation (duplicate)
+  "5bd67041-7f29-4b7c-960a-8ed9e1418587": 30, // Portable AC Setup (duplicate)
+  "94e42a93-2771-4efe-9f66-8aa63fe24e0d": 60, // Ducted AC Installation (duplicate)
+};  
 
   const handleMeasureComplete = (result) => {
     setRoomMeasurements(result.measurements);
@@ -84,6 +111,7 @@ const calculateRoomMeasurements = (points) => {
   const assigned = countStatus('assigned');
   const cancelled = countStatus('cancelled');
   const rejected = countStatus('rejected');
+  const completed = countStatus('completed');
   const [filter, setFilter] = useState('All'); // para sa category highlight
   const [maintenance, setMaintenance] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -97,23 +125,84 @@ const calculateRoomMeasurements = (points) => {
   if (!error) setBookings(data);
 };
 
+// 🟢 Fetch completed maintenance + calculate nextAction and daysLeft
 const fetchMaintenance = async () => {
   if (!user?.id) return;
 
-  const { data, error } = await supabase
-    .from("maintenance")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("date", { ascending: true }); // ✅ FIXED
+  try {
+    const { data, error } = await supabase
+      .from("maintenance")
+      .select(`
+        id,
+        status,
+        date,
+        reminder_days,
+        service_id,
+        service:maintenance_service_id_fkey (id, name)
+      `)
+      .eq("user_id", user.id)
+      .order("date", { ascending: true });
 
-  if (error) {
-    console.error(error);
+    if (error) throw error;
+
+    // Map data para sa dashboard
+    const mapped = data.map((m) => {
+      const intervalDays = preventiveIntervals[m.service_id] || 30;
+      const serviceName = m.service?.name || "Service";
+
+      const serviceDate = new Date(m.date);
+      const nextActionDate = new Date(serviceDate);
+      nextActionDate.setDate(serviceDate.getDate() + intervalDays);
+
+      return {
+        ...m,
+        service: serviceName,
+        nextAction: getMaintenanceAction(m.service_id),
+        daysLeft: intervalDays,  // ✅ dito lang ang fix
+        formattedDate: serviceDate.toLocaleDateString(),
+      };
+    });
+
+    setMaintenance(mapped);
+  } catch (err) {
+    console.error("Failed to fetch maintenance records:", err.message);
     setMaintenance([]);
-    return;
   }
-
-  setMaintenance(data || []);
 };
+
+
+const createMaintenance = async (booking) => {
+  if (!booking || !user?.id) return;
+
+  try {
+    const maintenanceData = {
+      user_id: booking.user_id,
+      service_id: booking.service_id, // ✅ tama na
+      technician_id: booking.technician_id, // 🔥 ADD THIS
+      notes: `Maintenance for ${booking.service || 'Service'}`,
+      date: new Date(new Date().setDate(new Date().getDate() + 30)),
+      status: "pending",
+      reminder_days: 3,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    const { data, error } = await supabase
+      .from("maintenance")
+      .insert([maintenanceData])
+      .select();
+
+    if (error) throw error;
+
+    console.log("✅ Maintenance created:", data);
+  } catch (err) {
+    console.error("❌ Error creating maintenance:", err.message);
+  }
+};
+
+
+
+
 // Para ma-color code base sa status (pending, done, cancelled)
 const getMaintenanceColorByStatus = (status) => {
   switch(status) {
@@ -140,112 +229,54 @@ const getMaintenanceColorByDate = (date) => {
 };
 
 // Para ipakita kung ilang araw na lang hanggang maintenance
-const calculateDaysRemaining = (date) => {   // parameter renamed
+const calculateDaysRemaining = (nextDate) => {
   const today = new Date();
-  const targetDate = new Date(date);          // local variable na ibang pangalan
-  const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+  const diffTime = nextDate - today;
+  return Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 0);
+};
 
-  if (diffDays < 0) return "Overdue";
-  if (diffDays === 0) return "Today";
-  return `${diffDays} days left`;
+const getMaintenanceAction = (service_id) => {
+  const days = preventiveIntervals[service_id] || 30;
+  return `Scheduled maintenance in ${days} day(s)`;
 };
 
 
-{/*const [maintenance, setMaintenance] = useState([
-  { id: 1, service: 'AC Filter Cleaning', date: '2026-03-25', status: 'okay' },
-  { id: 2, service: 'Cooling Coil Check', date: '2026-03-28', status: 'soon' },
-  { id: 3, service: 'Compressor Inspection', date: '2026-03-30', status: 'overdue' },
-]);
-*/}
-  const getMaintenanceColor = (status) => {
-  switch(status) {
-    case 'pending':
-      return '#fbbf24'; // yellow
-    case 'done':
-      return '#34d399'; // green
-    case 'cancelled':
-      return '#f87171'; // red
-    default:
-      return '#60a5fa'; // blue default
-  }
-};
-const getDaysRemaining = (date) => {
-  const today = new Date();
-  const target = new Date(date);
 
-  const diffTime = target - today;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return "Overdue";
-  if (diffDays === 0) return "Today";
-  return `${diffDays} days left`;
-};
+useEffect(() => {
+  if (user?.id) fetchMaintenance();
+}, [user]);
 
 useEffect(() => {
   if (!user?.id) return;
 
-  async function fetchMaintenance() {
-    const { data, error } = await supabase
-      .from("maintenance")          // table name mo sa Supabase
-      .select("*")
-      .eq("user_id", user.id)       // filtered sa current user
-      .order("date", { ascending: true });
+  const channel = supabase
+    .channel('maintenance-updates')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'maintenance',
+        filter: `user_id=eq.${user.id}`,
+      },
+      (payload) => {
+        console.log('Realtime maintenance payload:', payload);
 
-    if (error) {
-      console.error("Error fetching maintenance:", error);
-      setMaintenance([]);
-      return;
-    }
+        if (payload.eventType === 'INSERT') {
+          setMaintenance(prev => [payload.new, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setMaintenance(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+        } else if (payload.eventType === 'DELETE') {
+          setMaintenance(prev => prev.filter(m => m.id !== payload.old.id));
+        }
+      }
+    )
+    .subscribe();
 
-    setMaintenance(data || []);
-  }
-
- async function createMaintenance(booking) {
-  try {
-    const intervalDays = booking.interval_days || 30;
-    const nextDate = new Date(booking.date);
-    nextDate.setDate(nextDate.getDate() + intervalDays);
-
-    // 🔍 prevent duplicate
-    const { data: existing } = await supabase
-  .from("maintenance")
-  .select("*")
-  .eq("user_id", booking.user_id)
-  .eq("date", nextDate.toISOString()); // ✅ check by date
-
-    if (existing && existing.length > 0) return;
-
-    const { error } = await supabase
-      .from("maintenance")
-      .insert([
-        {
-          user_id: booking.user_id,
-          service_id: booking.service_id || null,
-          date: nextDate.toISOString(), // ✅ USE THIS
-          status: "pending",
-          notes: `Auto maintenance for ${booking.service}`,
-          technician_id: booking.technician_id || null,
-          technician_name: booking.technician_name || null,
-          reminder_days: booking.reminder_days || 3,
-        },
-      ]);
-
-    if (error) console.error("❌ Maintenance insert error:", error);
-    else console.log("✅ Maintenance auto-created!");
-
-  } catch (err) {
-    console.error("❌ Unexpected error:", err);
-  }
-}
-
-
-  fetchMaintenance();
-}, [user]);
-
-useEffect(() => {
-  if (user?.id) {
-    fetchMaintenance();
-  }
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }, [user]);
 
 useEffect(() => {
@@ -313,21 +344,24 @@ useEffect(() => {
         table: 'bookings',
         filter: `user_id=eq.${user.id}`
       },
-      (payload) => {
+      async (payload) => {
         const updatedBooking = payload.new;
 
-        // 🔔 Notification
-        if (updatedBooking.status !== 'pending') {
+        if (updatedBooking.service_status === 'completed') {
+          // 1️⃣ Auto create maintenance
+          await createMaintenance(updatedBooking);
+
+          // 2️⃣ Notify user
           setNotification(
-            `📢 Your booking "${updatedBooking.service}" is now ${updatedBooking.status.toUpperCase()}`
+            `🛠️ Maintenance scheduled after your "${updatedBooking.service}" service`
           );
-          fetchBookingHistory();
+
+        } else if (updatedBooking.status === 'assigned') {
+          setNotification(
+            `👨‍🔧 Technician assigned for "${updatedBooking.service}"`
+          );
         }
 
-        // 🔥 AUTO GENERATE MAINTENANCE
-        if (updatedBooking.status === 'completed') {
-          createMaintenance(updatedBooking);
-        }
       }
     )
     .subscribe();
@@ -339,34 +373,28 @@ useEffect(() => {
 
 useEffect(() => {
   if (!user?.id || maintenance.length === 0) return;
-
   const now = new Date();
+  const newNotifications = [];
 
   maintenance.forEach((m) => {
+    if (!m.date || m.status !== "pending") return;
+
     const schedDate = new Date(m.date);
     const diffDays = Math.ceil((schedDate - now) / (1000 * 60 * 60 * 24));
-
     const reminderDays = m.reminder_days || 3;
 
-    // 🔔 Reminder
-    if (diffDays <= reminderDays && diffDays > 0 && m.status === "pending") {
-      setNotification(
-        `🛠️ Reminder: "${m.notes}" on ${schedDate.toLocaleDateString()}`
-      );
-    }
-
-    // ⚠️ Overdue
-    if (diffDays < 0 && m.status === "pending") {
-      setNotification(
-        `⚠️ Overdue: "${m.notes}" scheduled last ${schedDate.toLocaleDateString()}`
-      );
-    }
-
-    // 👨‍🔧 Technician alert
-    if (m.technician_id && diffDays <= reminderDays && diffDays > 0) {
-      console.log(`🚨 Notify tech ${m.technician_name}`);
+    if (diffDays > 0 && diffDays <= reminderDays) {
+      const msg = `🛠️ Reminder: "${m.notes}" on ${schedDate.toLocaleDateString()}`;
+      if (!newNotifications.includes(msg)) newNotifications.push(msg);
+    } else if (diffDays < 0) {
+      const msg = `⚠️ Overdue: "${m.notes}" scheduled last ${schedDate.toLocaleDateString()}`;
+      if (!newNotifications.includes(msg)) newNotifications.push(msg);
     }
   });
+
+  if (newNotifications.length > 0) {
+  setNotification(newNotifications[0]); // isa lang para malinis UI
+}
 }, [maintenance, user]);
 
 const handleCancel = async (id) => {
@@ -615,6 +643,46 @@ function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm,
     setScreen('booking-form')
   }
 
+  // 👉 ILAGAY SA TAAS NG COMPONENT
+
+function getNextActionByService(serviceName) {
+  switch(serviceName) {
+
+    case "AC Installation Basic":
+    case "Split-type AC Installation":
+    case "Window-type AC Installation":
+    case "Ceiling Cassette AC Installation":
+    case "Ducted AC Installation":
+    case "Portable AC Setup":
+      return "Schedule preventive check";
+
+    case "AC Repair":
+    case "Water Leakage Fix":
+    case "AC Compressor Replacement":
+    case "AC Electrical Fault":
+    case "Strange AC Noise Repair":
+      return "Monitor performance & check for issues";
+
+    case "Filter Cleaning/Replacement":
+    case "Full AC Check-up":
+    case "AC Coil Cleaning":
+    case "Thermostat Calibration":
+    case "Gas Top-up":
+      return "Perform routine maintenance";
+
+    default:
+      return "Perform maintenance";
+  }
+}
+
+function calculateNextActionDate(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + 30);
+  return d;
+}
+
+
+
   {/*function handleConfirmBooking() {
     if (!bookingName || !bookingContact || !bookingDate || !bookingTime) {
       alert('Please complete all required fields')
@@ -740,20 +808,21 @@ if (existing) {
 
   try {
     const bookingsToInsert = cart.map(item => ({
-      user_id: user.id,
-      full_name: item.bookingDetails.fullName,
-      email: item.bookingDetails.email,
-      mobile_number: item.bookingDetails.mobileNumber,
-      address: item.bookingDetails.address,
-      service: item.serviceName,
-      room_area: parseFloat(item.roomMeasurements?.area) || null,
-      recommended_hp: item.recommendedProduct,
-      date: item.bookingDetails.date,
-      time: item.bookingDetails.time,
-      notes: item.bookingDetails.notes,
-      status: "pending",
-      created_at: new Date() // siguraduhin may timestamp para sa order
-    }));
+  user_id: user.id,
+  service_id: item.serviceId, // ✅ ADD THIS (IMPORTANT)
+  full_name: item.bookingDetails.fullName,
+  email: item.bookingDetails.email,
+  mobile_number: item.bookingDetails.mobileNumber,
+  address: item.bookingDetails.address,
+  service: item.serviceName,
+  room_area: parseFloat(item.roomMeasurements?.area) || null,
+  recommended_hp: item.recommendedProduct,
+  date: item.bookingDetails.date,
+  time: item.bookingDetails.time,
+  notes: item.bookingDetails.notes,
+  status: "pending",
+  created_at: new Date()
+}));
 
     const { data, error } = await supabase
       .from("bookings")
@@ -840,29 +909,7 @@ if (existing) {
 
           <div className="dashboard-summary">
 
-  {/*<div className="maintenance-preview">
-  {maintenance.map((m) => (
-    <div
-      key={m.id}
-      className="maintenance-item"
-      style={{
-        backgroundColor: getMaintenanceColor(m.status),
-        padding: '1rem',
-        borderRadius: '10px',
-        marginBottom: '0.5rem',
-        cursor: 'pointer'
-      }}
-      onClick={() => {
-        setStatusFilter(m.status); // kung gusto mo i-filter sa history
-        setScreen('history');
-      }}
-    >
-      <p>{m.service}</p>
-      <p>{m.date}</p>
-    </div>
-  ))}
-</div>
-*/}
+
 
 
 
@@ -933,6 +980,17 @@ if (existing) {
   <h3>{rejected}</h3>
   <p>Rejected</p>
 </div>
+
+<div 
+  className="card completed" 
+  onClick={() => {
+    setStatusFilter('completed')
+    setScreen('history')
+  }}
+>
+  <h3>{completed}</h3>
+  <p>Completed</p>
+</div>
 </div>
 </div>
 
@@ -947,30 +1005,60 @@ if (existing) {
     marginBottom: "1rem",
     cursor: "pointer"
   }}  
-  onClick={() => setScreen('preventive')}
+
+  
+  
+  className="card maintenance-preview"
+onClick={() => setScreen('maintenance')}
 >
   <h3>🔔 Upcoming Preventive Maintenance</h3>
 
+  {/* ✅ LEGEND */}
+  <div style={{
+    display: "flex",
+    gap: "10px",
+    marginBottom: "10px",
+    fontSize: "0.9rem"
+  }}>
+    <span>🟢 You're all good! ✅</span>
+    <span>🟡 Due Soon</span>
+    <span>🔴 Overdue</span>
+  </div>
+
   {maintenance.length === 0 ? (
-    <p>No upcoming maintenance. You're all good! ✅</p>
+    <p>No upcoming preventive maintenance. You're all good! ✅</p>
   ) : (
-    maintenance.slice(0, 3).map(item => (
-      <div
-        key={item.id}
-        style={{
-          backgroundColor: getMaintenanceColor(item.status),
-          padding: "0.5rem",
-          borderRadius: "8px",
-          marginTop: "0.5rem",
-          color: "#000",
-          fontWeight: "bold"
-        }}
-      >
-        <p>{item.notes}</p>
-        <p>{new Date(item.date).toLocaleDateString()}</p>
-        <p>⏳ {getDaysRemaining(item.date)}</p>
-      </div>
-    ))
+    maintenance.map((item) => {
+      const serviceName = item.service;
+      const interval = preventiveIntervals[item.service_id] || 30;
+      const completedDate = new Date(item.date);
+
+      const daysLeft = interval;
+
+      const nextAction =
+        item.status === "completed"
+          ? `No action needed ✅`
+          : `Scheduled maintenance in ${interval} day(s)`;
+
+      return (
+        <div
+          key={item.id}
+          style={{
+            backgroundColor: getMaintenanceColorByDate(completedDate),
+            padding: "0.5rem",
+            borderRadius: "8px",
+            marginBottom: "0.5rem",
+            color: "#000",
+            fontWeight: "bold",
+          }}
+        >
+          <p>{serviceName} – {item.status}</p>
+          <p>Date: {completedDate.toLocaleDateString()}</p>
+          <p>⏳ {daysLeft} days left</p>
+          <p>Next Action: {nextAction}</p>
+        </div>
+      );
+    })
   )}
 </div>
 
@@ -1168,6 +1256,29 @@ if (existing) {
   </main>
 )}
 
+{screen === "maintenance" && (
+  <div className="maintenance-list">
+    <h2>🛠️ Your Maintenance Schedule</h2>
+
+    {maintenance.length === 0 ? (
+      <p>No maintenance records yet.</p>
+    ) : (
+      <div className="maintenance-items">
+        {maintenance.map((m) => (
+          <div key={m.id} className="maintenance-item">
+            <h3>{m.service} – {m.status === "completed" ? "Completed" : m.status}</h3>
+            <p>Next Action: {m.nextAction} ✅</p>
+            <p>Date: {m.formattedDate}</p>
+            <p>⏳ {m.daysLeft} days left</p>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <button onClick={() => setScreen("home")}>⬅️ Back</button>
+  </div>
+)}
+
       {/* --- Booking Form --- */}
       {screen === 'booking-form' && bookingService && (
         <main className="user-main">
@@ -1285,6 +1396,7 @@ if (existing) {
         <button onClick={() => setStatusFilter('cancelled')}>Cancelled</button>
         <button onClick={() => setStatusFilter('rejected')}>Rejected</button>
         <button onClick={() => setStatusFilter('assigned')}>Assigned</button>
+        <button onClick={() => setStatusFilter('completed')}>Completed</button>
       </div>
     </div>
 
@@ -1321,6 +1433,7 @@ if (existing) {
           if (statusFilter === 'assigned') return item.status === 'assigned';
           if (statusFilter === 'cancelled') return item.status === 'cancelled';
           if (statusFilter === 'rejected') return item.status === 'rejected';
+          if (statusFilter === 'completed') return item.status === 'completed';
 
           return true;
         })
@@ -1362,6 +1475,8 @@ if (existing) {
                         ? "#f87171"
                         : item.status === "rejected"
                         ? "#ef4444"
+                        : item.status === "completed"
+                        ? "#22c55e"
                         : "#9ca3af",
                     color: "#fff",
                     padding: "4px 8px",
@@ -1374,6 +1489,7 @@ if (existing) {
                   {item.status === "assigned" && "👨‍🔧 Assigned"}
                   {item.status === "cancelled" && "❌ Cancelled"}
                   {item.status === "rejected" && "🚫 Rejected"}
+                  {item.status === "completed" && "✅ Completed"}
                 </span>
               </p>
 
@@ -1456,11 +1572,24 @@ if (existing) {
           </div>
         ))}
 
+        <div className="maintenance-list">
+  {maintenance.map((m) => (
+    <div key={m.id} className="maintenance-item" style={{ backgroundColor: getMaintenanceColorByStatus(m.status) }}>
+      <h4>{m.notes}</h4>
+      <p>Date: {new Date(m.date).toLocaleDateString()}</p>
+      <p>Status: {m.status}</p>
+      <p>{calculateDaysRemaining(m.date)}</p>
+    </div>
+  ))}
+</div>
+
       {/* --- No Services Message --- */}
       {services.filter((s) => s.category.toLowerCase() === filter.toLowerCase()).length === 0 && (
         <p>No services available in this category yet.</p>
       )}
     </div>
+
+    
 
     {/* --- Booking Form Modal --- */}
 {bookingService && (
@@ -1535,42 +1664,40 @@ if (existing) {
         </main>
       )}
 
-      {screen === "preventive" && (
-  <main className="user-main">
-    <div className="screen-header">
-      <h2>🛠️ Preventive Maintenance Schedule</h2>
-      <button onClick={() => setScreen("home")} className="btn-back">
-        ← Back
-      </button>
-    </div>
+  
+{screen === "preventive" && (
+  <div className="maintenance-list">
+    <h2>🛠️ Preventive Maintenance Schedule</h2>
 
-    <div className="maintenance-list">
-      {maintenance.length === 0 && <p>No preventive maintenance scheduled.</p>}
+    {maintenance.length === 0 ? (
+      <p>No preventive maintenance scheduled.</p>
+    ) : (
+      maintenance.map((m) => (
+        <div
+          key={m.id}
+          className="maintenance-item"
+          style={{
+            backgroundColor: getMaintenanceColorByDate(m.date),
+            padding: "0.5rem",
+            borderRadius: "8px",
+            marginBottom: "0.5rem",
+            display: "flex",
+            justifyContent: "space-between",
+            color: "#000",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+          onClick={() => alert(`Maintenance Details:\nService: ${m.service}\nDate: ${m.date}\nStatus: ${m.status}`)}
+        >
+          <span>{m.service}</span>
+          <span>{m.date}</span>
+          <span>⏳ {m.daysLeft} days left</span>
+        </div>
+      ))
+    )}
 
-      {maintenance.map((m) => (
-  <div
-    key={m.id}
-    className="maintenance-item"
-    style={{
-      backgroundColor: getMaintenanceColorByDate(m.date),
-      padding: "0.5rem",
-      borderRadius: "8px",
-      marginBottom: "0.5rem",
-      display: "flex",
-      justifyContent: "space-between",
-      color: "#000",
-      fontWeight: "bold",
-      cursor: "pointer",
-    }}
-    onClick={() => alert(`Maintenance Details:\nService: ${m.service}\nDate: ${m.date}\nStatus: ${m.status}`)}
-  >
-    <span>{m.service}</span>
-    <span>{new Date(m.date).toLocaleDateString()}</span>
-    <span>⏳ {calculateDaysRemaining(m.date)}</span>
+    <button onClick={() => setScreen("home")}>⬅️ Back</button>
   </div>
-))}
-    </div>
-  </main>
 )}
 
     {/* --- Edit Modal --- */}

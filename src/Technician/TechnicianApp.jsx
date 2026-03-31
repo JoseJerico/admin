@@ -21,7 +21,7 @@ function StatsGrid({ appointments }) {
       {statusList.map(status => (
         <div
           className="stat-card-tech"
-          key={status} // ✅ unique key sa bawat status
+          key={status}
           style={{backgroundColor: STATUS_COLORS[status]}}
         >
           <div className="stat-value-tech">
@@ -86,11 +86,39 @@ export default function TechnicianApp({ user, onLogout }) {
       .subscribe();
   }
 
+  // --- Filter Appointments Function ---
+  function getFilteredAppointments() {
+    if (activeFilter === 'all') return appointments;
+    return appointments.filter(a => a.status === activeFilter);
+  }
+
+  // --- Status Color Helper ---
+  function getStatusColor(status) {
+    const STATUS_COLORS = {
+      assigned: '#f59e0b',
+      in_progress: '#3b82f6',
+      completed: '#10b981'
+    };
+    return STATUS_COLORS[status] || '#6b7280'; // default grey
+  }
+
+  // --- Appointment Click Handler ---
   function handleAppointmentClick(apt) {
-    setSelectedAppointment(apt)
-    setWorkPhotos(apt.photos || [])
-    setNotes(apt.work_notes || '')
-    setScreen('details')
+    const serviceId = apt.service_id || crypto.randomUUID();
+
+    const updatedApt = {
+      ...apt,
+      service_id: serviceId,
+      photos: apt.photos || [],
+      work_notes: apt.work_notes || ''
+    }
+
+    console.log("Clicked appointment:", updatedApt);
+
+    setSelectedAppointment(updatedApt);
+    setWorkPhotos(updatedApt.photos);
+    setNotes(updatedApt.work_notes);
+    setScreen('details');
   }
 
   async function startWork(apt) {
@@ -110,7 +138,7 @@ export default function TechnicianApp({ user, onLogout }) {
     if (!selectedAppointment) return
 
     const photo = {
-      id: Date.now(), // ✅ unique key for map
+      id: Date.now(),
       type: cameraMode,
       url: photoUrl,
       timestamp: new Date().toISOString()
@@ -133,51 +161,70 @@ export default function TechnicianApp({ user, onLogout }) {
     setShowCamera(false)
   }
 
-  async function completeJob() {
-    if (!selectedAppointment) return
+  // --- Complete Job Function ---
+async function completeJob() {
+  if (!selectedAppointment) return;
 
-    if (!workPhotos.find(p => p.type === 'before') || !workPhotos.find(p => p.type === 'after')) {
-      return alert('📸 You must capture BOTH start and end photos before completing the job.')
-    }
-
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'completed',
-          service_status: 'completed',
-          work_notes: notes,
-          photos: workPhotos
-        })
-        .eq('id', selectedAppointment.id)
-      if (error) throw error
-
-      setSelectedAppointment(null)
-      setWorkPhotos([])
-      setNotes('')
-      setScreen('appointments')
-      loadAppointments()
-      alert('✅ Job completed successfully!')
-    } catch (err) {
-      console.error("Failed to complete job:", err)
-      alert('❌ Failed to complete job: ' + err.message)
-    }
+  // Siguraduhin may BEFORE at AFTER photos
+  if (!workPhotos.find(p => p.type === 'before') || !workPhotos.find(p => p.type === 'after')) {
+    return alert('📸 You must capture BOTH start and end photos before completing the job.');
   }
 
-  function getFilteredAppointments() {
-    if (activeFilter === 'all') return appointments
-    return appointments.filter(a => a.status === activeFilter)
-  }
+  try {
+    const serviceId = selectedAppointment.service_id || crypto.randomUUID();
+    const userId = selectedAppointment.user_id;
 
-  function getStatusColor(status) {
-    switch (status) {
-      case 'assigned': return '#f59e0b'
-      case 'in_progress': return '#3b82f6'
-      case 'completed': return '#10b981'
-      default: return '#6b7280'
-    }
-  }
+    if (!userId) return alert("❌ Missing user_id for maintenance record.");
 
+    // 1️⃣ Update booking status sa 'done' ✅
+    const { error: bookingError } = await supabase
+      .from('bookings')
+      .update({
+        status: 'completed',            // Booking completed
+        service_status: 'completed',
+        work_notes: notes,
+        photos: workPhotos,
+        service_id: serviceId
+      })
+      .eq('id', selectedAppointment.id);
+
+    if (bookingError) throw bookingError;
+
+    // 2️⃣ Insert preventive maintenance record (status: pending, 30 days after completion)
+    const maintenanceDate = new Date();
+    maintenanceDate.setDate(maintenanceDate.getDate() + 30); // 30 days later
+
+    const maintenancePayload = {
+      user_id: userId,
+      service_id: serviceId,
+      status: 'pending',          // Preventive maintenance pending
+      notes: notes || '',
+      date: maintenanceDate.toISOString(),
+      reminder_days: 30
+    };
+
+    console.log("Maintenance payload:", maintenancePayload);
+
+    const { error: maintenanceError } = await supabase
+      .from('maintenance')
+      .insert([maintenancePayload]);
+
+    if (maintenanceError) throw maintenanceError;
+
+    // 3️⃣ Reset UI
+    setSelectedAppointment(null);
+    setWorkPhotos([]);
+    setNotes('');
+    setScreen('appointments');
+    loadAppointments();
+
+    alert('✅ Job completed & preventive maintenance scheduled!');
+
+  } catch (err) {
+    console.error("Error completing job:", err);
+    alert('❌ Failed: ' + (err.message || JSON.stringify(err)));
+  }
+}
   if (showCamera) {
     return (
       <div className="tech-app">
@@ -213,7 +260,7 @@ export default function TechnicianApp({ user, onLogout }) {
           <div className="status-filter">
             {['all','assigned','in_progress','completed'].map(s => (
               <button
-                key={s} // ✅ unique key
+                key={s}
                 className={`filter-btn ${activeFilter === s ? 'active' : ''}`}
                 onClick={() => setActiveFilter(s)}
               >
@@ -225,7 +272,7 @@ export default function TechnicianApp({ user, onLogout }) {
           <div className="appointments-list">
             {getFilteredAppointments().map(apt => (
               <div
-                key={apt.id} // ✅ unique key sa bawat appointment
+                key={apt.id}
                 className="appointment-card"
                 onClick={() => handleAppointmentClick(apt)}
               >
@@ -298,7 +345,7 @@ export default function TechnicianApp({ user, onLogout }) {
 
             <div className="photos-grid">
               {workPhotos.map(p => (
-                <div key={p.id} className="photo-item"> {/* ✅ key para sa bawat photo */}
+                <div key={p.id} className="photo-item">
                   <img src={p.url} alt="" />
                   <div className="photo-label">{p.type}</div>
                 </div>

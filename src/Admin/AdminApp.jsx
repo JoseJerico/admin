@@ -190,14 +190,46 @@ export default function AdminApp({ user, onLogout }) {
   async function approve(id){ await supabase.from('bookings').update({status:'approved'}).eq('id',id); refresh(); }
   async function reject(id){ await supabase.from('bookings').update({status:'rejected'}).eq('id',id); refresh(); }
 
-  async function completeBooking(id){
-    if(!window.confirm("Mark this booking as COMPLETED?")) return;
-    const { error } = await supabase.from('bookings').update({status:"completed"}).eq("id",id);
-    if(error){ alert("❌ Failed to complete booking"); console.error(error); return; }
-    alert("✅ Booking marked as completed!");
-    refresh();
+  async function completeBooking(id) {
+  if (!window.confirm("Mark this booking as COMPLETED?")) return;
+
+  // 1️⃣ Update booking status sa 'completed'
+  const { error: bookingError } = await supabase
+    .from('bookings')
+    .update({ status: 'completed', service_status: 'completed' })
+    .eq('id', id);
+
+  if (bookingError) {
+    alert("❌ Failed to complete booking");
+    console.error(bookingError);
+    return;
   }
 
+  // 2️⃣ Kunin yung booking row para sa valid user_id at service_id
+  const booking = schedules.find(s => s.id === id);
+  if (!booking) return;
+
+  // 3️⃣ Insert preventive maintenance record sa maintenance table
+  const { error: maintenanceError } = await supabase
+    .from('maintenance')
+    .insert([{
+      user_id: booking.user_id,        // dapat existing sa profiles table
+      service_id: booking.service_id,  // dapat existing service
+      status: 'pending',               // default preventive maintenance status
+      notes: booking.notes || '',
+      date: new Date().toISOString(),  // ngayon na date
+      reminder_days: 30                // default reminder
+    }]);
+
+  if (maintenanceError) {
+    console.error(maintenanceError);
+    alert("⚠ Failed to log preventive maintenance");
+  } else {
+    alert("✅ Booking completed & preventive maintenance logged!");
+  }
+
+  refresh(); // optional, para i-reload ang UI
+}
   async function handleAssign(){
     if(!selectedBooking || !selectedTechnician) return alert("Select technician");
     const { error } = await supabase.from('bookings').update({
@@ -206,6 +238,7 @@ export default function AdminApp({ user, onLogout }) {
       technician_contact:selectedTechnician.contact,
       technician_specialty:selectedTechnician.specialty,
       status:"assigned"
+      
     }).eq("id",selectedBooking.id);
     if(error){ console.error(error); alert("Failed to assign technician"); return; }
     alert(`Technician ${selectedTechnician.name} assigned!`);
@@ -251,7 +284,7 @@ export default function AdminApp({ user, onLogout }) {
             <tr key={s.id} style={{ backgroundColor: bgColor }}>
               <td>{s.id}</td>
               <td>{s.full_name}</td>
-              <td>{s.service}</td>
+              <td>{s.services?.name || s.service}</td>
               <td>{s.date} {s.time}</td>
               <td>{s.mobile_number}</td>
               <td>{s.address}</td>
