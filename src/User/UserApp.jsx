@@ -17,12 +17,13 @@ export default function UserApp({ user, onLogout }) {
   const [resetCounter, setResetCounter] = useState(0);
   const [fullName, setFullName] = useState("");
   const [roleName, setRoleName] = useState("");
-  
+  const [notificationIndex, setNotificationIndex] = useState(0);
  
   // Manual measurement states
   const [manualLength, setManualLength] = useState('')
   const [manualWidth, setManualWidth] = useState('')
   const [manualUnit, setManualUnit] = useState('meters')
+  
   // Sa taas ng UserApp function/component
 
  
@@ -38,7 +39,6 @@ export default function UserApp({ user, onLogout }) {
   const [bookingAddress, setBookingAddress] = useState('')
   const [showConfirm, setShowConfirm] = React.useState(false)
   const [bookingHistory, setBookingHistory] = useState([])
-  const [bookings, setBookings] = useState([]);
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false)
@@ -115,15 +115,7 @@ const calculateRoomMeasurements = (points) => {
   const [filter, setFilter] = useState('All'); // para sa category highlight
   const [maintenance, setMaintenance] = useState([]);
   const [notification, setNotification] = useState(null);
-  const fetchBookings = async () => {
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("date", { ascending: false });
-
-  if (!error) setBookings(data);
-};
+  
 
 // 🟢 Fetch completed maintenance + calculate nextAction and daysLeft
 const fetchMaintenance = async () => {
@@ -380,6 +372,7 @@ useEffect(() => {
 
 useEffect(() => {
   if (!user?.id || maintenance.length === 0) return;
+
   const now = new Date();
   const newNotifications = [];
 
@@ -391,17 +384,33 @@ useEffect(() => {
     const reminderDays = m.reminder_days || 3;
 
     if (diffDays > 0 && diffDays <= reminderDays) {
-      const msg = `🛠️ Reminder: "${m.notes}" on ${schedDate.toLocaleDateString()}`;
+      const msg = `🛠️ Reminder: "${m.service}" on ${schedDate.toLocaleDateString()}`;
       if (!newNotifications.includes(msg)) newNotifications.push(msg);
     } else if (diffDays < 0) {
-      const msg = `⚠️ Overdue: "${m.notes}" scheduled last ${schedDate.toLocaleDateString()}`;
+      const msg = `⚠️ Overdue: "${m.service}" scheduled last ${schedDate.toLocaleDateString()}`;
       if (!newNotifications.includes(msg)) newNotifications.push(msg);
     }
   });
 
-  if (newNotifications.length > 0) {
-  setNotification(newNotifications[0]); // isa lang para malinis UI
-}
+  if (newNotifications.length === 0) {
+    setNotification(null);
+    return;
+  }
+
+  let index = 0;
+  setNotification(newNotifications[index]);
+
+  const interval = setInterval(() => {
+    index += 1;
+    if (index < newNotifications.length) {
+      setNotification(newNotifications[index]);
+    } else {
+      setNotification(null); // mawawala pagkatapos maipakita lahat
+      clearInterval(interval); // stop sa cycle
+    }
+  }, 3000);
+
+  return () => clearInterval(interval);
 }, [maintenance, user]);
 
 const handleCancel = async (id) => {
@@ -421,7 +430,7 @@ const handleCancel = async (id) => {
 
   alert("Booking cancelled!");
   fetchBookingHistory(); // 🔹 refresh history para makita agad ang cancelled status
-  fetchBookings();
+  
 };
 
 const handleEdit = (booking) => {
@@ -440,7 +449,7 @@ const handleUpdate = async (e) => {
   alert("Booking updated!");
   setEditingId(null);
   setFormData({});
-  fetchBookings();
+  fetchBookingHistory(); // 🔹 refresh history
 };
 
  useEffect(() => {
@@ -1088,7 +1097,7 @@ function calculateNextActionDate(date) {
         <div className="measure-icon">📏</div>
         <div className="measure-text">
           <h3>Manual Measurement</h3>
-          <p>Enter room size manually</p>
+          <p>Enter area dimensions manually</p>
         </div>
       </button>
 
@@ -1098,10 +1107,10 @@ function calculateNextActionDate(date) {
       >
         <div className="measure-icon">📷</div>
         <div className="measure-text">
-          <h3>Use Camera AR</h3>
-          <p>Scan your room using camera</p>
-          <small style={{ display: 'block', marginTop: '0.5rem', color: '#fbbf24' }}>
-            ⚠️ Tap at least 2 corners of your room to measure
+          <h3>Use Camera</h3>
+          <p>Tap at least 4 corners of the area to measure length and width</p>
+          <small style={{ display: 'block', marginTop: '0.5rem', color: '#007BFF' }}>
+            ⚠️ Disclaimer: Measurements taken using the camera are estimates only (80–90% accuracy). For precise results, please use manual measuring tools
           </small>
         </div>
       </button>
@@ -1116,7 +1125,7 @@ function calculateNextActionDate(date) {
       console.log("AR Result raw:", result);
 
       if (!result || !result.points || result.points.length < 2) {
-        return alert("⚠️ Tap at least 2 corners of your room!");
+        return alert("See your room measurements now.");
       }
 
       // 1️⃣ Kalkulahin ang measurements
@@ -1129,7 +1138,13 @@ function calculateNextActionDate(date) {
       const recommendedHP = getAirconHP(area);   // function mo para sa HP
 
       // 2️⃣ I-save sa state para magamit sa Room Analysis page
-      setRoomMeasurements({ length, width, area });
+     setRoomMeasurements({
+  measurements: {
+    length,
+    width,
+    area
+  }
+});
       setRecommendedProduct({ capacity: recommendedHP });
 
       // 3️⃣ Ipakita sa screen
@@ -1198,9 +1213,9 @@ function calculateNextActionDate(date) {
       <div className="result-card">
         <h3>Room Dimensions</h3>
         <div className="measurements">
-          <p>Length: <strong>{roomMeasurements.measurements.length || 0} m</strong></p>
-          <p>Width: <strong>{roomMeasurements.measurements.width || 0} m</strong></p>
-          <p>Area: <strong>{roomMeasurements.measurements.area || 0} m²</strong></p>
+          <p>Length: <strong>{roomMeasurements?.measurements?.length || 0} m</strong></p>
+          <p>Width: <strong>{roomMeasurements?.measurements?.width || 0} m</strong></p>
+          <p>Area: <strong>{roomMeasurements?.measurements?.area || 0} m²</strong></p>
         </div>
       </div>
 
@@ -1221,7 +1236,7 @@ function calculateNextActionDate(date) {
 
             setManualLength('');
             setManualWidth('');
-            setManualUnit('Meters');
+            setManualUnit('meters');
             
           }}
         >
@@ -1252,20 +1267,38 @@ function calculateNextActionDate(date) {
     ) : (
       <div className="maintenance-items">
         {maintenance.map((m) => {
-          const interval = preventiveIntervals[m.service_id] || 30;
+          // ✅ fallback interval
+          const interval = preventiveIntervals[m.service_id] ?? 30;
 
-          // ✅ Compute next maintenance date from TODAY (pareho sa dashboard)
+          // ✅ current date
           const today = new Date();
-          const nextDate = new Date(today);
-          nextDate.setDate(nextDate.getDate() + interval);
 
-          // ✅ Compute days left
-          const daysLeft = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+          // ✅ gamitin ang ORIGINAL date (ito ang pinaka-fix)
+          const baseDate = new Date(m.date);
 
+          // ✅ fixed next maintenance date
+          const nextDate = new Date(baseDate);
+          nextDate.setDate(baseDate.getDate() + interval);
+
+          // ✅ compute days left (countdown)
+          const diffTime = nextDate - today;
+          const daysLeft = isNaN(diffTime)
+            ? 0
+            : Math.max(
+                0,
+                Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+              );
+
+          // ✅ next action
           const nextAction =
             m.status === "completed"
               ? "No action needed ✅"
-              : `Scheduled maintenance in ${interval} day(s)`;
+              : daysLeft === 0
+              ? "Maintenance due today ⚠️"
+              : `Scheduled maintenance in ${daysLeft} day(s)`;
+
+          // ✅ service name fallback
+          const serviceName = m.service ?? "Unnamed Service";
 
           return (
             <div
@@ -1279,9 +1312,23 @@ function calculateNextActionDate(date) {
                 fontWeight: "bold",
               }}
             >
-              <h3>{m.service} – {m.status === "completed" ? "Completed" : m.status}</h3>
-              <p>Date: {nextDate.toLocaleDateString()}</p>
-              <p>⏳ {daysLeft} days left</p>
+              <h3>
+                {serviceName} –{" "}
+                {m.status === "completed" ? "Completed" : m.status}
+              </h3>
+
+              {/* ✅ show NEXT maintenance date (not today-based) */}
+              <p>
+                Next Maintenance Date:{" "}
+                {isNaN(nextDate)
+                  ? "TBD"
+                  : nextDate.toLocaleDateString()}
+              </p>
+
+              {/* ✅ countdown */}
+              <p>⏳ {daysLeft} day(s) left</p>
+
+              {/* ✅ action */}
               <p>Next Action: {nextAction}</p>
             </div>
           );
