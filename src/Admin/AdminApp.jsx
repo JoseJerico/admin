@@ -17,14 +17,14 @@ function AssignTechnicianModal({ booking, technicians, onAssign, onClose, select
         >
           <option value="">Select Technician</option>
           {technicians.map(t => (
-            <option key={t.id} value={t.id}>{t.name} | {t.contact || 'N/A'} | {t.specialty || 'N/A'}</option>
+            <option key={t.id} value={t.id}>{t.name} | {t.contact || 'N/A'} | {t.speciality || 'N/A'}</option>
           ))}
         </select>
         {selectedTechnician && (
           <div style={{ marginTop:"10px", padding:"10px", background:"#f1f5f9", borderRadius:"8px" }}>
             <p>👤 <strong>{selectedTechnician.name}</strong></p>
             <p>📞 {selectedTechnician.contact}</p>
-            <p>⚡ {selectedTechnician.specialty}</p>
+            <p>⚡ {selectedTechnician.speciality}</p>
           </div>
         )}
         <div style={{ marginTop:"10px" }}>
@@ -127,6 +127,10 @@ export default function AdminApp({ user, onLogout }) {
   const [showProfile, setShowProfile] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   const STATUS_COLORS = {
     cancelled: '#4da6ff',
     rejected: '#4da6ff',
@@ -147,6 +151,7 @@ export default function AdminApp({ user, onLogout }) {
       setSchedules(data || []);
       const conflicts = groupConflicts(data || []);
       setConflictIds(conflicts.flat().map(b => b.id));
+      setCurrentPage(1); // reset page sa bagong data
     }
     setLoading(false);
   }
@@ -180,7 +185,7 @@ export default function AdminApp({ user, onLogout }) {
   // Fetch technicians
   useEffect(() => {
     (async ()=>{
-      const { data, error } = await supabase.from("technicians").select("id,name,contact,specialty").order("name");
+      const { data, error } = await supabase.from("technicians").select("id,name,contact,speciality").order("name");
       if(error) console.error(error);
       else setTechnicians(data || []);
     })();
@@ -191,45 +196,67 @@ export default function AdminApp({ user, onLogout }) {
   async function reject(id){ await supabase.from('bookings').update({status:'rejected'}).eq('id',id); refresh(); }
 
   async function completeBooking(id) {
-  if (!window.confirm("Mark this booking as COMPLETED?")) return;
+    if (!window.confirm("Mark this booking as COMPLETED?")) return;
+    try {
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .update({ status: 'completed', service_status: 'completed' })
+        .eq('id', id);
+      if (bookingError) throw bookingError;
 
-  // 1️⃣ Update booking status sa 'completed'
-  const { error: bookingError } = await supabase
-    .from('bookings')
-    .update({ status: 'completed', service_status: 'completed' })
-    .eq('id', id);
+      const booking = schedules.find(s => s.id === id);
+      if (!booking) return alert("❌ Booking not found");
 
-  if (bookingError) {
-    alert("❌ Failed to complete booking");
-    console.error(bookingError);
-    return;
+      const serviceId = booking.service_id || crypto.randomUUID();
+      const userId = booking.user_id;
+      if (!userId) return alert("❌ Missing user_id");
+
+      const serviceName = booking.service;
+      const serviceReminderMap = {
+        'AC Installation Basic': 60,
+        'AC Rep': 45,
+        'AC Maintenance': 30,
+        'Split-type AC Installation': 60,
+        'Window-type AC Installation': 60,
+        'Ceiling Cassette AC Installation': 60,
+        'Portable AC Setup': 30,
+        'Ducted AC Installation': 60,
+        'AC Not Cooling': 45,
+        'AC Compressor Replacement': 45,
+        'AC Electrical Fault': 45,
+        'Strange AC Noise Repair': 30,
+        'AC Coil Cleaning': 60,
+        'Filter Cleaning/Replacement': 30,
+        'Full AC Check-up': 60,
+        'Gas Top-up': 30,
+        'Thermostat Calibration': 45
+      };
+      const reminderDays = serviceReminderMap[serviceName] || 30;
+
+      const maintenanceDate = new Date();
+      maintenanceDate.setDate(maintenanceDate.getDate() + reminderDays);
+
+      const { error: maintenanceError } = await supabase
+        .from('maintenance')
+        .insert([{
+          user_id: userId,
+          service_id: serviceId,
+          status: 'pending',
+          notes: booking.notes || '',
+          date: maintenanceDate.toISOString(),
+          reminder_days: reminderDays
+        }]);
+      if (maintenanceError) throw maintenanceError;
+
+      alert("✅ Booking completed & preventive maintenance scheduled!");
+      refresh();
+
+    } catch (err) {
+      console.error("Complete booking error:", err);
+      alert("❌ Failed: " + (err.message || JSON.stringify(err)));
+    }
   }
 
-  // 2️⃣ Kunin yung booking row para sa valid user_id at service_id
-  const booking = schedules.find(s => s.id === id);
-  if (!booking) return;
-
-  // 3️⃣ Insert preventive maintenance record sa maintenance table
-  const { error: maintenanceError } = await supabase
-    .from('maintenance')
-    .insert([{
-      user_id: booking.user_id,        // dapat existing sa profiles table
-      service_id: booking.service_id,  // dapat existing service
-      status: 'pending',               // default preventive maintenance status
-      notes: booking.notes || '',
-      date: new Date().toISOString(),  // ngayon na date
-      reminder_days: 30                // default reminder
-    }]);
-
-  if (maintenanceError) {
-    console.error(maintenanceError);
-    alert("⚠ Failed to log preventive maintenance");
-  } else {
-    alert("✅ Booking completed & preventive maintenance logged!");
-  }
-
-  refresh(); // optional, para i-reload ang UI
-}
   async function handleAssign(){
     if(!selectedBooking || !selectedTechnician) return alert("Select technician");
     const { error } = await supabase.from('bookings').update({
@@ -238,7 +265,6 @@ export default function AdminApp({ user, onLogout }) {
       technician_contact:selectedTechnician.contact,
       technician_speciality:selectedTechnician.speciality,
       status:"assigned"
-      
     }).eq("id",selectedBooking.id);
     if(error){ console.error(error); alert("Failed to assign technician"); return; }
     alert(`Technician ${selectedTechnician.name} assigned!`);
@@ -248,95 +274,100 @@ export default function AdminApp({ user, onLogout }) {
 
   const filteredSchedules = filter==='all'?schedules:schedules.filter(s=>s.status?.toLowerCase()===filter);
 
+  // Pagination
+  const indexOfLast = currentPage * rowsPerPage;
+  const indexOfFirst = indexOfLast - rowsPerPage;
+  const currentSchedules = filteredSchedules.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredSchedules.length / rowsPerPage);
+
+  function renderPagination() {
+    if(totalPages <= 1) return null;
+    const pages = [];
+    for(let i=1; i<=totalPages; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={()=>setCurrentPage(i)}
+          className={`pagination-btn ${currentPage===i?'active':''}`}
+        >{i}</button>
+      );
+    }
+    return <div className="pagination">{pages}</div>;
+  }
+
   function renderTable(data) {
-  return (
-    <table className="schedules-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Service</th>
-          <th>Date & Time</th>
-          <th>Contact</th>
-          <th>Address</th>
-          <th>Technician</th>
-          <th>Status</th>
-          <th>Photos</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map(s => {
-          let bgColor = 'transparent';
-          if (conflictIds.includes(s.id)) bgColor = STATUS_COLORS.conflict;
-          else if (['cancelled','rejected'].includes(s.status?.toLowerCase())) bgColor = STATUS_COLORS.cancelled;
-          else if (s.status?.toLowerCase() === 'pending') bgColor = STATUS_COLORS.pending;
-          else if (s.status?.toLowerCase() === 'approved' && !s.technician_id) bgColor = STATUS_COLORS.approved;
-          else if (s.status?.toLowerCase() === 'assigned') bgColor = STATUS_COLORS.assigned;
-          else if (s.status?.toLowerCase() === 'in_progress') bgColor = STATUS_COLORS.in_progress;
-          else if (s.status?.toLowerCase() === 'completed') bgColor = STATUS_COLORS.completed;
-
-          const isInProgress = s.status?.toLowerCase() === 'in_progress';
-          const isCompleted = s.status?.toLowerCase() === 'completed';
-          const isApproved = s.status?.toLowerCase() === 'approved';
-
-          return (
-            <tr key={s.id} style={{ backgroundColor: bgColor }}>
-              <td>{s.id}</td>
-              <td>{s.full_name}</td>
-              <td>{s.services?.name || s.service}</td>
-              <td>{s.date} {s.time}</td>
-              <td>{s.mobile_number}</td>
-              <td>{s.address}</td>
-              <td>{s.technician_name || 'N/A'}</td>
-              <td>{s.status}</td>
-              <td>
-                <div style={{ display: 'flex', gap: '5px' }}>
-                  {s.photos?.map((p, i) => (
-                    <img
-                      key={i}
-                      src={p.url}
-                      alt={p.type}
-                      title={p.type === 'before' ? 'Start Work' : 'End Work'}
-                      style={{ width: '40px', height: '40px', objectFit: 'cover', cursor: 'pointer', borderRadius: '4px' }}
-                      onClick={() => setSelectedPhoto(p.url)}
-                    />
-                  ))}
-                </div>
-              </td>
-              <td style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {/* EDIT BUTTON */}
-                {!isInProgress && !isCompleted && (
-                  <button onClick={() => setEditingAppointment(s)} className="btn-edit">✏ Edit</button>
-                )}
-
-                {/* APPROVE BUTTON */}
-                {!isInProgress && !isCompleted && !isApproved && (
-                  <button onClick={() => approve(s.id)} className="btn-approve">✅ Approve</button>
-                )}
-
-                {/* REJECT BUTTON */}
-                {!isInProgress && !isCompleted && !isApproved && (
-                  <button onClick={() => reject(s.id)} className="btn-reject">❌ Reject</button>
-                )}
-
-                {/* ASSIGN BUTTON */}
-                {!isInProgress && !isCompleted && (
-                  <button onClick={() => setSelectedBooking(s)} className="btn-assign">🛠 Assign</button>
-                )}
-
-                {/* COMPLETE BUTTON */}
-                {!isCompleted && (
-                  <button onClick={() => completeBooking(s.id)} className="btn-complete">✔ Complete</button>
-                )}
-              </td>
+    return (
+      <>
+        <table className="schedules-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Service</th>
+              <th>Date & Time</th>
+              <th>Contact</th>
+              <th>Address</th>
+              <th>Technician</th>
+              <th>Status</th>
+              <th>Photos</th>
+              <th>Actions</th>
             </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  );
-}
+          </thead>
+          <tbody>
+            {data.map(s => {
+              let bgColor = 'transparent';
+              if (conflictIds.includes(s.id)) bgColor = STATUS_COLORS.conflict;
+              else if (['cancelled','rejected'].includes(s.status?.toLowerCase())) bgColor = STATUS_COLORS.cancelled;
+              else if (s.status?.toLowerCase() === 'pending') bgColor = STATUS_COLORS.pending;
+              else if (s.status?.toLowerCase() === 'approved' && !s.technician_id) bgColor = STATUS_COLORS.approved;
+              else if (s.status?.toLowerCase() === 'assigned') bgColor = STATUS_COLORS.assigned;
+              else if (s.status?.toLowerCase() === 'in_progress') bgColor = STATUS_COLORS.in_progress;
+              else if (s.status?.toLowerCase() === 'completed') bgColor = STATUS_COLORS.completed;
+
+              const isInProgress = s.status?.toLowerCase() === 'in_progress';
+              const isCompleted = s.status?.toLowerCase() === 'completed';
+              const isApproved = s.status?.toLowerCase() === 'approved';
+
+              return (
+                <tr key={s.id} style={{ backgroundColor: bgColor }}>
+                  <td>{s.id}</td>
+                  <td>{s.full_name}</td>
+                  <td>{s.services?.name || s.service}</td>
+                  <td>{s.date} {s.time}</td>
+                  <td>{s.mobile_number}</td>
+                  <td>{s.address}</td>
+                  <td>{s.technician_name || 'N/A'}</td>
+                  <td>{s.status}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      {s.photos?.map((p, i) => (
+                        <img
+                          key={i}
+                          src={p.url}
+                          alt={p.type}
+                          title={p.type === 'before' ? 'Start Work' : 'End Work'}
+                          style={{ width: '40px', height: '40px', objectFit: 'cover', cursor: 'pointer', borderRadius: '4px' }}
+                          onClick={() => setSelectedPhoto(p.url)}
+                        />
+                      ))}
+                    </div>
+                  </td>
+                  <td style={{ display: 'flex', gap: '5px', flexWrap:'wrap' }}>
+                    {!isInProgress && !isCompleted && <button onClick={() => setEditingAppointment(s)} className="btn-edit">✏ Edit</button>}
+                    {!isInProgress && !isCompleted && !isApproved && <button onClick={() => approve(s.id)} className="btn-approve">✅ Approve</button>}
+                    {!isInProgress && !isCompleted && !isApproved && <button onClick={() => reject(s.id)} className="btn-reject">❌ Reject</button>}
+                    {!isInProgress && !isCompleted && <button onClick={() => setSelectedBooking(s)} className="btn-assign">🛠 Assign</button>}
+                    {!isCompleted && <button onClick={() => completeBooking(s.id)} className="btn-complete">✔ Complete</button>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        {renderPagination()}
+      </>
+    );
+  }
 
   return (
     <div className="app">
@@ -355,7 +386,7 @@ export default function AdminApp({ user, onLogout }) {
       <Filters filter={filter} setFilter={setFilter} />
       <StatusLegend />
 
-      <div className="schedules-container">{renderTable(filteredSchedules)}</div>
+      <div className="schedules-container">{renderTable(currentSchedules)}</div>
 
       {selectedBooking &&
         <AssignTechnicianModal
@@ -377,25 +408,11 @@ export default function AdminApp({ user, onLogout }) {
           position:"fixed",top:0,left:0,width:"100vw",height:"100vh",backgroundColor:"rgba(0,0,0,0.7)",
           display:"flex",justifyContent:"center",alignItems:"center",zIndex:1000,cursor:"pointer"
         }}>
-          <img src={selectedPhoto} alt="Booking Photo" style={{maxWidth:"80%",maxHeight:"80%",borderRadius:"8px"}} />
+          <img src={selectedPhoto} alt="Booking Photo" style={{maxWidth:"80%",maxHeight:"80%"}} />
         </div>
       }
 
-      {editingAppointment &&
-        <EditAppointment
-          appointment={editingAppointment}
-          schedules={schedules}
-          onClose={()=>setEditingAppointment(null)}
-          onSave={async (updated)=>{
-            const { error } = await supabase.from('bookings').update(updated).eq('id', editingAppointment.id);
-            if(error){ alert('Failed to save changes!'); console.error(error); return; }
-            await refresh();
-            setEditingAppointment(null);
-            alert('Changes saved successfully!');
-          }}
-        />
-      }
-
+      {editingAppointment && <EditAppointment appointment={editingAppointment} onClose={()=>setEditingAppointment(null)} onRefresh={refresh} />}
       <InstallPrompt />
     </div>
   );
