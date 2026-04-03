@@ -1744,22 +1744,26 @@ function calculateNextActionDate(date) {
     </div>
 
     {maintenance.length === 0 ? (
-      <p>✅ No upcoming maintenance. You're all good!.</p>
+      <p>✅ No upcoming maintenance. You're all good!</p>
     ) : (
       maintenance.map((m) => {
-        const interval = preventiveIntervals[m.service_id] || 30; // ✅ TODAY BASED
+        const interval = preventiveIntervals[m.service_id] || 30; // static interval
         const today = new Date();
-        const nextDate = new Date(today);
-        nextDate.setDate(today.getDate() + interval); // ✅ FIX NaN
-        const diffTime = nextDate - today;
-        const daysLeft = isNaN(diffTime) ? 0 : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const maintenanceDate = new Date(m.date); // fixed booked date
+        const diffTime = maintenanceDate - today;
+        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // dynamic
+
+        // Background color based on daysLeft
+        let bgColor = "#4caf50"; // default green
+        if (daysLeft <= 5 && daysLeft > 0) bgColor = "#ff9800"; // due soon
+        if (daysLeft <= 0) bgColor = "#f44336"; // overdue
 
         return (
           <div
             key={m.id}
             className="maintenance-item"
             style={{
-              backgroundColor: getMaintenanceColorByDate(nextDate),
+              backgroundColor: bgColor,
               padding: "0.5rem",
               borderRadius: "8px",
               marginBottom: "0.5rem",
@@ -1768,14 +1772,13 @@ function calculateNextActionDate(date) {
             }}
           >
             <h3>{m.service}</h3>
-            <p>Date: {nextDate.toLocaleDateString()}</p>
-            <p>⏳ {daysLeft} days left</p>
-            <p>Next Action: Scheduled maintenance in {interval} day(s)</p>
+            <p>Date: {maintenanceDate.toLocaleDateString()}</p> {/* static */}
+            <p>⏳ {daysLeft} days left</p> {/* dynamic */}
+            <p>Next Action: Scheduled maintenance in {interval} day(s)</p> {/* static */}
           </div>
         );
       })
     )}
-    
   </div>
 )}
     {/* --- Edit Modal --- */}

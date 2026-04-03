@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Login from '../Login';
 import EditAppointment from '../EditAppointment';
 import InstallPrompt from '../InstallPrompt';
@@ -121,7 +121,6 @@ export default function AdminApp({ user, onLogout }) {
   const [technicians, setTechnicians] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedTechnician, setSelectedTechnician] = useState(null);
-  const [conflictIds, setConflictIds] = useState([]);
   const [fullName, setFullName] = useState("");
   const [roleName, setRoleName] = useState("");
   const [showProfile, setShowProfile] = useState(false);
@@ -147,28 +146,21 @@ export default function AdminApp({ user, onLogout }) {
     setLoading(true);
     const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending:false });
     if (error) console.error(error);
-    else {
-      setSchedules(data || []);
-      const conflicts = groupConflicts(data || []);
-      setConflictIds(conflicts.flat().map(b => b.id));
-      setCurrentPage(1); // reset page sa bagong data
-    }
+    else setSchedules(data || []);
     setLoading(false);
   }
 
-  // Group conflicts
-  function groupConflicts(bookings) {
-    const active = bookings.filter(b => b.status && !['assigned','cancelled','rejected','completed'].includes(b.status.toLowerCase()));
-    const map = {};
-    active.forEach(b => {
-      const key = `${b.date}|${b.time}`;
-      if (!map[key]) map[key] = [];
-      map[key].push(b);
-    });
-    return Object.values(map).filter(g => g.length > 1);
-  }
-
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    const channel = supabase
+      .channel('realtime-bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+        console.log("Realtime change:", payload);
+        refresh();
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, []);
 
   // Fetch profile
   useEffect(() => {
@@ -211,6 +203,7 @@ export default function AdminApp({ user, onLogout }) {
       const userId = booking.user_id;
       if (!userId) return alert("❌ Missing user_id");
 
+      // ✅ PREVENTIVE MAINTENANCE LOGIC
       const serviceName = booking.service;
       const serviceReminderMap = {
         'AC Installation Basic': 60,
@@ -272,7 +265,23 @@ export default function AdminApp({ user, onLogout }) {
     refresh();
   }
 
-  const filteredSchedules = filter==='all'?schedules:schedules.filter(s=>s.status?.toLowerCase()===filter);
+  // FILTERED SCHEDULES & CONFLICT IDS
+  const filteredSchedules = useMemo(() => {
+    return filter === 'all'
+      ? schedules
+      : schedules.filter(s => s.status?.toLowerCase() === filter);
+  }, [schedules, filter]);
+
+  const conflictIds = useMemo(() => {
+    const active = schedules.filter(b => b.status && !['assigned','cancelled','rejected','completed'].includes(b.status.toLowerCase()));
+    const map = {};
+    active.forEach(b => {
+      const key = `${b.date}|${b.time}`;
+      if (!map[key]) map[key] = [];
+      map[key].push(b);
+    });
+    return Object.values(map).filter(g => g.length > 1).flat().map(b => b.id);
+  }, [schedules]);
 
   // Pagination
   const indexOfLast = currentPage * rowsPerPage;
@@ -283,15 +292,11 @@ export default function AdminApp({ user, onLogout }) {
   function renderPagination() {
     if(totalPages <= 1) return null;
     const pages = [];
-    for(let i=1; i<=totalPages; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={()=>setCurrentPage(i)}
-          className={`pagination-btn ${currentPage===i?'active':''}`}
-        >{i}</button>
-      );
+    pages.push(<button key="prev" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} className={`pagination-btn`} disabled={currentPage === 1}>⬅ Previous</button>);
+    for(let i=1;i<=totalPages;i++){
+      pages.push(<button key={i} onClick={()=>setCurrentPage(i)} className={`pagination-btn ${currentPage===i?'active':''}`}>{i}</button>);
     }
+    pages.push(<button key="next" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} className={`pagination-btn`} disabled={currentPage === totalPages}>Next ➡</button>);
     return <div className="pagination">{pages}</div>;
   }
 
@@ -347,6 +352,7 @@ export default function AdminApp({ user, onLogout }) {
                           alt={p.type}
                           title={p.type === 'before' ? 'Start Work' : 'End Work'}
                           style={{ width: '40px', height: '40px', objectFit: 'cover', cursor: 'pointer', borderRadius: '4px' }}
+                          loading="lazy"
                           onClick={() => setSelectedPhoto(p.url)}
                         />
                       ))}
@@ -386,34 +392,42 @@ export default function AdminApp({ user, onLogout }) {
       <Filters filter={filter} setFilter={setFilter} />
       <StatusLegend />
 
-      <div className="schedules-container">{renderTable(currentSchedules)}</div>
+      <div className="schedules-container">{renderTable(currentSchedules)} {renderPagination()}</div>
 
       {selectedBooking &&
         <AssignTechnicianModal
           booking={selectedBooking}
           technicians={technicians}
           onAssign={handleAssign}
-          onClose={()=>{ setSelectedBooking(null); setSelectedTechnician(null); }}
+          onClose={()=>{setSelectedBooking(null); setSelectedTechnician(null);}}
           selectedTechnician={selectedTechnician}
           setSelectedTechnician={setSelectedTechnician}
         />
       }
 
       {showProfile &&
-        <ProfileModal user={user} fullName={fullName} roleName={roleName} onClose={()=>setShowProfile(false)} />
+        <ProfileModal
+          user={user}
+          fullName={fullName}
+          roleName={roleName}
+          onClose={()=>setShowProfile(false)}
+        />
+      }
+
+      {editingAppointment &&
+        <EditAppointment
+          appointment={editingAppointment}
+          onClose={()=>setEditingAppointment(null)}
+          onSave={refresh}
+        />
       }
 
       {selectedPhoto &&
-        <div className="photo-modal-overlay" onClick={()=>setSelectedPhoto(null)} style={{
-          position:"fixed",top:0,left:0,width:"100vw",height:"100vh",backgroundColor:"rgba(0,0,0,0.7)",
-          display:"flex",justifyContent:"center",alignItems:"center",zIndex:1000,cursor:"pointer"
-        }}>
-          <img src={selectedPhoto} alt="Booking Photo" style={{maxWidth:"80%",maxHeight:"80%"}} />
-        </div>
+        <InstallPrompt
+          photoUrl={selectedPhoto}
+          onClose={()=>setSelectedPhoto(null)}
+        />
       }
-
-      {editingAppointment && <EditAppointment appointment={editingAppointment} onClose={()=>setEditingAppointment(null)} onRefresh={refresh} />}
-      <InstallPrompt />
     </div>
   );
 }
