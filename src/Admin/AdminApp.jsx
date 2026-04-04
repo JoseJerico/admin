@@ -5,6 +5,30 @@ import InstallPrompt from '../InstallPrompt';
 import { supabase } from '../supabase';
 import './AdminApp.css';
 
+function PhotoModal({ photoUrl, onClose }) {
+  return (
+    <div 
+      style={{
+        position: 'fixed',
+        top:0, left:0, right:0, bottom:0,
+        backgroundColor:'rgba(0,0,0,0.8)',
+        display:'flex',
+        justifyContent:'center',
+        alignItems:'center',
+        zIndex:9999
+      }}
+      onClick={onClose}
+    >
+      <img 
+        src={photoUrl} 
+        alt="Booking Photo" 
+        style={{ maxWidth:'90%', maxHeight:'90%', borderRadius:'8px' }}
+        onClick={e=>e.stopPropagation()} // para di ma-close kapag photo mismo ang iclick
+      />
+    </div>
+  )
+}
+
 // Assign Technician Modal
 function AssignTechnicianModal({ booking, technicians, onAssign, onClose, selectedTechnician, setSelectedTechnician }) {
   return (
@@ -76,12 +100,15 @@ function StatsGrid({ schedules }) {
 }
 
 // Filters
-function Filters({ filter, setFilter }) {
+function Filters({ filter, setFilter, setCurrentPage }) {
   const statusList = ['all','pending','approved','assigned','in_progress','completed','rejected','cancelled'];
   return (
     <div className="filter-tabs">
       {statusList.map(status => (
-        <button key={status} onClick={() => setFilter(status)} className={`tab ${filter===status?'active':''}`}>
+        <button key={status} onClick={() => {
+  setFilter(status);
+  setCurrentPage(1);
+}} className={`tab ${filter===status?'active':''}`}>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </button>
       ))}
@@ -125,10 +152,12 @@ export default function AdminApp({ user, onLogout }) {
   const [roleName, setRoleName] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [totalPages, setTotalPages] = useState(1);
+  const rowsPerPage = 5;
 
   const STATUS_COLORS = {
     cancelled: '#4da6ff',
@@ -141,26 +170,48 @@ export default function AdminApp({ user, onLogout }) {
     conflict: '#ff9999'
   };
 
-  // Fetch bookings
-  async function refresh() {
-    setLoading(true);
-    const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending:false });
-    if (error) console.error(error);
-    else setSchedules(data || []);
-    setLoading(false);
+  async function refresh(page = currentPage) {
+  setLoading(true);
+
+  const from = (page - 1) * rowsPerPage;
+  const to = from + rowsPerPage - 1;
+
+  let query = supabase
+    .from('bookings')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false });
+
+  if (filter !== 'all') {
+    query = query.eq('status', filter);
   }
 
+  const { data, error, count } = await query.range(from, to);
+
+  if (error) {
+    console.error(error);
+  } else {
+    setSchedules(data || []);
+    setTotalPages(Math.ceil(count / rowsPerPage));
+  }
+
+  setLoading(false);
+}
   useEffect(() => {
-    refresh();
-    const channel = supabase
-      .channel('realtime-bookings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
-        console.log("Realtime change:", payload);
-        refresh();
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, []);
+  refresh(currentPage);
+
+  const channel = supabase
+    .channel('realtime-bookings')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'bookings' },
+      () => {
+        refresh(currentPage); // ✅ importante
+      }
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [currentPage, filter]);
 
   // Fetch profile
   useEffect(() => {
@@ -284,21 +335,31 @@ export default function AdminApp({ user, onLogout }) {
   }, [schedules]);
 
   // Pagination
-  const indexOfLast = currentPage * rowsPerPage;
-  const indexOfFirst = indexOfLast - rowsPerPage;
-  const currentSchedules = filteredSchedules.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredSchedules.length / rowsPerPage);
 
-  function renderPagination() {
-    if(totalPages <= 1) return null;
-    const pages = [];
-    pages.push(<button key="prev" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} className={`pagination-btn`} disabled={currentPage === 1}>⬅ Previous</button>);
-    for(let i=1;i<=totalPages;i++){
-      pages.push(<button key={i} onClick={()=>setCurrentPage(i)} className={`pagination-btn ${currentPage===i?'active':''}`}>{i}</button>);
-    }
-    pages.push(<button key="next" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} className={`pagination-btn`} disabled={currentPage === totalPages}>Next ➡</button>);
-    return <div className="pagination">{pages}</div>;
-  }
+
+function renderPagination() {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="pagination">
+      <button
+        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+      >
+        ⬅ Previous
+      </button>
+
+      <span>{currentPage} / {totalPages}</span>
+
+      <button
+        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+      >
+        Next ➡
+      </button>
+    </div>
+  );
+}
 
   function renderTable(data) {
     return (
@@ -382,17 +443,19 @@ export default function AdminApp({ user, onLogout }) {
           <h1>🔧 Aircon Admin Dashboard</h1>
           <div className="header-actions">
             <button onClick={()=>setShowProfile(true)}>👤 {fullName||user?.email}</button>
-            <button onClick={refresh} disabled={loading}>{loading?'Loading...':'Refresh'}</button>
+            {/*<button onClick={refresh} disabled={loading}>{loading?'Loading...':'Refresh'}</button>*/}
             <button onClick={onLogout}>Logout</button>
           </div>
         </div>
       </header>
 
       <StatsGrid schedules={schedules} />
-      <Filters filter={filter} setFilter={setFilter} />
+      <Filters filter={filter} setFilter={setFilter} setCurrentPage={setCurrentPage} />
       <StatusLegend />
 
-      <div className="schedules-container">{renderTable(currentSchedules)} {renderPagination()}</div>
+     <div className="schedules-container">
+  {renderTable(filteredSchedules)}
+</div>
 
       {selectedBooking &&
         <AssignTechnicianModal
@@ -423,11 +486,11 @@ export default function AdminApp({ user, onLogout }) {
       }
 
       {selectedPhoto &&
-        <InstallPrompt
-          photoUrl={selectedPhoto}
-          onClose={()=>setSelectedPhoto(null)}
-        />
-      }
+  <PhotoModal
+    photoUrl={selectedPhoto}
+    onClose={() => setSelectedPhoto(null)}
+  />
+}
     </div>
   );
 }

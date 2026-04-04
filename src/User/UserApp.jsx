@@ -45,7 +45,9 @@ export default function UserApp({ user, onLogout }) {
   const [errorMsg, setErrorMsg] = useState(null)
   const [statusFilter, setStatusFilter] = useState('All')
   const [search, setSearch] = useState('')
-
+  const [page, setPage] = useState(1);
+  const pageSize = 10; // 10 records per page
+  
 const preventiveIntervals = {
   "4d376ac8-2b4e-4918-b3d3-7f026cb99ba7": 60, // AC Installation Basic
   "01a76081-771d-463b-9508-1ae2410dde47": 45, // AC Repair
@@ -240,6 +242,7 @@ useEffect(() => {
     setManualUnit("meters");
   };
 }, []);
+
 
 
 useEffect(() => {
@@ -461,36 +464,43 @@ const handleUpdate = async (e) => {
   }
 }, [user]);
 
-  async function fetchBookingHistory() {
-  if (!user?.id) return;
+useEffect(() => {
+  fetchBookingHistory();
+}, [page]); // Fetch new data whenever page changes
 
-  setLoading(true)
-  setErrorMsg(null)
+async function fetchBookingHistory() {
+  if (!user?.id) return; // Check if user is logged in
+
+  setLoading(true); // Set loading state to true
+  setErrorMsg(null); // Clear any previous error message
 
   try {
+    // Fetch records based on the current page and pageSize
     const { data, error } = await supabase
       .from('bookings')
-      .select(`
-        *,
-        technicians(name, contact)  -- join sa technician table
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(0, 9);
+      .select(`*, technicians(name, contact)`) // Join with technicians table
+      .eq('user_id', user.id) // Ensure the bookings belong to the current user
+      .order('created_at', { ascending: false }) // Order by created_at, most recent first
+      .range((page - 1) * pageSize, page * pageSize - 1); // Calculate the range based on the current page
 
     if (error) {
-      console.error(error)
-      setErrorMsg("❌ Failed to load booking history")
+      console.error(error);
+      setErrorMsg("❌ Failed to load booking history");
+      return;
     }
 
-    setBookingHistory(data || [])
+    setBookingHistory(data || []); // Set the fetched data into the state
   } catch (err) {
-    console.error(err)
-    setErrorMsg("❌ Unexpected error occurred")
+    console.error(err);
+    setErrorMsg("❌ Unexpected error occurred");
   }
 
-  setLoading(false)
+  setLoading(false); // Set loading state to false
 }
+
+const loadMore = () => {
+  setPage(prevPage => prevPage + 1); // Increase the page number to load the next set of records
+};
 
   async function fetchServices() {
   setLoading(true)
@@ -1516,7 +1526,16 @@ function calculateNextActionDate(date) {
     <p>Technician: {item.technicians.name}</p>
     <p>Contact: {item.technicians.contact}</p>
   </div>
+  
 )}
+
+
+{/* "Load More" Button */}
+  {bookingHistory.length === pageSize && (
+    <button onClick={loadMore}>Load More</button>
+  )}
+
+
 
               {/* 🔹 Status Badge */}
               <p>

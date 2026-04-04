@@ -343,3 +343,40 @@
 .btn-call:hover {
   background-color: #2563eb;
 }
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #e5e7eb;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.active-page {
+  background: #2563eb;
+  color: white;
+}
+
+.no-appointments {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+}
