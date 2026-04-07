@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useMemo } from 'react';
 import Login from '../Login';
 import EditAppointment from '../EditAppointment';
@@ -301,21 +303,43 @@ export default function AdminApp({ user, onLogout }) {
     }
   }
 
-  async function handleAssign(){
-    if(!selectedBooking || !selectedTechnician) return alert("Select technician");
-    const { error } = await supabase.from('bookings').update({
-      technician_id:selectedTechnician.id,
-      technician_name:selectedTechnician.name,
-      technician_contact:selectedTechnician.contact,
-      technician_speciality:selectedTechnician.speciality,
-      status:"assigned"
-    }).eq("id",selectedBooking.id);
-    if(error){ console.error(error); alert("Failed to assign technician"); return; }
-    alert(`Technician ${selectedTechnician.name} assigned!`);
-    setSelectedBooking(null); setSelectedTechnician(null);
-    refresh();
+ const handleAssign = async () => {
+  if (!selectedTechnician || !selectedBooking) {
+    return alert("Please select a technician and a booking.");
   }
 
+  console.log("Assigning technician...");
+  console.log("Technician ID:", selectedTechnician.id);
+  console.log("Booking ID:", selectedBooking.id);
+
+  // Kumuha ng technician_speciality mula sa selected technician
+  const technicianSpeciality = selectedTechnician.speciality || 'N/A';  // Default kung walang speciality
+
+  // Update the booking in Supabase with the technician details
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({
+      technician_id: selectedTechnician.id,
+      technician_name: selectedTechnician.name,
+      technician_contact: selectedTechnician.contact,
+      technician_speciality: technicianSpeciality,  // Set technician speciality
+      status: "assigned",  // Change status to 'assigned'
+    })
+    .eq('id', selectedBooking.id);  // Link technician to booking by ID
+
+  if (error) {
+    console.error("Error assigning technician:", error.message);
+    alert("Failed to assign technician: " + error.message);
+    return;
+  }
+
+  console.log("Technician assigned successfully:", data);
+  alert(`Technician ${selectedTechnician.name} assigned!`);
+
+  setSelectedBooking(null);  // Clear selected booking
+  setSelectedTechnician(null);  // Clear selected technician
+  refresh();  // Refresh the UI
+};
   // FILTERED SCHEDULES & CONFLICT IDS
   const filteredSchedules = useMemo(() => {
     return filter === 'all'

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react'
 import './UserApp.css'
 import { supabase } from '../supabase'
@@ -458,8 +459,14 @@ const handleUpdate = async (e) => {
  useEffect(() => {
   console.log("User prop changed:", user);
   console.log("User ID type:", typeof user.id, "value:", user.id);
+
   if (user?.id) {
     console.log("Fetching booking history for user ID:", user.id);
+
+    // Log the request URL and parameters before making the request
+    const requestUrl = `https://your-supabase-url.com/bookings?offset=0&limit=10`;
+    console.log("Request URL:", requestUrl);
+
     fetchBookingHistory();
   }
 }, [user]);
@@ -469,35 +476,37 @@ useEffect(() => {
 }, [page]); // Fetch new data whenever page changes
 
 async function fetchBookingHistory() {
-  if (!user?.id) return; // Check if user is logged in
+  if (!user?.id) return;  // Siguraduhin na may user ID
 
-  setLoading(true); // Set loading state to true
-  setErrorMsg(null); // Clear any previous error message
+  setLoading(true);
+  setErrorMsg(null); // Clear previous error message
 
   try {
-    // Fetch records based on the current page and pageSize
+    // Fetch bookings based on the user_id, with technician info joined
     const { data, error } = await supabase
       .from('bookings')
-      .select(`*, technicians(name, contact)`) // Join with technicians table
-      .eq('user_id', user.id) // Ensure the bookings belong to the current user
-      .order('created_at', { ascending: false }) // Order by created_at, most recent first
-      .range((page - 1) * pageSize, page * pageSize - 1); // Calculate the range based on the current page
+      .select(`
+        *,
+        technicians:technician_id (name, contact, speciality)  // Pag-join ng technicians data
+      `) 
+      .eq('user_id', user.id)  // Siguraduhin na may tamang user_id sa query
+      .order('created_at', { ascending: false })  // Order by created_at, most recent first
+      .range(0, 10);  // Pagination: offset=0 and limit=10
 
     if (error) {
-      console.error(error);
+      console.error("Error fetching booking history:", error.message);
       setErrorMsg("❌ Failed to load booking history");
-      return;
+    } else {
+      console.log("Booking history fetched:", data);
+      setBookingHistory(data || []); // Set the fetched data into state
     }
-
-    setBookingHistory(data || []); // Set the fetched data into the state
   } catch (err) {
-    console.error(err);
+    console.error("Unexpected error occurred:", err);
     setErrorMsg("❌ Unexpected error occurred");
   }
 
-  setLoading(false); // Set loading state to false
+  setLoading(false);
 }
-
 const loadMore = () => {
   setPage(prevPage => prevPage + 1); // Increase the page number to load the next set of records
 };

@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useRef } from 'react'
 import Camera from '../shared/Camera'
 import { supabase } from '../supabase'
@@ -162,28 +164,34 @@ export default function TechnicianApp({ user, onLogout }) {
     setScreen('details')
   }
 
-  async function startWork(apt) {
-    if (apt.status !== 'in_progress') {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'in_progress', service_status: 'in_progress' })
-        .eq('id', apt.id)
+async function startWork(apt) {
+  if (apt.status !== 'in_progress') {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'in_progress', service_status: 'in_progress' })
+      .eq('id', apt.id);
 
-      if (error) return console.error(error)
+    if (error) {
+      console.error('Error updating status to in_progress:', error.message);
+      alert('Failed to start work: ' + error.message);
+      return;
     }
 
-    setSelectedAppointment({ ...apt, status: 'in_progress', photos: apt.photos || [] })
-    setWorkPhotos(apt.photos || [])
-    setNotes(apt.work_notes || '')
-    const hasBefore = (apt.photos || []).some(p => p.type === 'before')
+    // Update local state for appointment
+    setSelectedAppointment({ ...apt, status: 'in_progress' });
+    setWorkPhotos(apt.photos || []);
+    setNotes(apt.work_notes || '');
 
-    if (!hasBefore) {
-      setCameraMode('before')
-      setShowCamera(true)
-    }
+    // Alert for "Start Work"
+    alert('✅ Work started! Please take a photo to document the work start.');
 
-    loadAppointments()
+    // Show camera for "Start Work" photo
+    setCameraMode('before');
+    setShowCamera(true);
+  } else {
+    alert('The work is already in progress.');
   }
+}
 
   function handleFinishedWork(apt) {
     const updatedApt = {
@@ -197,35 +205,45 @@ export default function TechnicianApp({ user, onLogout }) {
     setScreen('details')
   }
 
-  async function handlePhotoCapture(photoUrl) {
-    if (!selectedAppointment) return
+async function handlePhotoCapture(photoUrl) {
+  if (!selectedAppointment) return;
 
-    const photo = {
-      id: Date.now() + Math.random(),
-      type: cameraMode,
-      url: photoUrl,
-      timestamp: new Date().toISOString()
+  const photo = {
+    id: Date.now() + Math.random(),
+    type: cameraMode,  // This will be 'before' for start-of-work photo, 'after' for end-of-work
+    url: photoUrl,
+    timestamp: new Date().toISOString()
+  };
+
+  const updatedPhotos = [...workPhotos.filter(p => p.type !== cameraMode), photo];
+
+  try {
+    // Save the photo to the 'bookings' table in Supabase
+    const { error } = await supabase
+      .from('bookings')
+      .update({ photos: updatedPhotos })
+      .eq('id', selectedAppointment.id);  // Ensure we update the correct booking
+
+    if (error) throw error;
+
+    // Update the local state for work photos
+    setWorkPhotos(updatedPhotos);
+
+    // Conditional Alert based on cameraMode (start or end work)
+    if (cameraMode === 'before') {
+      alert('✅ Start Work photo submitted successfully!');  // Success alert for start-of-work
+    } else if (cameraMode === 'after') {
+      alert('✅ End of Work photo submitted successfully!');  // Success alert for end-of-work
     }
 
-    const updatedPhotos = [...workPhotos.filter(p => p.type !== cameraMode), photo]
-
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ photos: updatedPhotos })
-        .eq('id', selectedAppointment.id)
-
-      if (error) throw error
-
-      setWorkPhotos(updatedPhotos)
-    } catch (err) {
-      console.error('Failed to save photo:', err)
-      alert('❌ Failed to save photo')
-    }
-
-    setShowCamera(false)
+  } catch (err) {
+    console.error('Failed to save photo:', err);
+    alert('❌ Failed to save photo');
   }
 
+  // Hide the camera after submission
+  setShowCamera(false);
+}
   async function completeJob() {
     if (!selectedAppointment) return
 
