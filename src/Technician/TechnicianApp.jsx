@@ -5,6 +5,7 @@ import Camera from '../shared/Camera'
 import { supabase } from '../supabase'
 import './TechnicianApp.css'
 
+
 // --- Stats Grid Component ---
 function StatsGrid({ appointments }) {
   const statusList = ['assigned', 'in_progress', 'completed']
@@ -38,6 +39,8 @@ function StatsGrid({ appointments }) {
   )
 }
 
+
+
 // --- Technician App Component ---
 export default function TechnicianApp({ user, onLogout }) {
   const [screen, setScreen] = useState('appointments')
@@ -49,7 +52,71 @@ export default function TechnicianApp({ user, onLogout }) {
   const [cameraMode, setCameraMode] = useState('before')
   const [activeFilter, setActiveFilter] = useState('all')
   const [maintenanceReminders, setMaintenanceReminders] = useState([])
+  const [showProfile, setShowProfile] = useState(false);
+  const [technician, setTechnician] = useState(null);
 
+useEffect(() => {
+    if (user?.id) {  // Ensure there's a user ID
+      async function fetchTechnicianData() {
+        const { data, error } = await supabase
+          .from('technicians')
+          .select('*')  // Fetch all fields for technician
+          .eq('user_id', user.id);  // Use user.id to get technician data
+
+        if (error) {
+          console.error("Error fetching technician data:", error);
+          return;
+        }
+
+        // Debugging line to check technician data
+        console.log("Fetched Technician Data:", data);
+
+        // Set technician data if it's available
+        if (data && data.length > 0) {
+          const technicianData = data[0];
+          setTechnician({
+            name: technicianData.name,
+            email: technicianData.email,
+            role: technicianData.role || 'technician',  // Default to 'technician' if role is missing
+          });
+        }
+      }
+
+      fetchTechnicianData();  // Call the fetch function
+    }
+  }, [user?.id]);  // Trigger this effect when user.id changes
+
+
+   function showTechnicianProfile(e) {
+    e.preventDefault();  // Prevent default anchor behavior
+    setShowProfile(true);  // Show the profile modal
+  }
+
+  const preventiveIntervals = {
+  "4d376ac8-2b4e-4918-b3d3-7f026cb99ba7": 60, // AC Installation Basic
+  "01a76081-771d-463b-9508-1ae2410dde47": 45, // AC Repair
+  "1dd16c71-7392-48a0-926d-5b0fcc1818ec": 30, // AC Maintenance
+  "0935c1b6-ca4f-4d76-b9eb-4d67df5d227f": 60, // Split-type AC Installation
+  "82091676-9819-44a5-9784-45c0642082a1": 60, // Window-type AC Installation
+  "4d802600-9ec2-4893-8674-8c78bc6ecb14": 60, // Ceiling Cassette AC Installation
+  "dc6fb40e-32b9-45bb-a295-beff8f6072c8": 30, // Portable AC Setup
+  "745185be-b8d9-4e69-8b81-69a45b42fd13": 60, // Ducted AC Installation
+  "cf0c1e3a-86ca-49e3-ade0-fbac6307c5a9": 45, // AC Not Cooling
+  "8a6eebcb-727c-4fb9-af39-18fd692ad86e": 30, // Water Leakage Fix
+  "d3adddb7-13ee-413f-9045-11f311491bfe": 45, // AC Compressor Replacement
+  "3f04cce4-e0a6-41d2-9527-e499af381c89": 45, // AC Electrical Fault
+  "7d83399d-f639-4633-aecb-0112831a159f": 30, // Strange AC Noise Repair
+  "3f049aca-f623-4a9c-8b15-4f52af6db177": 60, // AC Coil Cleaning
+  "48352c7f-6ca3-445f-8597-7fb7958fd98d": 30, // Filter Cleaning/Replacement
+  "32128b70-c635-4419-b1cf-c6ea6cecab15": 60, // Full AC Check-up
+  "7ecce893-74cf-4b7b-936d-0a285e4b6d09": 30, // Gas Top-up
+  "e2692bd6-5e65-48a2-a61c-ff091d812789": 45, // Thermostat Calibration
+  "c1e524c8-64f5-4922-8537-19ffcc41a18b": 60, // Aircon Unit Relocation 
+  "19a6029e-a206-423d-8088-09ad2cb22a90": 60, // AC Energy Optimization Services 
+  "82cc28a6-f812-4f5c-8cb0-f0ff242e8c9a": 60, // Cooling System Consultation & Assessment 
+  "5bd67041-7f29-4b7c-960a-8ed9e1418587": 30, // Centralized AC System Installation 
+  "94e42a93-2771-4efe-9f66-8aa63fe24e0d": 60, // Thermal Insulation and AC Efficiency Upgrade 
+};
   // --- Pagination states ---
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
@@ -244,71 +311,81 @@ async function handlePhotoCapture(photoUrl) {
   // Hide the camera after submission
   setShowCamera(false);
 }
-  async function completeJob() {
-    if (!selectedAppointment) return
+async function completeJob() {  
+  if (!selectedAppointment) return;  
+  
+  // Check if both before and after photos are captured  
+  if (!workPhotos.find(p => p.type === 'before') || !workPhotos.find(p => p.type === 'after')) {  
+    return alert('📸 You must capture BOTH start and end photos before completing the job.');  
+  }  
+  
+  try {  
+    const serviceId = selectedAppointment.service_id || crypto.randomUUID();  
+    const userId = selectedAppointment.user_id;  
+  
+    if (!userId) return alert('❌ Missing user_id for maintenance record.');  
+  
+    // Update the booking status to completed  
+    const { error: bookingError } = await supabase  
+      .from('bookings')  
+      .update({  
+        status: 'completed',  
+        service_status: 'completed',  
+        work_notes: notes,  
+        photos: workPhotos,  
+        service_id: serviceId  
+      })  
+      .eq('id', selectedAppointment.id);  
+  
+    if (bookingError) throw bookingError;  
+  
+    // Get the interval days from preventiveIntervals object based on service_id
+    const intervalDays = preventiveIntervals[selectedAppointment.service_id] || 30; // Default to 30 if not found
+  
+    // Calculate the maintenance date based on the correct interval (using preventiveIntervals)
+    const maintenanceDate = new Date();
+    maintenanceDate.setDate(maintenanceDate.getDate() + intervalDays); // Add the interval to today's date
+  
+    // Calculate the days left
+    const diffTime = maintenanceDate - new Date();
+    const daysLeft = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 0);
+  
+    // Define the next action message
+    const nextAction = `Scheduled maintenance in ${intervalDays} day(s)`;
+  
+    // Create the maintenance payload
+    const maintenancePayload = {
+      user_id: userId,
+      service_id: serviceId,
+      status: 'pending',
+      notes: notes || '',
+      date: maintenanceDate.toISOString(),
+      reminder_days: intervalDays, // Use the intervalDays for reminder
+    };
+  
+    // Insert the preventive maintenance record
+    const { error: maintenanceError } = await supabase
+      .from('maintenance')
+      .insert([maintenancePayload]);
 
-    if (!workPhotos.find(p => p.type === 'before') || !workPhotos.find(p => p.type === 'after')) {
-      return alert('📸 You must capture BOTH start and end photos before completing the job.')
-    }
+    if (maintenanceError) throw maintenanceError;
 
-    try {
-      const serviceId = selectedAppointment.service_id || crypto.randomUUID()
-      const userId = selectedAppointment.user_id
+    // Set the UI back to appointments screen
+    setSelectedAppointment(null);
+    setWorkPhotos([]);
+    setNotes('');
+    setScreen('appointments');
+    loadAppointments();
+    loadMaintenanceReminders();
 
-      if (!userId) return alert('❌ Missing user_id for maintenance record.')
+    // Show success alert
+    alert('✅ Job completed & preventive maintenance scheduled!');
 
-      const { error: bookingError } = await supabase
-        .from('bookings')
-        .update({
-          status: 'completed',
-          service_status: 'completed',
-          work_notes: notes,
-          photos: workPhotos,
-          service_id: serviceId
-        })
-        .eq('id', selectedAppointment.id)
-
-      if (bookingError) throw bookingError
-
-      const maintenanceDate = new Date()
-      const serviceReminderMap = {
-        Cleaning: 30,
-        Repair: 30,
-        Installation: 30
-      }
-
-      const reminderDays = serviceReminderMap[selectedAppointment.service] || 30
-      maintenanceDate.setDate(maintenanceDate.getDate() + reminderDays)
-
-      const maintenancePayload = {
-        user_id: userId,
-        service_id: serviceId,
-        status: 'pending',
-        notes: notes || '',
-        date: maintenanceDate.toISOString(),
-        reminder_days: reminderDays
-      }
-
-      const { error: maintenanceError } = await supabase
-        .from('maintenance')
-        .insert([maintenancePayload])
-
-      if (maintenanceError) throw maintenanceError
-
-      setSelectedAppointment(null)
-      setWorkPhotos([])
-      setNotes('')
-      setScreen('appointments')
-      loadAppointments()
-      loadMaintenanceReminders()
-
-      alert('✅ Job completed & preventive maintenance scheduled!')
-    } catch (err) {
-      console.error('Error completing job:', err)
-      alert('❌ Failed: ' + (err.message || JSON.stringify(err)))
-    }
+  } catch (err) {
+    console.error('Error completing job:', err);
+    alert('❌ Failed: ' + (err.message || JSON.stringify(err)));
   }
-
+}
   // --- Pagination Logic ---
   const filteredAppointments = getFilteredAppointments()
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage)
@@ -346,11 +423,25 @@ async function handlePhotoCapture(photoUrl) {
             alt="avatar"
           />
           <span className="tech-name">
-            👤 {user?.full_name || 'Technician'}
+            <a href="#" onClick={showTechnicianProfile}>
+                👤 {technician?.name || 'Technician'} 
+            </a>
           </span>
           <button onClick={onLogout} className="btn-logout-tech">🚪 Logout</button>
         </div>
       </header>
+
+{showProfile && technician && (
+  <div className="modal">
+    <div className="modal-content">
+      <span className="close-btn" onClick={() => setShowProfile(false)}>&times;</span>
+      <h2>Technician Profile</h2>
+      <p>Name: {technician?.name || 'N/A'}</p>
+      <p>Email: {technician?.email || 'N/A'}</p>
+      <p>Role: {technician?.role || 'technician'}</p>  {/* Default to 'technician' */}
+    </div>
+  </div>
+)}
 
       <StatsGrid appointments={appointments} />
 

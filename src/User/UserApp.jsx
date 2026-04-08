@@ -49,7 +49,7 @@ export default function UserApp({ user, onLogout }) {
   const [page, setPage] = useState(1);
   const pageSize = 10; // 10 records per page
   
-const preventiveIntervals = {
+  const preventiveIntervals = {
   "4d376ac8-2b4e-4918-b3d3-7f026cb99ba7": 60, // AC Installation Basic
   "01a76081-771d-463b-9508-1ae2410dde47": 45, // AC Repair
   "1dd16c71-7392-48a0-926d-5b0fcc1818ec": 30, // AC Maintenance
@@ -68,12 +68,12 @@ const preventiveIntervals = {
   "32128b70-c635-4419-b1cf-c6ea6cecab15": 60, // Full AC Check-up
   "7ecce893-74cf-4b7b-936d-0a285e4b6d09": 30, // Gas Top-up
   "e2692bd6-5e65-48a2-a61c-ff091d812789": 45, // Thermostat Calibration
-  "c1e524c8-64f5-4922-8537-19ffcc41a18b": 60, // Split-type AC Installation (duplicate)
-  "19a6029e-a206-423d-8088-09ad2cb22a90": 60, // Window-type AC Installation (duplicate)
-  "82cc28a6-f812-4f5c-8cb0-f0ff242e8c9a": 60, // Ceiling Cassette AC Installation (duplicate)
-  "5bd67041-7f29-4b7c-960a-8ed9e1418587": 30, // Portable AC Setup (duplicate)
-  "94e42a93-2771-4efe-9f66-8aa63fe24e0d": 60, // Ducted AC Installation (duplicate)
-};  
+  "c1e524c8-64f5-4922-8537-19ffcc41a18b": 60, // Aircon Unit Relocation 
+  "19a6029e-a206-423d-8088-09ad2cb22a90": 60, // AC Energy Optimization Services 
+  "82cc28a6-f812-4f5c-8cb0-f0ff242e8c9a": 60, // Cooling System Consultation & Assessment 
+  "5bd67041-7f29-4b7c-960a-8ed9e1418587": 30, // Centralized AC System Installation 
+  "94e42a93-2771-4efe-9f66-8aa63fe24e0d": 60, // Thermal Insulation and AC Efficiency Upgrade 
+}; 
 
   const handleMeasureComplete = (result) => {
     setRoomMeasurements(result.measurements);
@@ -120,7 +120,6 @@ const calculateRoomMeasurements = (points) => {
   const [notification, setNotification] = useState(null);
   
 
-// 🟢 Fetch completed maintenance + calculate nextAction and daysLeft
 const fetchMaintenance = async () => {
   if (!user?.id) return;
 
@@ -140,30 +139,45 @@ const fetchMaintenance = async () => {
 
     if (error) throw error;
 
-    // Map data para sa dashboard
+    console.log("Fetched maintenance data:", data);  // Debugging log
+
+    // Map data for the dashboard
     const mapped = data.map((m) => {
+      // Get the interval for the service (30, 45, or 60 days)
       const intervalDays = preventiveIntervals[m.service_id] || 30;
       const serviceName = m.service?.name || "Service";
 
-      const serviceDate = new Date(m.date);
-      const nextActionDate = new Date(serviceDate);
-      nextActionDate.setDate(serviceDate.getDate() + intervalDays);
+      // Get today's date
+      const today = new Date();
+
+      // Calculate the next maintenance date
+      const serviceDate = new Date(today);  // Start from today
+      serviceDate.setDate(today.getDate() + intervalDays); // Add the interval days to today's date
+
+      // Calculate days left from today to the next maintenance date
+      const diffTime = serviceDate - today;
+      const daysLeft = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 0);
+
+      // Define the next action message
+      const nextAction = `Scheduled maintenance in ${intervalDays} day(s)`;
 
       return {
         ...m,
         service: serviceName,
-        nextAction: getMaintenanceAction(m.service_id),
-        daysLeft: intervalDays,  // ✅ dito lang ang fix
-        formattedDate: serviceDate.toLocaleDateString(),
+        nextAction: nextAction, // Show the dynamic next action
+        daysLeft: daysLeft, // Show the calculated days left
+        formattedDate: serviceDate.toLocaleDateString(), // Format the date (45 or 60 days from today)
       };
     });
 
-    setMaintenance(mapped);
+    console.log("Mapped Maintenance Data:", mapped);  // Check the mapped data
+    setMaintenance(mapped);  // Set the mapped data to the state
   } catch (err) {
     console.error("Failed to fetch maintenance records:", err.message);
-    setMaintenance([]);
+    setMaintenance([]);  // If there's an error, set maintenance to empty array
   }
 };
+
 
 
 const createMaintenance = async (booking) => {
@@ -476,29 +490,34 @@ useEffect(() => {
 }, [page]); // Fetch new data whenever page changes
 
 async function fetchBookingHistory() {
-  if (!user?.id) return;  // Siguraduhin na may user ID
+  if (!user?.id) return;
 
   setLoading(true);
-  setErrorMsg(null); // Clear previous error message
+  setErrorMsg(null);
 
   try {
-    // Fetch bookings based on the user_id, with technician info joined
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
     const { data, error } = await supabase
       .from('bookings')
       .select(`
         *,
-        technicians:technician_id (name, contact, speciality)  // Pag-join ng technicians data
-      `) 
-      .eq('user_id', user.id)  // Siguraduhin na may tamang user_id sa query
-      .order('created_at', { ascending: false })  // Order by created_at, most recent first
-      .range(0, 10);  // Pagination: offset=0 and limit=10
+        technicians:technician_id (name, contact, speciality)
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (error) {
       console.error("Error fetching booking history:", error.message);
       setErrorMsg("❌ Failed to load booking history");
     } else {
-      console.log("Booking history fetched:", data);
-      setBookingHistory(data || []); // Set the fetched data into state
+      if (page === 1) {
+        setBookingHistory(data || []);
+      } else {
+        setBookingHistory(prev => [...prev, ...(data || [])]);
+      }
     }
   } catch (err) {
     console.error("Unexpected error occurred:", err);
@@ -531,88 +550,7 @@ useEffect(() => {
   fetchServices();
 }, []);
  // --- BookingForm Component ---
-function BookingForm({ service, roomMeasurements, recommendedProduct, onConfirm, onCancel, setScreen }) {
-  const [name, setName] = React.useState('')
-  const [contact, setContact] = React.useState('')
-  const [email, setEmail] = React.useState('')
-  const [address, setAddress] = React.useState('')
-  const [date, setDate] = React.useState('')
-  const [time, setTime] = React.useState('')
-  const [notes, setNotes] = React.useState('')
 
-  return (
-    <div className="booking-modal-overlay" onClick={onCancel}>
-      <div className="booking-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>📌 Booking: {service.name}</h3>
-
-        {roomMeasurements && recommendedProduct && (
-          <p>
-            Room Area: {roomMeasurements.measurements.area} m² | Recommended AC: {recommendedProduct?.capacity}
-          </p>
-        )}
-
-        <div className="booking-form">
-          <label>Full Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" />
-
-          <label>Contact Number</label>
-          <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact Number" />
-
-          <label>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-
-          <label>Address</label>
-          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
-
-          <label>Preferred Date</label>
-          <input
-            type="date"
-             value={date}
-             min={new Date().toISOString().split("T")[0]}
-             onChange={(e) => setDate(e.target.value)}
-          />
-
-          <label>Preferred Time</label>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-
-          <label>Additional Notes</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" />
-        </div>
-
-        {/* --- Footer na palaging nakikita sa ilalim --- */}
-        <div className="booking-footer">
-          <h3>Confirm Booking</h3>
-          <p>Are you sure you want to add this booking to your cart?</p>
-
-          <div className="footer-buttons">
-            <button
-              className="btn-confirm-modern"
-              onClick={() =>
-                onConfirm({
-                  fullName: name,
-                  mobileNumber: contact,
-                  email,
-                  address,
-                  date,
-                  time,
-                  notes,
-                })
-              }
-            >
-              ✅ Yes, Add to Cart
-            </button>
-
-            <button className="btn-header-style" onClick={onCancel}>
-              ❌ Cancel
-            </button>
-
-            
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
   function handleManualCalculate() {
     if (!manualLength || !manualWidth) {
       alert('Please enter both length and width')
@@ -1538,14 +1476,6 @@ function calculateNextActionDate(date) {
   
 )}
 
-
-{/* "Load More" Button */}
-  {bookingHistory.length === pageSize && (
-    <button onClick={loadMore}>Load More</button>
-  )}
-
-
-
               {/* 🔹 Status Badge */}
               <p>
                 Status:{" "}
@@ -1614,6 +1544,11 @@ function calculateNextActionDate(date) {
         })}
     </div>
 
+    {/* "Load More" Button */}
+  {bookingHistory.length >= pageSize && (
+  <button onClick={loadMore}>Load More</button>
+)}
+
     <button onClick={() => setScreen('home')} className="btn-back">
       ← Back
     </button>
@@ -1665,43 +1600,6 @@ function calculateNextActionDate(date) {
         <p>No services available in this category yet.</p>
       )}
     </div>
-
-    
-
-    {/* --- Booking Form Modal --- */}
-{bookingService && (
-  <BookingForm
-    service={bookingService}
-    onCancel={() => setBookingService(null)}
-    setScreen={setScreen}
-    onConfirm={(data, localMeasurements, localRecommendation) => {
-      // Siguraduhin serviceId ay string o number
-      const validServiceId =
-        typeof bookingService.id === 'object'
-          ? bookingService.id.value || bookingService.id.key // depende sa structure
-          : bookingService.id;
-
-      if (!validServiceId) {
-        alert(`❌ Invalid service ID for service "${bookingService.name}"`);
-        return;
-      }
-
-      const newItem = {
-        cartId: Date.now(),
-        serviceId: validServiceId,
-        serviceName: bookingService.name,
-        price: bookingService.price || 0,
-        roomMeasurements: localMeasurements || null,
-        recommendedProduct: localRecommendation?.capacity || null,
-        bookingDetails: data,
-      };
-
-      setCart(prev => [...prev, newItem]);
-      setBookingService(null);
-      alert(`Booking for ${bookingService.name} added to cart`);
-    }}
-  />
-)}
   </main>
 )}
 
@@ -1771,7 +1669,7 @@ function calculateNextActionDate(date) {
       </div>
     </div>
 
-    {maintenance.length === 0 ? (
+      {maintenance.length === 0 ? (
       <p>✅ No upcoming maintenance. You're all good!</p>
     ) : (
       maintenance.map((m) => {

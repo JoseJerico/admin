@@ -380,3 +380,7 @@
   padding: 20px;
   color: #6b7280;
 }
+.tech-name a {
+  color: white;  /* Palitan ng puti ang kulay ng pangalan */
+  text-decoration: none; /* Optional: para alisin ang underline sa link */
+}
