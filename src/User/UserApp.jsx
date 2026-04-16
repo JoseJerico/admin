@@ -79,7 +79,7 @@ export default function UserApp({ user, onLogout }) {
     setRoomMeasurements(result.measurements);
     setRecommendedProduct({ capacity: result.recommended });
     setShowAR(false);
-    setScreen("room-analysis");
+    setScreen("home");
   };
 
   const handleARTap = (position) => {
@@ -1075,41 +1075,44 @@ function calculateNextActionDate(date) {
   </main>
 )}
 
-  {showAR && (
-  <RoomMeasurementAR
-    resetTrigger={resetCounter}
-    onMeasureComplete={(result) => {
-      console.log("AR Result raw:", result);
+    {/* Show AR Component if showAR is true */}
+    {showAR && (
+     <RoomMeasurementAR 
+  resetTrigger={resetCounter}
+  onMeasureComplete={(result) => {
+    console.log("AR Result raw:", result);
 
-      if (!result || !result.points || result.points.length < 2) {
-        return alert("See your room measurements now.");
+    if (!result || !result.points || result.points.length < 2) {
+      return alert("See your room measurements now.");
+    }
+
+    // 1️⃣ Kalkulahin ang measurements
+    const measurements = calculateRoomMeasurements(result.points); // return {length, width}
+    console.log("Calculated measurements:", measurements);
+
+    const length = parseFloat(measurements.length);
+    const width = parseFloat(measurements.width);
+    const area = (length * width).toFixed(2); // Area sa m²
+    const recommendedHP = getAirconHP(area);   // function mo para sa HP
+
+    // 2️⃣ I-save sa state para magamit sa Room Analysis page
+    setRoomMeasurements({
+      measurements: {
+        length,
+        width,
+        area
       }
+    });
+    setRecommendedProduct({ capacity: recommendedHP });
 
-      // 1️⃣ Kalkulahin ang measurements
-      const measurements = calculateRoomMeasurements(result.points); // return {length, width}
-      console.log("Calculated measurements:", measurements);
-
-      const length = parseFloat(measurements.length);
-      const width = parseFloat(measurements.width);
-      const area = (length * width).toFixed(2); // Area sa m²
-      const recommendedHP = getAirconHP(area);   // function mo para sa HP
-
-      // 2️⃣ I-save sa state para magamit sa Room Analysis page
-     setRoomMeasurements({
-  measurements: {
-    length,
-    width,
-    area
-  }
-});
-      setRecommendedProduct({ capacity: recommendedHP });
-
-      // 3️⃣ Ipakita sa screen
-      setShowAR(false);
-      setScreen('measure'); // punta sa Room Analysis page
-    }}
-  />
-)}
+    // 3️⃣ Ipakita sa screen
+    setShowAR(false);  // Hiding the AR component
+    setScreen('home');  // Going back to the home screen
+  }}
+  setShowAR={setShowAR}  // Pass setShowAR here
+  setScreen={setScreen}  // Pass setScreen here
+/>
+    )}
 
       {/* --- Manual Measurement --- */}
       {screen === 'manual-measure' && (

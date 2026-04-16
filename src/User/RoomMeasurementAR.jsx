@@ -2,13 +2,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./RoomMeasurementAR.css"; // For pulsating & pop animations
 
-export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger }) {
+export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger,setShowAR , setScreen}) {
   const videoRef = useRef(null);
   const [markers, setMarkers] = useState([]);
   const [length, setLength] = useState(null);
   const [width, setWidth] = useState(null);
   const [showRectangle, setShowRectangle] = useState(false);
-
+  
+  // Handle measuring complete
+  const handleMeasurementComplete = () => {
+    setShowAR(false);  // Hide AR view
+    setScreen('home');  // Go to home screen after measurement
+  };
   // Crosshair state
   const [crosshair, setCrosshair] = useState({ x: 0, y: 0, visible: false });
 
@@ -177,8 +182,21 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger }) {
             <p>Area: {(length * width).toFixed(2)} m²</p>
             <p>Recommended HP: {recommendedHP()}</p>
             <div>✅ Measurement Complete!</div>
-          </>
-        )}
+       <button
+      style={{
+        backgroundColor: "#007BFF",
+        color: "#fff",
+        padding: "10px 20px",
+        borderRadius: "5px",
+        cursor: "pointer",
+        marginTop: "1rem",
+      }}
+       onClick={handleMeasurementComplete} 
+    >
+      Go to Home
+    </button>
+  </>
+)}
       </div>
 
       {/* Red numbered markers with pop animation */}
