@@ -33,90 +33,98 @@ export default function RoleSelector({ onRoleSelect }) {
     : baseRoles;
 
   async function handleRegister() {
-    if (!email || !password) {
-      alert("Email and password are required");
-      return;
-    }
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters");
-      return;
-    }
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
-    if (!age || Number(age) <= 0) {
-      alert("Please enter a valid age");
-      return;
-    }
-    if (!gender) {
-      alert("Please select a gender");
-      return;
-    }
-    if (!/^\d{11}$/.test(mobileNumber)) {
-      alert("Mobile number must be exactly 11 digits");
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      alert(error.message);
-      return;
-    }
-    const user = data.user;
-    if (!user) {
-      alert("Signup failed");
-      return;
-    }
-
-    const { data: roleData, error: roleError } = await supabase
-      .from("roles")
-      .select("id")
-      .eq("name", selectedRole)
-      .single();
-    if (roleError || !roleData) {
-      alert("Role not found in database");
-      return;
-    }
-
-    try {
-      await supabase.from("profiles").insert({
-        id: user.id,
-        role_id: roleData.id,
-        full_name: `${firstName} ${middleInitial} ${lastName}`,
-        username: email,
-        avatar_url: null,
-      });
-
-      // Convert current time to PH timezone
-      const phTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-
-      await supabase.from("user_details").insert({
-        id: user.id,
-        user_id: user.id,
-        first_name: firstName,
-        middle_initial: middleInitial,
-        last_name: lastName,
-        address: address,
-        mobile_number: mobileNumber,
-        email: email,
-        role: selectedRole,
-        role_id: roleData.id,
-        age: Number(age),
-        gender: gender,
-        is_verified: false,
-        created_at: phTime,
-      });
-
-      alert(`Account created successfully! Philippine Time: ${phTime.toLocaleString()}`);
-      setIsRegistering(false);
-    } catch (insertError) {
-      console.error("Database error:", insertError);
-      alert(`Database error saving new user: ${insertError.message}`);
-      setIsRegistering(false);
-    }
+  // Check if all required fields are filled
+  if (!email || !password || !firstName || !lastName || !middleInitial || !address || !mobileNumber || !age || !gender) {
+    alert("All fields are required! Please fill in all the fields.");
+    return;
   }
 
+   // Email validation
+  const emailRegex = /^[^\s@]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
+  if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address.");
+    return;
+  }
+  if (password.length < 6) {
+    alert("Password must be at least 6 characters");
+    return;
+  }
+  if (password !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
+ if (!/^\d{11}$/.test(mobileNumber)) {
+  alert("Mobile number must contain only 11 digits, no letters or symbols.");
+  return;
+}
+  if (!age || Number(age) < 18) {
+  alert("You must be at least 18 years old.");
+  return;
+}
+  if (!gender) {
+    alert("Please select a gender");
+    return;
+  }
+
+  // Proceed with the registration
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) {
+    alert(error.message);
+    return;
+  }
+  const user = data.user;
+  if (!user) {
+    alert("Signup failed");
+    return;
+  }
+
+  const { data: roleData, error: roleError } = await supabase
+    .from("roles")
+    .select("id")
+    .eq("name", selectedRole)
+    .single();
+  if (roleError || !roleData) {
+    alert("Role not found in database");
+    return;
+  }
+
+  try {
+    await supabase.from("profiles").insert({
+      id: user.id,
+      role_id: roleData.id,
+      full_name: `${firstName} ${middleInitial} ${lastName}`,
+      username: email,
+      avatar_url: null,
+    });
+
+    // Convert current time to PH timezone
+    const phTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+
+    await supabase.from("user_details").insert({
+      id: user.id,
+      user_id: user.id,
+      first_name: firstName,
+      middle_initial: middleInitial,
+      last_name: lastName,
+      address: address,
+      mobile_number: mobileNumber,
+      email: email,
+      role: selectedRole,
+      role_id: roleData.id,
+      age: Number(age),
+      gender: gender,
+      is_verified: false,
+      created_at: phTime,
+    });
+
+    alert(`Account created successfully! Philippine Time: ${phTime.toLocaleString()}`);
+    setIsRegistering(false);
+  } catch (insertError) {
+    console.error("Database error:", insertError);
+    alert(`Database error saving new user: ${insertError.message}`);
+    setIsRegistering(false);
+  }
+}
   async function handleLogin() {
     if (!email || !password) {
       alert("Email and password are required");
@@ -202,7 +210,7 @@ export default function RoleSelector({ onRoleSelect }) {
                   <div className="form-group"><label>Last Name</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
                   <div className="form-group"><label>Address</label><input type="text" value={address} onChange={(e) => setAddress(e.target.value)} /></div>
                   <div className="form-group"><label>Mobile Number</label><input type="text" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} placeholder="11-digit number" /></div>
-                  <div className="form-group"><label>Age</label><input type="number" value={age} onChange={(e) => setAge(e.target.value)} /></div>
+                  <div className="form-group"><label>Age</label><input type="number" value={age} onChange={(e) => setAge(e.target.value)}/></div>
                   <div className="form-group"><label>Gender</label>
                     <select value={gender} onChange={(e) => setGender(e.target.value)}>
                       <option value="">Select Gender</option>
