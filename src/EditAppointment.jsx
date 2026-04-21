@@ -1,49 +1,56 @@
 import React, { useState } from 'react';
 import './EditAppointment.css';
 
-export default function EditAppointment({ appointment, onSave, onClose, schedules }) {
-  // ✅ States para sa lahat ng fields
+export default function EditAppointment({
+  appointment = {},
+  onSave,
+  onClose,
+  schedules = []
+}) {
   const [fullName, setFullName] = useState(appointment.full_name || '');
   const [date, setDate] = useState(appointment.date || '');
   const [time, setTime] = useState(appointment.time || '');
-  const [mobileNumber, setMobileNumber] = useState(appointment.mobile_number || appointment.contact || '');
+  const [mobileNumber, setMobileNumber] = useState(
+    appointment.mobile_number || appointment.contact || ''
+  );
   const [address, setAddress] = useState(appointment.address || '');
   const [status, setStatus] = useState(appointment.status || 'pending');
   const [notes, setNotes] = useState(appointment.notes || '');
 
-  // ✅ Save button handler
-const handleSave = () => {
-  if (!fullName || !date || !time) {
-    return alert('Please fill in required fields: Customer Name, Date, and Time');
-  }
+  const handleSave = () => {
+    if (!fullName || !date || !time) {
+      return alert('Please fill in required fields: Customer Name, Date, and Time');
+    }
 
-  // ✅ Availability check
-  const conflict = schedules.some((b) => {
-    if (b.id === appointment.id) return false; // skip current booking
-    if (b.date !== date || b.time !== time) return false; // different date/time
-    const bTech = b.technician_id || null;
-    const currentTech = appointment.technician_id || null;
-    // conflict only if BOTH bookings have no technician OR same technician
-    if (!bTech && !currentTech) return true;
-    if (bTech && currentTech && bTech === currentTech) return true;
-    return false; // otherwise, no conflict
-  });
+    const safeSchedules = Array.isArray(schedules) ? schedules : [];
 
-  if (conflict) {
-    return alert('⚠ Conflict detected! Another booking exists at this date and time.');
-  }
+    const conflict = safeSchedules.some((b) => {
+      if (b.id === appointment.id) return false;
+      if (b.date !== date || b.time !== time) return false;
 
-  // ✅ Save if no conflict
-  onSave({
-    full_name: fullName,
-    date,
-    time,
-    mobile_number: mobileNumber,
-    address,
-    status,
-    notes
-  });
-};
+      const bTech = b.technician_id || null;
+      const currentTech = appointment.technician_id || null;
+
+      if (!bTech && !currentTech) return true;
+      if (bTech && currentTech && bTech === currentTech) return true;
+
+      return false;
+    });
+
+    if (conflict) {
+      return alert('⚠ Conflict detected! Another booking exists at this date and time.');
+    }
+
+    onSave({
+      full_name: fullName,
+      date,
+      time,
+      mobile_number: mobileNumber,
+      address,
+      status,
+      notes
+    });
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -99,7 +106,6 @@ const handleSave = () => {
             <option value="cancelled">Cancelled</option>
           </select>
 
-          {/* ✅ Notes Field */}
           <label>Notes</label>
           <textarea
             value={notes}

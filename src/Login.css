@@ -19,7 +19,7 @@
 
 /* Login Header */
 .login-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #073ca5 0%, #3224f8 100%) !important;
   color: white;
   padding: 40px 24px;
   text-align: center;

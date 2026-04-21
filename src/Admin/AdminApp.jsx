@@ -502,12 +502,28 @@ function renderPagination() {
       }
 
       {editingAppointment &&
-        <EditAppointment
-          appointment={editingAppointment}
-          onClose={()=>setEditingAppointment(null)}
-          onSave={refresh}
-        />
+  <EditAppointment
+    appointment={editingAppointment}
+    schedules={schedules || []}
+    onClose={() => setEditingAppointment(null)}
+    onSave={async (updatedData) => {
+      const { error } = await supabase
+        .from('bookings')
+        .update(updatedData)
+        .eq('id', editingAppointment.id);
+
+      if (error) {
+        console.error('Update error:', error);
+        alert('❌ Failed to update booking');
+        return;
       }
+
+      alert('✅ Booking updated successfully');
+      setEditingAppointment(null);
+      refresh();
+    }}
+  />
+}
 
       {selectedPhoto &&
   <PhotoModal

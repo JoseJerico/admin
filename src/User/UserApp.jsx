@@ -435,39 +435,78 @@ const handleCancel = async (id) => {
   const confirmCancel = window.confirm("Cancel this booking?");
   if (!confirmCancel) return;
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("bookings")
     .update({ status: "cancelled" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) {
     console.error("Error cancelling booking:", error);
-    alert("❌ Failed to cancel booking.");
+    alert("❌ Failed to cancel booking: " + error.message);
     return;
   }
 
-  alert("Booking cancelled!");
-  fetchBookingHistory(); // 🔹 refresh history para makita agad ang cancelled status
-  
+  alert("✅ Booking cancelled!");
+  fetchBookingHistory();
 };
 
 const handleEdit = (booking) => {
-  setFormData(booking);
+  setFormData({
+    full_name: booking.full_name || "",
+    mobile_number: booking.mobile_number || "",
+    email: booking.email || "",
+    address: booking.address || "",
+    date: booking.date || "",
+    time: booking.time || "",
+    notes: booking.notes || ""
+  });
   setEditingId(booking.id);
 };
 
 const handleUpdate = async (e) => {
   e.preventDefault();
 
-  await supabase
-    .from("bookings")
-    .update(formData)
-    .eq("id", editingId);
+  if (!editingId) {
+    alert("No booking selected.");
+    return;
+  }
 
-  alert("Booking updated!");
+  const updateData = {
+    full_name: formData.full_name || "",
+    mobile_number: formData.mobile_number || "",
+    email: formData.email || "",
+    address: formData.address || "",
+    date: formData.date || "",
+    time: formData.time || "",
+    notes: formData.notes || ""
+  };
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update(updateData)
+    .eq("id", editingId)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating booking:", error);
+    alert("❌ Failed to update booking: " + error.message);
+    return;
+  }
+
+  alert("✅ Booking updated successfully!");
+
+  setBookingHistory((prev) =>
+    prev.map((item) =>
+      item.id === editingId ? { ...item, ...data } : item
+    )
+  );
+
   setEditingId(null);
   setFormData({});
-  fetchBookingHistory(); // 🔹 refresh history
+  fetchBookingHistory();
 };
 
  useEffect(() => {
