@@ -1,13 +1,13 @@
 /* Login Container */
 /* Adjusting the Blue Background */
+/* Login Container */
 .login-container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) no-repeat center center fixed;
-  background-size: cover;
-  padding: 16px 40px; /* Added more padding on the left to give space */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
   position: relative;
   box-sizing: border-box;
 }
@@ -22,17 +22,15 @@
   overflow: hidden;
   padding: 32px 24px;
   box-sizing: border-box;
-  margin: 0 auto; /* Center the form on mobile */
 }
 
-/* Login Header */
 /* Login Header */
 .login-header {
   background: linear-gradient(135deg, #073ca5 0%, #3224f8 100%);
   color: white;
   padding: 40px 24px;
   text-align: center;
-  width: 100%;  /* Stretch to full width */
+  width: 100%; /* Stretch to full width */
   position: relative;
   top: 0;
   left: 0;
@@ -48,7 +46,7 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg, #073ca5 0%, #3224f8 100%);
-  z-index: -1;  /* Put it behind the text */
+  z-index: -1; /* Put it behind the text */
   border-radius: 16px 16px 0 0; /* Make sure the top is rounded */
 }
 
@@ -150,18 +148,17 @@
 
 /* Back Button */
 .btn-back-role {
-  position: fixed !important;
-  top: 16px !important;
-  left: 16px !important;
-  z-index: 10000 !important;
-  background: rgba(255, 255, 255, 0.3) !important;
-  padding: 8px 16px !important;
-  border-radius: 8px !important;
-  font-size: 14px !important;
-  color: white !important;
-  cursor: pointer !important;
-  font-weight: bold !important;
-  margin: 0 !important;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 .btn-back-role:hover {
