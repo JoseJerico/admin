@@ -1,3 +1,4 @@
+/* Role Selector Container */
 .role-selector {
   display: flex;
   align-items: center;
@@ -79,7 +80,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: center;
-  border-top: 4px solid #007bff; /* Asul na border */
+  border-top: 4px solid #007bff; /* Blue border */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -495,6 +496,7 @@
     font-size: 32px;
   }
 }
+
 .technician-pin-modal {
   position: fixed;
   top: 0;
@@ -617,6 +619,7 @@
 .btn-pin-cancel:active {
   background: #d1d5db;
 }
+
 .btn-technician-access {
   background: #f3f4f6;
   border: 2px solid #d1d5db;
@@ -645,5 +648,3 @@
   font-size: 20px; /* Ayusin ang laki ng icon */
   color: #1e40af; /* Kulay blue ng wrench icon */
 }
-
-

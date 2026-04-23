@@ -21,6 +21,7 @@
   padding: 24px 16px; /* Adjusted padding */
   box-sizing: border-box;
   margin: 0 auto;
+  transition: all 0.3s ease;
 }
 
 /* Login Header */
@@ -169,8 +170,8 @@
 @media (max-width: 480px) {
   .login-box {
     padding: 20px;
-    width: 100%;
-    max-width: 100%;
+    width: 90%; /* Allow form to use more space on smaller screens */
+    max-width: 90%; /* Allow form to adjust to screen size */
     border-radius: 12px;
   }
 
