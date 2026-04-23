@@ -495,4 +495,155 @@
     font-size: 32px;
   }
 }
+.technician-pin-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); /* Dim background */
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the modal */
+  z-index: 1000;
+  padding: 16px;
+}
+
+.technician-pin-box {
+  background: white;
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 350px;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.technician-pin-box h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.technician-pin-box p {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.pin-input-group {
+  margin-bottom: 20px;
+}
+
+.pin-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+  font-family: monospace;
+}
+
+.pin-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.pin-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.pin-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-pin-submit,
+.btn-pin-cancel {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-pin-submit {
+  background: #10b981;
+  color: white;
+}
+
+.btn-pin-submit:hover {
+  background: #059669;
+}
+
+.btn-pin-submit:active {
+  background: #047857;
+}
+
+.btn-pin-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-pin-cancel:hover {
+  background: #e5e7eb;
+}
+
+.btn-pin-cancel:active {
+  background: #d1d5db;
+}
+.btn-technician-access {
+  background: #f3f4f6;
+  border: 2px solid #d1d5db;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center; /* Para magkatabi ang icon at text */
+  gap: 10px; /* Espasyo sa pagitan ng icon at text */
+}
+
+.btn-technician-access:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.btn-technician-access:active {
+  transform: scale(0.95);
+}
+
+.btn-technician-access .role-icon {
+  font-size: 20px; /* Ayusin ang laki ng icon */
+  color: #1e40af; /* Kulay blue ng wrench icon */
+}
+
 

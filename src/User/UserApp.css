@@ -2017,4 +2017,109 @@
   border-color: rgba(255, 215, 0, 0.75);
   box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
 }
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
 
+/* Modal */
+.modal {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  font-family: 'Arial', sans-serif;
+  position: relative;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Header */
+.modal h3 {
+  font-size: 22px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Stars for Rating */
+.modal .rating span {
+  font-size: 30px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.modal .rating span:hover {
+  color: gold;
+}
+
+/* Select Box */
+.modal select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+/* Textarea */
+.modal textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  min-height: 100px;
+  resize: vertical;
+  margin-bottom: 15px;
+}
+
+/* Buttons */
+.modal button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  margin-top: 10px;
+}
+
+.modal button:hover {
+  background-color: #4c90ff;
+  color: white;
+}
+
+.modal button.cancel {
+  background-color: #e4e4e4;
+  margin-right: 10px;
+}
+
+/* Footer note */
+.modal-footer {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #888;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

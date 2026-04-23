@@ -25,7 +25,13 @@ export default function UserApp({ user, onLogout }) {
   const [manualWidth, setManualWidth] = useState('')
   const [manualUnit, setManualUnit] = useState('meters')
   
-  // Sa taas ng UserApp function/component
+  // State Setup for Modal
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [feedbackRating, setFeedbackRating] = useState(5);  // Default rating (5 stars)
+  const [feedbackMessage, setFeedbackMessage] = useState('');  // Default empty feedback
+  const [feedbackType, setFeedbackType] = useState('feedback');  // Default type is 'feedback'
+  const [feedbacks, setFeedbacks] = useState([]);
 
  
 
@@ -585,10 +591,70 @@ const loadMore = () => {
   setLoading(false)
 }
 
+
 useEffect(() => {
   fetchServices();
 }, []);
- // --- BookingForm Component ---
+ 
+  function handleOpenFeedback(booking) {
+  setSelectedBooking(booking);  // Set selected booking
+  setFeedbackRating(5);  // Reset rating to default 5
+  setFeedbackMessage('');  // Clear any previous feedback message
+  setShowFeedbackModal(true);  // Show the feedback modal
+}
+
+// Function to fetch feedbacks
+async function fetchFeedbacks() {
+  try {
+    const { data, error } = await supabase
+      .from('booking_feedback')  // Ensure correct table name
+      .select('*')
+      .order('created_at', { ascending: false });  // Order by latest feedback
+
+    if (error) throw error;
+
+    console.log('Fetched feedbacks:', data);
+    // Set the feedback data to state or use it as needed
+    setFeedbacks(data);
+  } catch (err) {
+    console.error('Error fetching feedbacks:', err.message);
+  }
+}
+
+async function submitFeedback() {
+  if (!selectedBooking?.id) return;  // Ensure booking exists
+  if (!feedbackMessage.trim()) {  // Ensure feedback message is not empty
+    alert("Please enter your message");
+    return;
+  }
+
+  // Insert feedback into Supabase
+  const { data, error } = await supabase
+    .from('booking_feedback')
+    .insert([
+      {
+        booking_id: selectedBooking.id,  // Correct column name
+        user_id: user.id,
+        rating: feedbackRating,
+        type: feedbackType,
+        message: feedbackMessage.trim(),
+      }
+    ]);
+
+  if (error) {
+    console.error("Error submitting feedback:", error); // Log the error
+    alert("❌ Failed to submit feedback");
+  } else {
+    alert("✅ Feedback submitted successfully!");
+    setShowFeedbackModal(false);  // Close modal
+    fetchFeedbacks();  // Reload feedbacks after submission
+  }
+}
+
+useEffect(() => {
+    fetchFeedbacks();  // Fetch feedbacks when the component is mounted
+  }, [user]);  // Call when user changes or first load
+
 
   function handleManualCalculate() {
     if (!manualLength || !manualWidth) {
@@ -1506,17 +1572,30 @@ function calculateNextActionDate(date) {
           if (item.status === 'cancelled') statusClass = 'history-cancelled';
           if (item.status === 'rejected') statusClass = 'history-rejected';
 
-          return (
-            <div key={item.id} className={`history-item ${statusClass}`}>
-              <h3>{item.service}</h3>
-              <p>Date: {item.date} | Time: {item.time}</p>
-    {item.status === 'assigned' && item.technicians && (
-  <div className="assigned-info">
-    <p>Technician: {item.technicians.name}</p>
-    <p>Contact: {item.technicians.contact}</p>
-  </div>
-  
-)}
+         return (
+        <div key={item.id} className={`history-item ${statusClass}`}>
+          <h3>{item.service}</h3>
+          <p>Date: {item.date} | Time: {item.time}</p>
+
+          {/* Button para sa Rate & Feedback */}
+          {item.status === 'completed' && (
+            <div>
+              <button onClick={() => handleOpenFeedback(item)}>
+                ⭐ Rate & Feedback
+              </button>
+            </div>
+          )}
+
+          <p>Status: {item.status}</p>
+          <p>Room Area: {item.room_area}</p>
+          <p>Technician: {item.technician_name}</p>
+
+          {item.status === 'assigned' && item.technicians && (
+            <div className="assigned-info">
+              <p>Technician: {item.technicians.name}</p>
+              <p>Contact: {item.technicians.contact}</p>
+            </div>
+          )}
 
               {/* 🔹 Status Badge */}
               <p>
@@ -1815,6 +1894,50 @@ function calculateNextActionDate(date) {
           <button type="button" onClick={() => setEditingId(null)} className="btn-cancel">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+)}
+
+{showFeedbackModal && (
+  <div className="modal-overlay" onClick={() => setShowFeedbackModal(false)}>
+    <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <h3>Rate & Provide Feedback</h3>
+
+      {/* Rating (1-5 stars) */}
+      <div className="rating">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            onClick={() => setFeedbackRating(star)}
+            style={{ color: star <= feedbackRating ? "gold" : "gray" }}
+          >
+            ★
+          </span>
+        ))}
+      </div>
+
+      {/* Feedback Type */}
+      <label>Type of Feedback</label>
+      <select value={feedbackType} onChange={(e) => setFeedbackType(e.target.value)}>
+        <option value="feedback">Feedback</option>
+        <option value="complaint">Complaint</option>
+      </select>
+
+      {/* Message Input */}
+      <textarea
+        placeholder="Enter your message here..."
+        value={feedbackMessage}
+        onChange={(e) => setFeedbackMessage(e.target.value)}
+      />
+
+      {/* Footer note */}
+      <div className="modal-footer">
+        Your feedback is important to us and will help us improve our services.
+      </div>
+
+      {/* Action Buttons */}
+      <button onClick={submitFeedback}>Submit Feedback</button>
+      <button className="cancel" onClick={() => setShowFeedbackModal(false)}>Cancel</button>
     </div>
   </div>
 )}

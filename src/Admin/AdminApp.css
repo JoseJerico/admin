@@ -900,3 +900,83 @@
     grid-template-columns: 1fr !important;
   }
 }
+/* Adjust layout for feedback section */
+.feedback-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Nagsisigurado na ang mga items ay nasa gitna horizontally */
+  justify-content: center; /* Nagsisigurado na ang mga items ay nasa gitna vertically */
+  margin-top: 20px; /* Para may espasyo sa itaas */
+  padding: 20px; /* Para sa padding sa loob ng section */
+  width: 100%; /* Siguraduhin na sumasakop sa buong lapad ng container */
+}
+
+.feedback-item {
+  width: 80%; /* Set the feedback container to occupy 80% of the container width */
+  background-color: #f4f4f4; /* Gawin itong kaunti 'light' para hindi mahirap basahin */
+  margin-bottom: 10px; /* Espasyo sa pagitan ng feedback items */
+  padding: 15px;
+  border-radius: 8px; /* Para sa rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Maglagay ng shadow para magmukhang "card" */
+}
+
+.feedback-item p {
+  margin: 5px 0; /* Space between text lines */
+}
+
+.feedback-item textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  min-height: 80px;
+}
+
+.feedback-item button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  margin-top: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.feedback-item button:hover {
+  background-color: #45a049;
+}
+
+/* Ensure the feedback section is above the table */
+.schedules-container {
+  position: relative;
+  z-index: 1; /* Keeps table below feedback section */
+}
+.feedback-summary {
+  cursor: pointer;
+  background-color: #f1f1f1;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+}
+
+.feedback-details {
+  background-color: #f9f9f9;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-left: 3px solid #007bff;
+}
+
+textarea {
+  width: 100%;
+  height: 80px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}

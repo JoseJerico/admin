@@ -154,8 +154,9 @@ export default function AdminApp({ user, onLogout }) {
   const [roleName, setRoleName] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-  
-
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [replyTexts, setReplyTexts] = useState({});
+  const [expandedFeedback, setExpandedFeedback] = useState(null);
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -226,6 +227,8 @@ export default function AdminApp({ user, onLogout }) {
       setRoleName(roleMap[data.role_id] || "Customer");
     })();
   }, [user]);
+
+
 
   // Fetch technicians
   useEffect(() => {
@@ -303,6 +306,49 @@ export default function AdminApp({ user, onLogout }) {
     }
   }
 
+useEffect(() => {
+  // Function para mag-refresh ng feedbacks every 10 seconds
+  const interval = setInterval(() => {
+    fetchFeedbacks();  // Regular na mag-fetch ng feedbacks
+  }, 10000); // 10,000 ms = 10 seconds
+
+  // Clean-up function para alisin ang interval kapag unmounted ang component
+  return () => clearInterval(interval);
+}, []);  // Empty dependency array, so this runs only once when the component mounts
+
+useEffect(() => {
+  console.log('Updated feedbacks state:', feedbacks);  // Log feedbacks state after it's updated
+}, [feedbacks]);  // This will log the state whenever it changes
+ // Example ng fetchFeedbacks function sa Admin Dashboard
+async function fetchFeedbacks() {
+  try {
+    const { data, error } = await supabase
+      .from('booking_feedback')
+      .select(`
+        id,
+        booking_id,
+        user_id,
+        rating,
+        type,
+        message,
+        created_at,
+        bookings:booking_id (
+          id,
+          service,
+          full_name
+        )
+      `)
+      .order('created_at', { ascending: false }); // Get all feedbacks, ordered by creation date
+
+    if (error) throw error;
+
+    console.log('Fetched feedbacks:', data); // Log the fetched feedbacks
+    setFeedbacks(data || []);  // Update the feedbacks state with fetched data
+  } catch (err) {
+    console.error('Error fetching feedbacks:', err.message);
+  }
+}
+
  const handleAssign = async () => {
   if (!selectedTechnician || !selectedBooking) {
     return alert("Please select a technician and a booking.");
@@ -358,7 +404,9 @@ export default function AdminApp({ user, onLogout }) {
     return Object.values(map).filter(g => g.length > 1).flat().map(b => b.id);
   }, [schedules]);
 
-  // Pagination
+function toggleExpand(id) {
+  setExpandedFeedback(expandedFeedback === id ? null : id);
+}
 
 
 function renderPagination() {
@@ -473,13 +521,42 @@ function renderPagination() {
         </div>
       </header>
 
+ 
+
       <StatsGrid schedules={schedules} />
       <Filters filter={filter} setFilter={setFilter} setCurrentPage={setCurrentPage} />
       <StatusLegend />
 
+  
+
      <div className="schedules-container">
   {renderTable(filteredSchedules)}
 </div>
+<div className="feedback-section">
+  <h3>Feedbacks from Customers</h3>
+
+  {feedbacks.length > 0 ? (
+    feedbacks.map((feedback) => (
+      <div key={feedback.id} className="feedback-item">
+        {/* Summary: Shows customer info, service, rating */}
+        <div className="feedback-summary" onClick={() => toggleExpand(feedback.id)}>
+          <p><strong>Customer:</strong> {feedback.bookings?.full_name || "N/A"}</p>
+          <p><strong>Service:</strong> {feedback.bookings?.service || "N/A"}</p>
+          <p><strong>Rating:</strong> {feedback.rating} ⭐</p>
+        </div>
+
+        {/* Details: Shows the full message and the reply textarea */}
+        <div className="feedback-details">
+          <p><strong>Message:</strong> {feedback.message}</p>
+          {/* Remove admin reply part */}
+        </div>
+      </div>
+    ))
+  ) : (
+    <p>No feedback available.</p>
+  )}
+</div>
+
 
       {selectedBooking &&
         <AssignTechnicianModal
