@@ -648,3 +648,15 @@
   font-size: 20px; /* Ayusin ang laki ng icon */
   color: #1e40af; /* Kulay blue ng wrench icon */
 }
+/* Ensure the QR code is centered and has proper spacing */
+.qr-code-container {
+  margin-top: 20px;
+  text-align: center;
+  padding: 10px;
+}
+
+.qr-code-container canvas {
+  border: 2px solid #667eea;
+  margin-top: 10px;
+  background-color: #fff;
+}
