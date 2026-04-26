@@ -32,6 +32,7 @@ export default function UserApp({ user, onLogout }) {
   const [feedbackMessage, setFeedbackMessage] = useState('');  // Default empty feedback
   const [feedbackType, setFeedbackType] = useState('feedback');  // Default type is 'feedback'
   const [feedbacks, setFeedbacks] = useState([]);
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
 
  
 
@@ -595,11 +596,27 @@ const loadMore = () => {
 useEffect(() => {
   fetchServices();
 }, []);
+
+function hasFeedbackForBooking(bookingId) {
+  return feedbacks.some(
+    (feedback) =>
+      feedback.booking_id === bookingId &&
+      feedback.user_id === user?.id
+  );
+}
  
-  function handleOpenFeedback(booking) {
+function handleOpenFeedback(booking) {
+  const alreadySubmitted = hasFeedbackForBooking(booking.id); // Check if feedback exists
+
+  if (alreadySubmitted) {
+    alert("You have already submitted feedback for this booking.");
+    return; // Stop execution if feedback exists
+  }
+
   setSelectedBooking(booking);  // Set selected booking
   setFeedbackRating(5);  // Reset rating to default 5
   setFeedbackMessage('');  // Clear any previous feedback message
+  setFeedbackType('feedback');  // Set the default feedback type
   setShowFeedbackModal(true);  // Show the feedback modal
 }
 
@@ -654,6 +671,26 @@ async function submitFeedback() {
 useEffect(() => {
     fetchFeedbacks();  // Fetch feedbacks when the component is mounted
   }, [user]);  // Call when user changes or first load
+
+  useEffect(() => {
+  if (selectedBooking?.id) {
+    checkIfFeedbackExists();  // Function na titingin kung may existing feedback
+  }
+}, [selectedBooking]);
+const checkIfFeedbackExists = async () => {
+  const { data, error } = await supabase
+    .from('booking_feedback')
+    .select('*')
+    .eq('booking_id', selectedBooking.id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (data) {
+    setHasSubmittedFeedback(true);  // Kung may data, ibig sabihin may feedback na
+  } else {
+    setHasSubmittedFeedback(false);  // Kung wala, wala pang feedback
+  }
+};
 
 
   function handleManualCalculate() {

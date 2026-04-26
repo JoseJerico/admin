@@ -155,7 +155,7 @@ export default function AdminApp({ user, onLogout }) {
   const [showProfile, setShowProfile] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
-  const [replyTexts, setReplyTexts] = useState({});
+  const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false);
   const [expandedFeedback, setExpandedFeedback] = useState(null);
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -307,14 +307,14 @@ export default function AdminApp({ user, onLogout }) {
   }
 
 useEffect(() => {
-  // Function para mag-refresh ng feedbacks every 10 seconds
-  const interval = setInterval(() => {
-    fetchFeedbacks();  // Regular na mag-fetch ng feedbacks
-  }, 10000); // 10,000 ms = 10 seconds
+  fetchFeedbacks();
 
-  // Clean-up function para alisin ang interval kapag unmounted ang component
+  const interval = setInterval(() => {
+    fetchFeedbacks();
+  }, 10000);
+
   return () => clearInterval(interval);
-}, []);  // Empty dependency array, so this runs only once when the component mounts
+}, []); // Empty dependency array, so this runs only once when the component mounts
 
 useEffect(() => {
   console.log('Updated feedbacks state:', feedbacks);  // Log feedbacks state after it's updated
@@ -533,27 +533,57 @@ function renderPagination() {
   {renderTable(filteredSchedules)}
 </div>
 <div className="feedback-section">
-  <h3>Feedbacks from Customers</h3>
+  <button
+    type="button"
+    className="feedback-dropdown-header"
+    onClick={() => setShowFeedbackDropdown(prev => !prev)}
+  >
+    <span>Feedbacks from Customers ({feedbacks.length})</span>
+    <span>{showFeedbackDropdown ? "▲ Hide" : "▼ Show"}</span>
+  </button>
 
-  {feedbacks.length > 0 ? (
-    feedbacks.map((feedback) => (
-      <div key={feedback.id} className="feedback-item">
-        {/* Summary: Shows customer info, service, rating */}
-        <div className="feedback-summary" onClick={() => toggleExpand(feedback.id)}>
-          <p><strong>Customer:</strong> {feedback.bookings?.full_name || "N/A"}</p>
-          <p><strong>Service:</strong> {feedback.bookings?.service || "N/A"}</p>
-          <p><strong>Rating:</strong> {feedback.rating} ⭐</p>
-        </div>
+  {showFeedbackDropdown && (
+    <div className="feedback-list">
+      {feedbacks.length > 0 ? (
+        feedbacks.map((feedback) => {
+          const isOpen = expandedFeedback === feedback.id;
 
-        {/* Details: Shows the full message and the reply textarea */}
-        <div className="feedback-details">
-          <p><strong>Message:</strong> {feedback.message}</p>
-          {/* Remove admin reply part */}
-        </div>
-      </div>
-    ))
-  ) : (
-    <p>No feedback available.</p>
+          return (
+            <div key={feedback.id} className="feedback-item">
+              <button
+                type="button"
+                className="feedback-summary"
+                onClick={() => toggleExpand(feedback.id)}
+              >
+                <div>
+                  <p><strong>Customer:</strong> {feedback.bookings?.full_name || "N/A"}</p>
+                  <p><strong>Service:</strong> {feedback.bookings?.service || "N/A"}</p>
+                  <p><strong>Rating:</strong> {feedback.rating} ⭐</p>
+                </div>
+
+                <span className="feedback-arrow">
+                  {isOpen ? "▲" : "▼"}
+                </span>
+              </button>
+
+              {isOpen && (
+                <div className="feedback-details">
+                  <p><strong>Message:</strong> {feedback.message || "No message"}</p>
+                  <p>
+                    <strong>Date:</strong>{" "}
+                    {feedback.created_at
+                      ? new Date(feedback.created_at).toLocaleString()
+                      : "N/A"}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })
+      ) : (
+        <p className="no-feedback">No feedback available.</p>
+      )}
+    </div>
   )}
 </div>
 

@@ -278,7 +278,7 @@ export default function RoleSelector({ onRoleSelect }) {
         </div>
 
         <div className="selector-footer">
-          <p>🔒 Secure Portal • PWA Ready • Mobile Optimized</p>
+          <p>🔒 Secure Login • Online Booking System • Mobile Optimized</p>
           {!adminAccessGranted && <button onClick={handleOpenAdminAccess} className="btn-admin-access">🔑 Admin Access</button>}
         </div>
       </div>
