@@ -292,9 +292,6 @@ export default function RoleSelector({ onRoleSelect }) {
     <div className="role-selector">
       <div className="selector-container">
         <div className="selector-header">
-          <div className="qr-code-container">
-            <QRCodeGenerator url="https://adminchill.vercel.app" />
-          </div>
           <div className="logo">❄️</div>
           <h1>RoomChill Advisor</h1>
           <p>Smart Cooling Solutions</p>
