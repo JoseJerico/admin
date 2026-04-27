@@ -659,4 +659,6 @@
   border: 2px solid #667eea;
   margin-top: 10px;
   background-color: #fff;
+  width: 100px; /* Pagbabawas ng width */
+  height: 100px; /* Pagbabawas ng height */
 }

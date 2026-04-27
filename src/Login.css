@@ -136,7 +136,7 @@
 /* Back Button */
 .btn-back-role {
   position: absolute;
-  top: 16px;
+  top: 50px;  /* Itaas ng konti ang top spacing */
   left: 16px;
   z-index: 9999;
   background: rgba(255, 255, 255, 0.3);
@@ -151,7 +151,6 @@
 .btn-back-role:hover {
   background: rgba(255, 255, 255, 0.5);
 }
-
 /* Login Footer */
 .login-footer {
   padding: 0 24px 24px;
@@ -186,5 +185,14 @@
   .btn-login {
     padding: 10px 20px;
     font-size: 16px;
+  }
+}
+/* Mobile and Desktop Adjustments */
+@media (max-width: 480px) {
+  .btn-back-role {
+    padding: 10px 20px;
+    font-size: 16px; /* Adjust for better visibility */
+    left: 10px; /* Ensure it doesn't overlap other elements */
+    top: 10px;
   }
 }

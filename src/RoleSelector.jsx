@@ -292,11 +292,14 @@ export default function RoleSelector({ onRoleSelect }) {
     <div className="role-selector">
       <div className="selector-container">
         <div className="selector-header">
+          <div className="qr-code-container">
+            <QRCodeGenerator url="https://adminchill.vercel.app" />
+          </div>
           <div className="logo">❄️</div>
           <h1>RoomChill Advisor</h1>
           <p>Smart Cooling Solutions</p>
         </div>
-
+         
         {showAdminPin && (
           <div className="admin-pin-modal">
             <div className="admin-pin-box">
@@ -376,10 +379,6 @@ export default function RoleSelector({ onRoleSelect }) {
 
         <div className="selector-footer">
           <p>🔒 Secure Login • Online Booking System • Mobile Optimized</p>
-
-          <div className="qr-code-container">
-            <QRCodeGenerator url="https://adminchill.vercel.app" />
-          </div>
 
           <div className="access-buttons">
             {!technicianAccessGranted && (

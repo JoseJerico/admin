@@ -1,21 +1,21 @@
-// RoomMeasurementAR.jsx
 import React, { useEffect, useRef, useState } from "react";
-import "./RoomMeasurementAR.css"; // For pulsating & pop animations
+import "./RoomMeasurementAR.css"; // For static crosshair
 
-export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger,setShowAR , setScreen}) {
+export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger, setShowAR, setScreen }) {
   const videoRef = useRef(null);
   const [markers, setMarkers] = useState([]);
   const [length, setLength] = useState(null);
   const [width, setWidth] = useState(null);
   const [showRectangle, setShowRectangle] = useState(false);
-  
+
+  // Crosshair state
+  const [crosshair, setCrosshair] = useState({ x: 0, y: 0, visible: true }); // Always visible in center
+
   // Handle measuring complete
   const handleMeasurementComplete = () => {
     setShowAR(false);  // Hide AR view
     setScreen('home');  // Go to home screen after measurement
   };
-  // Crosshair state
-  const [crosshair, setCrosshair] = useState({ x: 0, y: 0, visible: false });
 
   // Animation trigger for markers
   const [popMarkers, setPopMarkers] = useState({}); // { idx: true }
@@ -44,7 +44,7 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger,setS
     setLength(null);
     setWidth(null);
     setShowRectangle(false);
-    setCrosshair({ x: 0, y: 0, visible: false });
+    setCrosshair({ x: 0, y: 0, visible: true }); // Ensure crosshair is visible initially
     setPopMarkers({});
   }, [resetTrigger]);
 
@@ -82,21 +82,24 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger,setS
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const newMarkers = [...markers, { x, y }];
-    setMarkers(newMarkers);
+    // Define the center area tolerance (larger area)
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const tolerance = 100; // Expand the area for easier clicking
 
-    // Trigger pop animation
-    setPopMarkers({ ...popMarkers, [newMarkers.length - 1]: true });
-    setTimeout(() => {
-      setPopMarkers((prev) => ({ ...prev, [newMarkers.length - 1]: false }));
-    }, 300);
+    // Check if the tap is within the center area
+    if (
+      Math.abs(x - centerX) <= tolerance &&
+      Math.abs(y - centerY) <= tolerance
+    ) {
+      // Only start measuring if tapped in the center
+      setMarkers([]); // Reset markers for new measurement
+      setLength(null);
+      setWidth(null);
+      setShowRectangle(false);
+      setPopMarkers({});
 
-    if (newMarkers.length === 4) {
-      const confirmed = window.confirm("✅ All 4 corners tapped! Click OK.");
-      if (confirmed) {
-        calculateMeasurements(newMarkers);
-        setShowRectangle(true);
-      }
+      console.log("Center area tapped. Start measurement!");
     }
   }
 
@@ -182,21 +185,21 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger,setS
             <p>Area: {(length * width).toFixed(2)} m²</p>
             <p>Recommended HP: {recommendedHP()}</p>
             <div>✅ Measurement Complete!</div>
-       <button
-      style={{
-        backgroundColor: "#007BFF",
-        color: "#fff",
-        padding: "10px 20px",
-        borderRadius: "5px",
-        cursor: "pointer",
-        marginTop: "1rem",
-      }}
-       onClick={handleMeasurementComplete} 
-    >
-      Go to Home
-    </button>
-  </>
-)}
+            <button
+              style={{
+                backgroundColor: "#007BFF",
+                color: "#fff",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                cursor: "pointer",
+                marginTop: "1rem",
+              }}
+              onClick={handleMeasurementComplete}
+            >
+              Go to Home
+            </button>
+          </>
+        )}
       </div>
 
       {/* Red numbered markers with pop animation */}
@@ -244,36 +247,23 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger,setS
         );
       })()}
 
-      {/* Pulsating Crosshair + Center Dot */}
+      {/* Static Crosshair with larger clickable area */}
       {crosshair.visible && (
-        <>
-          <div
-            className="pulsating-crosshair"
-            style={{
-              position: "absolute",
-              left: crosshair.x - 20,
-              top: crosshair.y - 20,
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              border: "2px solid yellow",
-              backgroundColor: "rgba(255,255,0,0.2)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: crosshair.x - 4,
-              top: crosshair.y - 4,
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              backgroundColor: "yellow",
-              pointerEvents: "none",
-            }}
-          />
-        </>
+        <div
+          className="static-crosshair"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)", // Center it
+            width: 40, // Size of the crosshair
+            height: 40,
+            borderRadius: "50%", // Round shape
+            border: "2px solid yellow", // Yellow border
+            backgroundColor: "rgba(255,255,0,0.2)", // Light yellow background for better visibility
+            pointerEvents: "none", // Prevents interference with user clicks or taps
+          }}
+        />
       )}
     </div>
   );

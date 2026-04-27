@@ -6,8 +6,8 @@ const QRCodeGenerator = ({ url }) => {
 
   // This effect runs every time the `url` prop changes
   useEffect(() => {
-    // Generate the QR code and display it on the canvas
-    QRCode.toCanvas(canvasRef.current, url, (error) => {
+    // Generate the QR code and display it on the canvas with custom size
+    QRCode.toCanvas(canvasRef.current, url, { width: 100, height: 100 }, (error) => {
       if (error) console.error('Error generating QR code:', error);
       console.log('QR code generated!');
     });
@@ -15,7 +15,7 @@ const QRCodeGenerator = ({ url }) => {
 
   return (
     <div>
-      <canvas ref={canvasRef}></canvas> {/* This is where the QR code will be drawn */}
+      <canvas ref={canvasRef} style={{ width: '100px', height: '100px' }}></canvas> {/* This is where the QR code will be drawn */}
     </div>
   );
 };
