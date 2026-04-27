@@ -82,24 +82,22 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger, set
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Define the center area tolerance (larger area)
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const tolerance = 100; // Expand the area for easier clicking
+    const newMarkers = [...markers, { x, y }];
+    setMarkers(newMarkers);
 
-    // Check if the tap is within the center area
-    if (
-      Math.abs(x - centerX) <= tolerance &&
-      Math.abs(y - centerY) <= tolerance
-    ) {
-      // Only start measuring if tapped in the center
-      setMarkers([]); // Reset markers for new measurement
-      setLength(null);
-      setWidth(null);
-      setShowRectangle(false);
-      setPopMarkers({});
+    // Trigger pop animation
+    setPopMarkers({ ...popMarkers, [newMarkers.length - 1]: true });
+    setTimeout(() => {
+      setPopMarkers((prev) => ({ ...prev, [newMarkers.length - 1]: false }));
+    }, 300);
 
-      console.log("Center area tapped. Start measurement!");
+    // After 4 taps, show alert and calculate measurements
+    if (newMarkers.length === 4) {
+      const confirmed = window.confirm("✅ All 4 corners tapped! Click OK.");
+      if (confirmed) {
+        calculateMeasurements(newMarkers);
+        setShowRectangle(true);
+      }
     }
   }
 
@@ -247,7 +245,7 @@ export default function RoomMeasurementAR({ onMeasureComplete, resetTrigger, set
         );
       })()}
 
-      {/* Static Crosshair with larger clickable area */}
+      {/* Static Crosshair */}
       {crosshair.visible && (
         <div
           className="static-crosshair"
