@@ -6,6 +6,8 @@ import EditAppointment from '../EditAppointment';
 import InstallPrompt from '../InstallPrompt';
 import { supabase } from '../supabase';
 import './AdminApp.css';
+import AccountCreatorModal from './AccountCreatorModal';  // Import the modal
+
 
 function PhotoModal({ photoUrl, onClose }) {
   return (
@@ -157,6 +159,7 @@ export default function AdminApp({ user, onLogout }) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false);
   const [expandedFeedback, setExpandedFeedback] = useState(null);
+  const [showAccountCreator, setShowAccountCreator] = useState(false);
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -520,7 +523,17 @@ function renderPagination() {
           </div>
         </div>
       </header>
-
+      <div className="admin-technician-account">
+  <h2>Admin / Technician Account</h2>
+  <p>Create staff accounts here for team access. Click below to open the role form.</p>
+  <button 
+    className="open-account-creator-btn"
+    onClick={() => setShowAccountCreator(true)}
+  >
+    Open Account Creator
+  </button>
+</div>
+  {showAccountCreator && <AccountCreatorModal onClose={() => setShowAccountCreator(false)} />}
  
 
       <StatsGrid schedules={schedules} />
