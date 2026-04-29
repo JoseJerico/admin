@@ -680,6 +680,6 @@
 }
 @media (max-width: 768px) {
     .login-container {
-        background-size: 40% !important; /* Adjust logo size for mobile */
+        background-size: 100% !important; /* Adjust logo size for mobile */
     }
   }
