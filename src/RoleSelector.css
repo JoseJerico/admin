@@ -277,16 +277,19 @@
   background: #d1d5db;
 }
 
-/* Login Container */
-.login-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #073ca5 0%, #3224f8 100%) !important;
-  padding: 16px;
-}
 
+/* Login Container with background image */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: url('/src/public/logo.png') no-repeat center top fixed !important;
+    background-size: 20%!important; /* Even smaller background size */ 
+    padding: 16px;
+    position: relative;
+    box-sizing: border-box;
+}
 .login-box {
   background: white;
   border-radius: 16px;
@@ -661,4 +664,17 @@
   background-color: #fff;
   width: 100px; /* Pagbabawas ng width */
   height: 100px; /* Pagbabawas ng height */
+}
+.btn-back {
+  background-color: #ffcc00;
+  color: black;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.btn-back:hover {
+  background-color: #e6b800;
 }

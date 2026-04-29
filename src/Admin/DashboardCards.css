@@ -1,0 +1,123 @@
+.dashboard-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 20px;
+}
+
+.dashboard-cards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.overview-header {
+  flex: 1;
+}
+
+.completion-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 180px;
+}
+
+.completion-circle {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.bg-circle {
+  fill: none;
+  stroke: #e0e0e0;
+  stroke-width: 8;
+}
+
+.progress-circle {
+  fill: none;
+  stroke: #4caf50;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.completion-text {
+  position: absolute;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.completion-value {
+  font-size: 20px;
+}
+
+.completion-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon {
+  font-size: 36px;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.card-label {
+  font-size: 16px;
+  color: #888;
+}
+
+.card-description {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .completion-circle {
+    width: 80px;
+    height: 80px;
+  }
+
+  .completion-text {
+    font-size: 12px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+/* Para sa Dashboard Header */
+.header-title h1 {
+  color: white; /* Palitan ang kulay ng text ng Dashboard sa white */
+}
+
+/* Para sa Welcome back, Taga Pa Mahala */
+.header-title p {
+  color: white; /* Palitan ang kulay ng text sa "Welcome back, Taga Pa Mahala" sa white */
+}
+

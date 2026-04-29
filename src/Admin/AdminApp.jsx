@@ -7,6 +7,8 @@ import InstallPrompt from '../InstallPrompt';
 import { supabase } from '../supabase';
 import './AdminApp.css';
 import AccountCreatorModal from './AccountCreatorModal';  // Import the modal
+import Sidebar from './Sidebar.jsx';
+import DashboardCards from './DashboardCards';
 
 
 function PhotoModal({ photoUrl, onClose }) {
@@ -160,6 +162,7 @@ export default function AdminApp({ user, onLogout }) {
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false);
   const [expandedFeedback, setExpandedFeedback] = useState(null);
   const [showAccountCreator, setShowAccountCreator] = useState(false);
+  const [activeMenu, setActiveMenu] = useState('dashboard');
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -512,40 +515,63 @@ function renderPagination() {
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="header-content">
-          <h1>🔧 Aircon Admin Dashboard</h1>
-          <div className="header-actions">
-            <button onClick={()=>setShowProfile(true)}>👤 {fullName||user?.email}</button>
-            {/*<button onClick={refresh} disabled={loading}>{loading?'Loading...':'Refresh'}</button>*/}
-            <button onClick={onLogout}>Logout</button>
+    <div className="app-layout">
+      <Sidebar user={user} onLogout={onLogout} fullName={fullName} roleName={roleName} activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
+      
+      <div className="app-main">
+        <header className="header">
+          <div className="header-content">
+            <div className="header-title">
+              <h1>
+                {activeMenu === 'dashboard' && '🔧 Dashboard'}
+                {activeMenu === 'bookings' && '📅 Bookings'}
+                {activeMenu === 'technicians' && '👥 Technicians/Admins'}
+                {activeMenu === 'feedback' && '⭐ Customer Feedback'}
+              </h1>
+              <p>Welcome back, {fullName || user?.email}</p>
+            </div>
+            <div className="header-actions">
+              <button className="btn-profile" onClick={()=>setShowProfile(true)}>👤 Profile</button>
+            </div>
           </div>
-        </div>
-      </header>
-      <div className="admin-technician-account">
-  <h2>Admin / Technician Account</h2>
-  <p>Create staff accounts here for team access. Click below to open the role form.</p>
-  <button 
-    className="open-account-creator-btn"
-    onClick={() => setShowAccountCreator(true)}
-  >
-    Open Account Creator
-  </button>
-</div>
-  {showAccountCreator && <AccountCreatorModal onClose={() => setShowAccountCreator(false)} />}
- 
+        </header>
 
-      <StatsGrid schedules={schedules} />
-      <Filters filter={filter} setFilter={setFilter} setCurrentPage={setCurrentPage} />
-      <StatusLegend />
+        <div className="app-content">
+          {activeMenu === 'dashboard' && (
+            <>
+              <DashboardCards schedules={schedules} />
+            </>
+          )}
 
-  
+          {activeMenu === 'technicians' && (
+            <>
+              <div className="admin-technician-account">
+                <h2>Staff Account Management</h2>
+                <p>Create staff accounts here for team access. Click below to open the role form.</p>
+                <button 
+                  className="open-account-creator-btn"
+                  onClick={() => setShowAccountCreator(true)}
+                >
+                  + Create New Account
+                </button>
+              </div>
+              {showAccountCreator && <AccountCreatorModal onClose={() => setShowAccountCreator(false)} />}
+            </>
+          )}
 
-     <div className="schedules-container">
-  {renderTable(filteredSchedules)}
-</div>
-<div className="feedback-section">
+          {activeMenu === 'bookings' && (
+            <>
+              <Filters filter={filter} setFilter={setFilter} setCurrentPage={setCurrentPage} />
+              <StatusLegend />
+
+              <div className="schedules-container">
+                {renderTable(filteredSchedules)}
+              </div>
+            </>
+          )}
+
+          {activeMenu === 'feedback' && (
+            <div className="feedback-section">
   <button
     type="button"
     className="feedback-dropdown-header"
@@ -598,8 +624,8 @@ function renderPagination() {
       )}
     </div>
   )}
-</div>
-
+        </div>
+          )}
 
       {selectedBooking &&
         <AssignTechnicianModal
@@ -646,11 +672,13 @@ function renderPagination() {
 }
 
       {selectedPhoto &&
-  <PhotoModal
-    photoUrl={selectedPhoto}
-    onClose={() => setSelectedPhoto(null)}
-  />
-}
+        <PhotoModal
+          photoUrl={selectedPhoto}
+          onClose={() => setSelectedPhoto(null)}
+        />
+      }
+        </div>
+      </div>
     </div>
   );
 }

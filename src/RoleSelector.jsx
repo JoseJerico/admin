@@ -16,6 +16,11 @@ export default function RoleSelector({ onRoleSelect }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Back button function
+  const handleBack = () => {
+    setIsRegistering(false);  // Switch to login page
+  };
+
   // Registration function
   async function handleRegister() {
     if (!email || !password || !firstName || !lastName || !middleInitial || !address || !mobileNumber || !age || !gender) {
@@ -66,14 +71,11 @@ export default function RoleSelector({ onRoleSelect }) {
       return;
     }
 
-    // Handle profile creation without role selection
     try {
       const phTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
 
-      // Assign default role 'customer' for this example
-      const roleName = "customer"; 
+      const roleName = "customer"; // Default role
 
-      // Fetch the role_id from the roles table
       const { data: roleData, error: roleError } = await supabase
         .from("roles")
         .select("id")
@@ -85,16 +87,14 @@ export default function RoleSelector({ onRoleSelect }) {
         return;
       }
 
-      // Insert user profile data into 'profiles' table
       await supabase.from("profiles").insert({
         id: user.id,
         full_name: `${firstName} ${middleInitial} ${lastName}`.trim(),
         username: email,
         avatar_url: null,
-        role_id: roleData.id, // Assign role_id
+        role_id: roleData.id,
       });
 
-      // Insert user details into 'user_details' table
       await supabase.from("user_details").insert({
         id: user.id,
         user_id: user.id,
@@ -106,8 +106,8 @@ export default function RoleSelector({ onRoleSelect }) {
         email: email,
         age: Number(age),
         gender: gender,
-        role: roleName, // Role in string format
-        role_id: roleData.id, // Role ID
+        role: roleName,
+        role_id: roleData.id,
         is_verified: false,
         created_at: phTime,
       });
@@ -168,6 +168,11 @@ export default function RoleSelector({ onRoleSelect }) {
               : "Enter your email and password to open the correct dashboard."}
             </p>
           </div>
+
+          {/* Back Button only visible on the registration screen */}
+          {isRegistering && (
+            <button className="btn-back" onClick={handleBack}>Back</button>
+          )}
 
           <form
             onSubmit={(e) => {

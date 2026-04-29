@@ -14,13 +14,13 @@
 .login-box {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-width: 400px;
+  max-width: 350px; /* Shrink the login box width */
   overflow: hidden;
-  padding: 24px 16px; /* Adjusted padding */
-  box-sizing: border-box;
-  margin: 0 auto;
+  padding: 16px 16px; /* Reduced padding to make the box shorter */
+  margin-top: 250px; 
+  height: auto; /* Ensure the height adjusts to content */
 }
 
 /* Login Header */
