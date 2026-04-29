@@ -11,6 +11,7 @@ export default function DashboardCards({ schedules }) {
     completed: schedules.filter(s => s.status?.toLowerCase() === 'completed').length,
     cancelled: schedules.filter(s => s.status?.toLowerCase() === 'cancelled').length,  // New status
     rejected: schedules.filter(s => s.status?.toLowerCase() === 'rejected').length,      // New status
+    conflict: schedules.filter(s => s.status?.toLowerCase() === 'conflict').length, 
   };
 
   const completionRate = schedules.length > 0 

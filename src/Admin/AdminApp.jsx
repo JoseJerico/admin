@@ -166,7 +166,7 @@ export default function AdminApp({ user, onLogout }) {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const rowsPerPage = 5;
+  const rowsPerPage = 10;
 
   const STATUS_COLORS = {
     cancelled: '#4da6ff',
