@@ -16,11 +16,11 @@
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-width: 350px; /* Shrink the login box width */
+  max-width: 400px; /* Shrink the login box width */
   overflow: hidden;
   padding: 16px 16px; /* Reduced padding to make the box shorter */
   margin-top: 250px; 
-  height: auto; /* Ensure the height adjusts to content */
+  
 }
 
 /* Login Header */
