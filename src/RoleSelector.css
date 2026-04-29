@@ -678,3 +678,8 @@
 .btn-back:hover {
   background-color: #e6b800;
 }
+@media (max-width: 768px) {
+    .login-container {
+        background-size: 40% !important; /* Adjust logo size for mobile */
+    }
+  }
