@@ -506,7 +506,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  min-height: auto;
+  min-height: 100vh; /* O isang tiyak na taas kung kinakailangan */
   padding-top: 24px;
   overflow-y: visible;
   width: 100%;
