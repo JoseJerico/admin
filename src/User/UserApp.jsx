@@ -13,6 +13,14 @@ export default function UserApp({ user, onLogout }) {
   const [showProfile, setShowProfile] = useState(false)
   const [services, setServices] = useState([])
   const [showAR, setShowAR] = useState(false);
+  const menuItems = [
+    { id: 'home', label: 'Dashboard', icon: '🏠', screen: 'home' },
+    { id: 'measure-choice', label: 'Measure Room', icon: '📐', screen: 'measure-choice' },
+    { id: 'services', label: 'Services', icon: '🔧', screen: 'services' },
+    { id: 'history', label: 'Bookings', icon: '📅', screen: 'history' },
+    { id: 'preventive', label: 'Maintenance', icon: '🛠️', screen: 'preventive' },
+    { id: 'cart', label: 'Cart', icon: '🛒', screen: 'cart' },
+  ];
   const [markers, setMarkers] = useState([]);  // tap points
   const [roomData, setRoomData] = useState(null);
   const [resetCounter, setResetCounter] = useState(0);
@@ -980,39 +988,50 @@ function calculateNextActionDate(date) {
 
   return (
     <div className="user-app">
-      <header className="user-header">
+      <aside className="user-sidebar">
+        <div className="sidebar-brand">
+          <div className="brand-mark">❄</div>
+          <div>
+            <div className="brand-title">AirCon Hub</div>
+            <div className="brand-subtitle">Customer Dashboard</div>
+          </div>
+        </div>
+
+        <div className="sidebar-user">
+          <div className="avatar">
+            {fullName ? fullName.split(' ').map((name) => name[0]).join('').slice(0, 2) : 'AC'}
+          </div>
+          <div className="sidebar-user-info">
+            <p>Welcome back</p>
+            <h2>{fullName || 'Customer'}</h2>
+          </div>
+        </div>
+
+        <nav className="sidebar-menu">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              className={`sidebar-link ${screen === item.screen ? 'active' : ''}`}
+              onClick={() => {
+                setScreen(item.screen)
+              }}
+            >
+              <span className="sidebar-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <button className="sidebar-logout" onClick={onLogout}>
+            Logout
+          </button>
+        </div>
+      </aside>
+      <div className={`user-view ${screen === 'home' ? 'home-active' : ''}`}>
+        <header className="user-header">
         <div className="header-top">
           <h1>❄️ AirCon Hub</h1>
-          <div className="header-actions">
-            <button
-              onClick={() => setShowProfile(true)}
-              className="user-info"
-              title="View profile"
-            >
-              👤 {fullName || "User"}
-            </button>
-            <button
-  onClick={() => setScreen('cart')}
-  className="btn-cart"
-  title="View cart"
->
-  🛒 View Cart 
-  {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
-</button>
-            <button
-              onClick={async () => {
-                if (user?.id) await fetchBookingHistory()
-                setScreen('history')
-              }}
-              className="btn-history"
-              title="View past bookings"
-            >
-              📖 My Booking History
-            </button>
-            <button onClick={onLogout} className="btn-logout-user">
-              🚪 Logout
-            </button>
-          </div>
         </div>
         {screen !== 'home' && (
           <button onClick={() => setScreen('home')} className="btn-back">
@@ -1030,22 +1049,31 @@ function calculateNextActionDate(date) {
 
       {/* --- Home Screen --- */}
       {screen === 'home' && (
-        <main className="user-main">
-          <div className="hero">
-            <div className="hero-content">
-              <h2>Smart Cooling Solutions</h2>
-              <p>Professional AC installation, maintenance & repair services</p>
+        <main className="user-main home-screen dashboard-page">
+          <div className="dashboard-topbar">
+            <div className="dashboard-title-group">
+              <p className="page-label">Customer Dashboard</p>
+              <h2>Welcome back, {fullName || 'AirCon Hub'}</h2>
+            </div>
+            <div className="dashboard-top-actions">
+              <button className="btn-compact" onClick={() => setScreen('history')}>
+                📖 Bookings
+              </button>
+              <button className="btn-compact" onClick={() => setScreen('cart')}>
+                🛒 Cart {cart.length > 0 && <span className="cart-badge mini">{cart.length}</span>}
+              </button>
             </div>
           </div>
 
-          <div className="dashboard-summary">
+          <section className="dashboard-content">
+            <div className="hero dashboard-hero">
+              <div className="hero-content">
+                <h2>Smart Cooling Solutions</h2>
+                <p>Professional AC installation, maintenance & repair services</p>
+              </div>
+            </div>
 
-
-
-
-
- <div className="dashboard-summary">
-
+            <div className="dashboard-summary">
   <div 
     className="card total" 
     onClick={() => {
@@ -1123,55 +1151,41 @@ function calculateNextActionDate(date) {
   <p>Completed</p>
 </div>
 </div>
-</div>
-
-
-
- <div  
-  style={{
-    backgroundColor: "#1e293b",
-    color: "#fff",
-    padding: "1rem",
-    borderRadius: "12px",
-    marginBottom: "1rem",
-    cursor: "pointer"
-  }}  
-  className="card maintenance-preview"
-  onClick={() => setScreen('preventive')}
->
-  <h3>🔔 Preventive Maintenance ({maintenance.length})</h3>
-
-  {maintenance.length === 0 ? (
-    <p>✅ No upcoming maintenance. You're all good!</p>
-  ) : (
-    <p style={{ color: "#fbbf24", fontWeight: "bold" }}>
-      ⚠️ You have upcoming preventive maintenance.
-      <br />
-      👉 Click here to view details
-    </p>
-  )}
-</div>
-     
-
-          <div className="quick-actions">
-            <button
-              onClick={() => setScreen('measure-choice')}
-              className="action-card measure"
-            >
-              <div className="action-icon">📐</div>
-              <h3>Measure Room</h3>
-              <p>Get AC recommendation</p>
-            </button>
 
             <button
-              onClick={() => setScreen('services')}
-              className="action-card services"
+              className="maintenance-card"
+              onClick={() => setScreen('preventive')}
             >
-              <div className="action-icon">🔧</div>
-              <h3>Services</h3>
-              <p>Installation & repair</p>
+              <div>
+                <h3>🔔 Preventive Maintenance</h3>
+                {maintenance.length === 0 ? (
+                  <p>You're all good — no upcoming maintenance.</p>
+                ) : (
+                  <p>You have {maintenance.length} upcoming item(s). Tap to view details.</p>
+                )}
+              </div>
             </button>
-          </div>
+
+            <div className="quick-actions">
+              <button
+                onClick={() => setScreen('measure-choice')}
+                className="action-card measure"
+              >
+                <div className="action-icon">📐</div>
+                <h3>Measure Room</h3>
+                <p>Get AC recommendation</p>
+              </button>
+
+              <button
+                onClick={() => setScreen('services')}
+                className="action-card services"
+              >
+                <div className="action-icon">🔧</div>
+                <h3>Services</h3>
+                <p>Installation & repair</p>
+              </button>
+            </div>
+          </section>
         </main>
       )}
 
@@ -1361,13 +1375,24 @@ function calculateNextActionDate(date) {
 )}
 
 {screen === "maintenance" && (
-  <div className="maintenance-list">
-    <h2>🛠️ Your Maintenance Schedule</h2>
+  <main className="user-main maintenance-screen">
+    <div className="screen-header">
+      <h2>🛠️ Preventive Maintenance Schedule</h2>
+      <p className="screen-subtitle">
+        Track upcoming maintenance, due dates, and next actions in a premium dashboard view.
+      </p>
+    </div>
+
+    <div className="maintenance-legend">
+      <span className="legend-pill legend-upcoming">✅ Upcoming (more than 5 days)</span>
+      <span className="legend-pill legend-soon">⚠️ Due Soon (1-5 days)</span>
+      <span className="legend-pill legend-overdue">❌ Overdue</span>
+    </div>
 
     {maintenance.length === 0 ? (
       <p>No maintenance records yet.</p>
     ) : (
-      <div className="maintenance-items">
+      <div className="maintenance-grid">
         {maintenance.map((m) => {
           // ✅ fallback interval
           const interval = preventiveIntervals[m.service_id] ?? 30;
@@ -1401,45 +1426,71 @@ function calculateNextActionDate(date) {
 
           // ✅ service name fallback
           const serviceName = m.service ?? "Unnamed Service";
+          const accent = getMaintenanceColorByDate(nextDate);
+          const statusLabel =
+            m.status === "completed"
+              ? "Completed"
+              : m.status === "cancelled"
+              ? "Cancelled"
+              : m.status === "pending"
+              ? "Pending"
+              : m.status === "approved"
+              ? "Confirmed"
+              : m.status === "assigned"
+              ? "Assigned"
+              : m.status;
 
           return (
-            <div
+            <article
               key={m.id}
-              style={{
-                backgroundColor: getMaintenanceColorByDate(nextDate),
-                padding: "0.5rem",
-                borderRadius: "8px",
-                marginBottom: "0.5rem",
-                color: "#000",
-                fontWeight: "bold",
-              }}
+              className="maintenance-card"
+              style={{ borderLeft: `5px solid ${accent}` }}
             >
-              <h3>
-                {serviceName} –{" "}
-                {m.status === "completed" ? "Completed" : m.status}
-              </h3>
+              <div className="maintenance-card-header">
+                <div>
+                  <span className="maintenance-label">Preventive</span>
+                  <h3>{serviceName}</h3>
+                </div>
+                <span
+                  className="maintenance-status"
+                  style={{ backgroundColor: accent, color: '#fff' }}
+                >
+                  {statusLabel}
+                </span>
+              </div>
 
-              {/* ✅ show NEXT maintenance date (not today-based) */}
-              <p>
-                Next Maintenance Date:{" "}
-                {isNaN(nextDate)
-                  ? "TBD"
-                  : nextDate.toLocaleDateString()}
-              </p>
+              <div className="maintenance-card-details">
+                <div className="maintenance-meta">
+                  <span className="meta-label">Next date</span>
+                  <strong>{isNaN(nextDate) ? 'TBD' : nextDate.toLocaleDateString()}</strong>
+                </div>
+                <div className="maintenance-meta">
+                  <span className="meta-label">Days left</span>
+                  <strong>{daysLeft}</strong>
+                </div>
+                <div className="maintenance-meta">
+                  <span className="meta-label">Interval</span>
+                  <strong>{interval} days</strong>
+                </div>
+              </div>
 
-              {/* ✅ countdown */}
-              <p>⏳ {daysLeft} day(s) left</p>
+              <p className="maintenance-action">{nextAction}</p>
 
-              {/* ✅ action */}
-              <p>Next Action: {nextAction}</p>
-            </div>
+              {m.notes && (
+                <div className="maintenance-note">
+                  <strong>Notes:</strong> {m.notes}
+                </div>
+              )}
+            </article>
           );
         })}
       </div>
     )}
 
-    <button onClick={() => setScreen("home")}>⬅️ Back</button>
-  </div>
+    <div className="maintenance-actions-row">
+      <button className="btn-back" onClick={() => setScreen("home")}>⬅️ Back to Dashboard</button>
+    </div>
+  </main>
 )}
       {/* --- Booking Form --- */}
       {screen === 'booking-form' && bookingService && (
@@ -1455,55 +1506,77 @@ function calculateNextActionDate(date) {
           </div>
 
           <div className="booking-form">
-            <div className="form-group">
-              <label>Full Name</label>
-              <input
-                type="text"
-                value={bookingName}
-                onChange={(e) => setBookingName(e.target.value)}
-              />
+            <div className="booking-summary">
+              <div className="summary-card">
+                <h4>Service</h4>
+                <p>{bookingService.name}</p>
+              </div>
+              {roomMeasurements && (
+                <div className="summary-card">
+                  <h4>Room Area</h4>
+                  <p>{roomMeasurements.measurements.area} m²</p>
+                </div>
+              )}
+              {recommendedProduct && (
+                <div className="summary-card">
+                  <h4>Recommended AC</h4>
+                  <p>{recommendedProduct.capacity}</p>
+                </div>
+              )}
             </div>
-            <div className="form-group">
-              <label>Contact Number</label>
-              <input
-                type="text"
-                value={bookingContact}
-                onChange={(e) => setBookingContact(e.target.value)}
-              />
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  value={bookingName}
+                  onChange={(e) => setBookingName(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Contact Number</label>
+                <input
+                  type="text"
+                  value={bookingContact}
+                  onChange={(e) => setBookingContact(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={bookingEmail}
+                  onChange={(e) => setBookingEmail(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Address</label>
+                <input
+                  type="text"
+                  value={bookingAddress}
+                  onChange={(e) => setBookingAddress(e.target.value)}
+                  placeholder="Enter full address"
+                />
+              </div>
+              <div className="form-group">
+                <label>Preferred Date</label>
+                <input
+                  type="date"
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Preferred Time</label>
+                <input
+                  type="time"
+                  value={bookingTime}
+                  onChange={(e) => setBookingTime(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                value={bookingEmail}
-                onChange={(e) => setBookingEmail(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Address</label>
-              <input
-                type="text"
-                value={bookingAddress}
-                onChange={(e) => setBookingAddress(e.target.value)}
-                placeholder="Enter full address"
-              />
-            </div>
-            <div className="form-group">
-              <label>Preferred Date</label>
-              <input
-                type="date"
-                value={bookingDate}
-                onChange={(e) => setBookingDate(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Preferred Time</label>
-              <input
-                type="time"
-                value={bookingTime}
-                onChange={(e) => setBookingTime(e.target.value)}
-              />
-            </div>
+
             <div className="form-group">
               <label>Additional Notes</label>
               <textarea
@@ -1552,13 +1625,48 @@ function calculateNextActionDate(date) {
 
       {/* 🔥 STATUS LEGEND */}
       <div className="legend">
-        <button onClick={() => setStatusFilter('All')}>All</button>
-        <button onClick={() => setStatusFilter('pending')}>Pending</button>
-        <button onClick={() => setStatusFilter('approved')}>Confirmed</button>
-        <button onClick={() => setStatusFilter('cancelled')}>Cancelled</button>
-        <button onClick={() => setStatusFilter('rejected')}>Rejected</button>
-        <button onClick={() => setStatusFilter('assigned')}>Assigned</button>
-        <button onClick={() => setStatusFilter('completed')}>Completed</button>
+        <button
+          className={statusFilter === 'All' ? 'active' : ''}
+          onClick={() => setStatusFilter('All')}
+        >
+          All
+        </button>
+        <button
+          className={statusFilter === 'pending' ? 'active' : ''}
+          onClick={() => setStatusFilter('pending')}
+        >
+          Pending
+        </button>
+        <button
+          className={statusFilter === 'approved' ? 'active' : ''}
+          onClick={() => setStatusFilter('approved')}
+        >
+          Confirmed
+        </button>
+        <button
+          className={statusFilter === 'cancelled' ? 'active' : ''}
+          onClick={() => setStatusFilter('cancelled')}
+        >
+          Cancelled
+        </button>
+        <button
+          className={statusFilter === 'rejected' ? 'active' : ''}
+          onClick={() => setStatusFilter('rejected')}
+        >
+          Rejected
+        </button>
+        <button
+          className={statusFilter === 'assigned' ? 'active' : ''}
+          onClick={() => setStatusFilter('assigned')}
+        >
+          Assigned
+        </button>
+        <button
+          className={statusFilter === 'completed' ? 'active' : ''}
+          onClick={() => setStatusFilter('completed')}
+        >
+          Completed
+        </button>
       </div>
     </div>
 
@@ -1604,100 +1712,117 @@ function calculateNextActionDate(date) {
           let statusClass = '';
 
           if (item.status === 'pending') statusClass = 'history-pending';
-          if (item.status === 'approved') statusClass = 'history-confirmed';
+          if (item.status === 'approved') statusClass = 'history-approved';
           if (item.status === 'assigned') statusClass = 'history-assigned';
           if (item.status === 'cancelled') statusClass = 'history-cancelled';
           if (item.status === 'rejected') statusClass = 'history-rejected';
 
          return (
         <div key={item.id} className={`history-item ${statusClass}`}>
-          <h3>{item.service}</h3>
-          <p>Date: {item.date} | Time: {item.time}</p>
-
-          {/* Button para sa Rate & Feedback */}
-          {item.status === 'completed' && (
+          <div className="history-card-header">
             <div>
-              <button onClick={() => handleOpenFeedback(item)}>
-                ⭐ Rate & Feedback
-              </button>
-            </div>
-          )}
-
-          <p>Status: {item.status}</p>
-          <p>Room Area: {item.room_area}</p>
-          <p>Technician: {item.technician_name}</p>
-
-          {item.status === 'assigned' && item.technicians && (
-            <div className="assigned-info">
-              <p>Technician: {item.technicians.name}</p>
-              <p>Contact: {item.technicians.contact}</p>
-            </div>
-          )}
-
-              {/* 🔹 Status Badge */}
-              <p>
-                Status:{" "}
-                <span
-                  className="status-badge"
-                  style={{
-                    backgroundColor:
-                      item.status === "pending"
-                        ? "#fbbf24"
-                        : item.status === "approved"
-                        ? "#34d399"
-                        : item.status === "assigned"
-                        ? "#3b82f6"
-                        : item.status === "cancelled"
-                        ? "#f87171"
-                        : item.status === "rejected"
-                        ? "#ef4444"
-                        : item.status === "completed"
-                        ? "#22c55e"
-                        : "#9ca3af",
-                    color: "#fff",
-                    padding: "4px 8px",
-                    borderRadius: "6px",
-                    fontWeight: "bold"
-                  }}
-                >
-                  {item.status === "pending" && "⏳ Pending"}
-                  {item.status === "approved" && "✅ Confirmed"}
-                  {item.status === "assigned" && "👨‍🔧 Assigned"}
-                  {item.status === "cancelled" && "❌ Cancelled"}
-                  {item.status === "rejected" && "🚫 Rejected"}
-                  {item.status === "completed" && "✅ Completed"}
-                </span>
+              <h3>{item.service}</h3>
+              <p className="history-subtitle">
+                {item.date} · {item.time}
               </p>
+            </div>
+            <span
+              className="status-badge"
+              style={{
+                backgroundColor:
+                  item.status === "pending"
+                    ? "#f59e0b"
+                    : item.status === "approved"
+                    ? "#34d399"
+                    : item.status === "assigned"
+                    ? "#3b82f6"
+                    : item.status === "cancelled"
+                    ? "#ef4444"
+                    : item.status === "rejected"
+                    ? "#6b7280"
+                    : item.status === "completed"
+                    ? "#2563eb"
+                    : "#9ca3af",
+                color: "#fff"
+              }}
+            >
+              {item.status === "pending" && "⏳ Pending"}
+              {item.status === "approved" && "✅ Confirmed"}
+              {item.status === "assigned" && "👨‍🔧 Assigned"}
+              {item.status === "cancelled" && "❌ Cancelled"}
+              {item.status === "rejected" && "🚫 Rejected"}
+              {item.status === "completed" && "✅ Completed"}
+            </span>
+          </div>
 
-              <p>Room Area: {item.room_area || 'N/A'} m²</p>
-              <p>Recommended AC: {item.recommended_hp || 'N/A'}</p>
-
-              <p>👤 {item.full_name}</p>
-              <p>📞 {item.mobile_number}</p>
-              <p>📧 {item.email}</p>
-              <p>📍 {item.address}</p>
-
-              {item.notes && <p>📝 {item.notes}</p>}
-              {/* 🔁 QUICK REBOOK */}
-              <button
-                onClick={() =>
-                  openBookingForm({
-                    id: item.id,
-                    name: item.service,
-                    price: 1500,
-                  })
-                }
-              >
-                🔁 Book Again
-              </button>
-
-              {item.status === "pending" && (
-                <div className="history-actions">
-                  <button onClick={() => handleEdit(item)}>✏ Edit</button>
-                  <button onClick={() => handleCancel(item.id)}>🗑 Cancel</button>
-                </div>
+          <div className="history-card-grid">
+            <div>
+              <p>
+                <strong>Room Area:</strong> {item.room_area || 'N/A'} m²
+              </p>
+              <p>
+                <strong>Recommended AC:</strong> {item.recommended_hp || 'N/A'}
+              </p>
+              <p>
+                <strong>Customer:</strong> {item.full_name}
+              </p>
+              <p>
+                <strong>Contact:</strong> {item.mobile_number}
+              </p>
+            </div>
+            <div>
+              <p>
+                <strong>Email:</strong> {item.email}
+              </p>
+              <p>
+                <strong>Address:</strong> {item.address}
+              </p>
+              {item.status === 'assigned' && item.technicians && (
+                <>
+                  <p>
+                    <strong>Technician:</strong> {item.technicians.name}
+                  </p>
+                  <p>
+                    <strong>Tech Contact:</strong> {item.technicians.contact}
+                  </p>
+                </>
               )}
             </div>
+          </div>
+
+          {item.notes && (
+            <div className="history-note">
+              <strong>Notes:</strong> {item.notes}
+            </div>
+          )}
+
+          <div className="history-actions">
+            <button
+              onClick={() =>
+                openBookingForm({
+                  id: item.id,
+                  name: item.service,
+                  price: 1500,
+                })
+              }
+            >
+              🔁 Rebook
+            </button>
+
+            {item.status === 'completed' && (
+              <button onClick={() => handleOpenFeedback(item)}>
+                ⭐ Feedback
+              </button>
+            )}
+
+            {item.status === 'pending' && (
+              <>
+                <button onClick={() => handleEdit(item)}>✏ Edit</button>
+                <button onClick={() => handleCancel(item.id)}>🗑 Cancel</button>
+              </>
+            )}
+          </div>
+        </div>
           )
         })}
     </div>
@@ -2012,6 +2137,7 @@ function calculateNextActionDate(date) {
     </div>
   </div>
 )}
+      </div>
     </div>
   )
 }
