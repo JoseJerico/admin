@@ -21,6 +21,13 @@ export default function UserApp({ user, onLogout }) {
     { id: 'preventive', label: 'Maintenance', icon: '🛠️', screen: 'preventive' },
     { id: 'cart', label: 'Cart', icon: '🛒', screen: 'cart' },
   ];
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+// Toggle ang sidebar (bukas o sarado) kapag pinindot ang button
+  const toggleSidebar = () => {
+   setIsSidebarOpen(!isSidebarOpen);
+};
   const [markers, setMarkers] = useState([]);  // tap points
   const [roomData, setRoomData] = useState(null);
   const [resetCounter, setResetCounter] = useState(0);
@@ -988,7 +995,12 @@ function calculateNextActionDate(date) {
 
   return (
     <div className="user-app">
-      <aside className="user-sidebar">
+      {/* Button para buksan ang sidebar sa mobile */}
+      <button className="toggle-sidebar-btn" onClick={toggleSidebar}>
+        <span className="hamburger-icon">☰</span> {/* Hamburger Icon */}
+      </button>
+
+      <aside className={`user-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-brand">
           <div className="brand-mark">❄</div>
           <div>
