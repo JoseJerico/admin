@@ -3323,7 +3323,7 @@
     display: flex !important;
     position: fixed !important;
     top: 14px !important;
-    left: 14px !important;
+    right: 14px !important; /* Move it to the right side */
     z-index: 10000 !important;
     align-items: center !important;
     justify-content: center !important;
@@ -3356,14 +3356,15 @@
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
-    left: 0 !important;
+    left: auto !important; /* Make sure the sidebar is positioned from the right */
+    right: 0 !important; /* Align sidebar to the right */
     width: 78% !important;
     max-width: 320px !important;
     height: 100vh !important;
     min-height: 100vh !important;
     z-index: 9999 !important;
     background: #ffffff !important;
-    transform: translateX(-105%) !important;
+    transform: translateX(105%) !important; /* Sidebar starts from the right */
     transition: transform 0.3s ease !important;
     box-shadow: 8px 0 30px rgba(0, 0, 0, 0.2) !important;
     overflow-y: auto !important;
@@ -3376,6 +3377,6 @@
 
   /* Kapag closed */
   .user-sidebar.closed {
-    transform: translateX(-105%) !important;
+    transform: translateX(105%) !important;
   }
 }
