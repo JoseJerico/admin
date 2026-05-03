@@ -3248,3 +3248,63 @@
     padding-bottom: 120px;
   }
 }
+/* Mobile Layout */
+@media (max-width: 768px) {
+  .user-app {
+    flex-direction: column; /* stack layout for mobile */
+  }
+
+  .user-sidebar {
+    display: none; /* Hide sidebar on mobile */
+  }
+
+  .user-view {
+    margin-left: 0;
+  }
+
+  /* Add a toggleable button for sidebar in mobile */
+  .toggle-sidebar {
+    display: block; 
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+  }
+
+  /* Sidebar menu style when opened */
+  .sidebar.open {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 70%;
+    height: 100%;
+    background: #fff;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+  }
+
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+}
+
+/* Button to open sidebar on mobile */
+.toggle-sidebar-btn {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.25);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Hamburger icon for toggle button */
+.hamburger-icon {
+  font-size: 24px;
+  display: block;
+  cursor: pointer;
+}
