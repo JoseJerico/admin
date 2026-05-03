@@ -1026,6 +1026,7 @@ function calculateNextActionDate(date) {
               className={`sidebar-link ${screen === item.screen ? 'active' : ''}`}
               onClick={() => {
                 setScreen(item.screen)
+                setIsSidebarOpen(false)
               }}
             >
               <span className="sidebar-icon">{item.icon}</span>
