@@ -16,6 +16,18 @@ export default function UserApp({ user, onLogout }) {
   const [orderMobile, setOrderMobile] = useState('')
   const [orderAddress, setOrderAddress] = useState('')
   const [orderSubmitting, setOrderSubmitting] = useState(false)
+
+  const [myOrders, setMyOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState('')
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
+  const [notifications, setNotifications] = useState([])
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [notificationsError, setNotificationsError] = useState('')
+
+  const unreadNotifications = notifications.filter(
+    (notification) => !notification.is_read
+  ).length
   const [roomMeasurements, setRoomMeasurements] = useState(null)
   const [recommendedProduct, setRecommendedProduct] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -28,6 +40,13 @@ export default function UserApp({ user, onLogout }) {
     { id: 'services', label: 'Services', icon: '🔧', screen: 'services' },
     { id: 'products', label: 'Products', icon: '❄️', screen: 'products' },
     { id: 'orders', label: 'My Orders', icon: '📦', screen: 'orders' },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: '🔔',
+      screen: 'notifications',
+      badge: unreadNotifications
+    },
     { id: 'history', label: 'Bookings', icon: '📅', screen: 'history' },
     { id: 'preventive', label: 'Maintenance', icon: '🛠️', screen: 'preventive' },
     { id: 'cart', label: 'Cart', icon: '🛒', screen: 'cart' },
@@ -635,10 +654,130 @@ export default function UserApp({ user, onLogout }) {
     setProducts(data || []);
   }
 
+  async function fetchMyOrders() {
+    if (!user?.id) return;
+
+    setOrdersLoading(true);
+    setOrdersError('');
+
+    try {
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (ordersError) throw ordersError;
+
+      if (!ordersData || ordersData.length === 0) {
+        setMyOrders([]);
+        return;
+      }
+
+      const orderIds = ordersData.map((order) => order.id);
+
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds)
+        .order('created_at', { ascending: true });
+
+      if (itemsError) throw itemsError;
+
+      const ordersWithItems = ordersData.map((order) => ({
+        ...order,
+        items: (itemsData || []).filter(
+          (item) => item.order_id === order.id
+        )
+      }));
+
+      setMyOrders(ordersWithItems);
+
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrdersError(error.message || 'Failed to load orders.');
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
+  async function fetchNotifications() {
+    if (!user?.id) return;
+
+    setNotificationsLoading(true);
+    setNotificationsError('');
+
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setNotifications(data || []);
+
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotificationsError(
+        error.message || 'Failed to load notifications.'
+      );
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }
+
+  async function markNotificationAsRead(notificationId) {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({
+          is_read: true
+        })
+        .eq('id', notificationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setNotifications((currentNotifications) =>
+        currentNotifications.map((notification) =>
+          notification.id === notificationId
+            ? {
+              ...notification,
+              is_read: true
+            }
+            : notification
+        )
+      );
+
+    } catch (error) {
+      console.error(
+        'Failed to mark notification as read:',
+        error
+      );
+    }
+  }
+
   useEffect(() => {
     fetchServices();
     fetchProducts();
+    fetchNotifications();
   }, []);
+
+  useEffect(() => {
+    if (screen === 'orders' && user?.id) {
+      fetchMyOrders();
+    }
+  }, [screen, user?.id]);
+
+  useEffect(() => {
+    if (screen === 'notifications' && user?.id) {
+      fetchNotifications();
+    }
+  }, [screen, user?.id]);
 
   function hasFeedbackForBooking(bookingId) {
     return feedbacks.some(
@@ -1068,6 +1207,19 @@ export default function UserApp({ user, onLogout }) {
         return;
       }
 
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: 'Order Submitted',
+          message: 'Your product order has been submitted and is waiting for confirmation.',
+          type: 'order'
+        });
+
+      if (notificationError) {
+        console.error('Failed to create notification:', notificationError);
+      }
+
       console.log("Created order ID:", data);
 
       alert("✅ Your product order has been submitted successfully!");
@@ -1080,6 +1232,7 @@ export default function UserApp({ user, onLogout }) {
       setOrderAddress('');
 
       await fetchProducts();
+      await fetchNotifications();
 
     } catch (err) {
       console.error("Unexpected checkout error:", err);
@@ -1206,7 +1359,15 @@ export default function UserApp({ user, onLogout }) {
               }}
             >
               <span className="sidebar-icon">{item.icon}</span>
-              <span>{item.label}</span>
+              <span>
+                {item.label}
+
+                {item.badge > 0 && (
+                  <span>
+                    ({item.badge})
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </nav>
@@ -2075,6 +2236,257 @@ export default function UserApp({ user, onLogout }) {
           </main>
         )}
 
+        {/* --- My Orders --- */}
+        {screen === 'orders' && (
+          <main className="user-main">
+            <div className="screen-header">
+              <h2>📦 My Orders</h2>
+              <p>View your product orders</p>
+            </div>
+
+            {ordersLoading && (
+              <p>Loading orders...</p>
+            )}
+
+            {ordersError && (
+              <p style={{ color: 'red' }}>
+                {ordersError}
+              </p>
+            )}
+
+            {!ordersLoading && !ordersError && myOrders.length === 0 && (
+              <p>No orders found.</p>
+            )}
+
+            {!ordersLoading && !ordersError && myOrders.length > 0 && (
+              <div className="cart-list">
+                {myOrders.map((order) => (
+                  <div key={order.id} className="cart-item">
+                    <h3>
+                      Order #{order.id.substring(0, 8).toUpperCase()}
+                    </h3>
+
+                    <p>
+                      <strong>Status:</strong>{' '}
+                      <span
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontWeight: '600',
+                          textTransform: 'capitalize',
+                          backgroundColor:
+                            order.status === 'completed'
+                              ? '#dcfce7'
+                              : order.status === 'cancelled'
+                                ? '#fee2e2'
+                                : order.status === 'processing'
+                                  ? '#dbeafe'
+                                  : '#fef3c7',
+                          color:
+                            order.status === 'completed'
+                              ? '#166534'
+                              : order.status === 'cancelled'
+                                ? '#991b1b'
+                                : order.status === 'processing'
+                                  ? '#1e40af'
+                                  : '#92400e'
+                        }}
+                      >
+                        {order.status || 'pending'}
+                      </span>
+                    </p>
+
+                    <p>
+                      <strong>Payment:</strong>{' '}
+                      <span
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontWeight: '600',
+                          textTransform: 'capitalize',
+                          backgroundColor:
+                            order.payment_status === 'paid'
+                              ? '#dcfce7'
+                              : '#fee2e2',
+                          color:
+                            order.payment_status === 'paid'
+                              ? '#166534'
+                              : '#991b1b'
+                        }}
+                      >
+                        {order.payment_status || 'unpaid'}
+                      </span>
+                    </p>
+
+                    <p>
+                      <strong>Total:</strong> ₱
+                      {Number(order.total_amount).toLocaleString('en-PH', {
+                        minimumFractionDigits: 2
+                      })}
+                    </p>
+
+                    <p>
+                      <strong>Date:</strong>{' '}
+                      {new Date(order.created_at).toLocaleDateString('en-PH')}
+                    </p>
+                    <button
+                      onClick={() =>
+                        setExpandedOrderId(
+                          expandedOrderId === order.id ? null : order.id
+                        )
+                      }
+                    >
+                      {expandedOrderId === order.id ? 'Hide Details' : 'View Details'}
+                    </button>
+                    {expandedOrderId === order.id && (
+                      <div style={{ marginTop: '15px' }}>
+                        <h4>Order Items</h4>
+
+                        {order.items && order.items.length > 0 ? (
+                          order.items.map((item) => (
+                            <div
+                              key={item.id}
+                              style={{
+                                padding: '10px 0',
+                                borderBottom: '1px solid #ddd'
+                              }}
+                            >
+                              <p>
+                                <strong>{item.brand} {item.model}</strong>
+                              </p>
+
+                              <p>HP: {item.hp} HP</p>
+
+                              <p>Quantity: {item.quantity}</p>
+
+                              <p>
+                                Unit Price: ₱
+                                {Number(item.unit_price).toLocaleString('en-PH', {
+                                  minimumFractionDigits: 2
+                                })}
+                              </p>
+
+                              <p>
+                                Subtotal: ₱
+                                {Number(item.subtotal).toLocaleString('en-PH', {
+                                  minimumFractionDigits: 2
+                                })}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p>No items found for this order.</p>
+                        )}
+
+                        <h4 style={{ marginTop: '20px' }}>Customer Information</h4>
+
+                        <p>
+                          <strong>Name:</strong> {order.full_name}
+                        </p>
+
+                        <p>
+                          <strong>Email:</strong> {order.email}
+                        </p>
+
+                        <p>
+                          <strong>Mobile:</strong> {order.mobile_number}
+                        </p>
+
+                        <p>
+                          <strong>Address:</strong> {order.address}
+                        </p>
+
+                        <h4 style={{ marginTop: '20px' }}>Payment Information</h4>
+
+                        <p>
+                          <strong>Payment Status:</strong> {order.payment_status || 'unpaid'}
+                        </p>
+
+                        <p>
+                          <strong>Payment Method:</strong> {order.payment_method || 'Not yet selected'}
+                        </p>
+
+                        <p>
+                          <strong>Payment Reference:</strong> {order.payment_reference || 'None'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </main>
+        )}
+
+        {/* --- Notifications --- */}
+        {screen === 'notifications' && (
+          <main className="user-main">
+            <div className="screen-header">
+              <h2>🔔 Notifications</h2>
+              <p>View your latest notifications</p>
+            </div>
+
+            {notificationsLoading && (
+              <p>Loading notifications...</p>
+            )}
+
+            {notificationsError && (
+              <p style={{ color: 'red' }}>
+                {notificationsError}
+              </p>
+            )}
+
+            {!notificationsLoading &&
+              !notificationsError &&
+              notifications.length === 0 && (
+                <p>No notifications yet.</p>
+              )}
+
+            {!notificationsLoading &&
+              !notificationsError &&
+              notifications.length > 0 && (
+                <div className="cart-list">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="cart-item"
+                    >
+                      <h3>{notification.title}</h3>
+
+                      <p>{notification.message}</p>
+
+                      <p>
+                        <strong>Type:</strong>{' '}
+                        {notification.type || 'general'}
+                      </p>
+
+                      <p>
+                        <strong>Status:</strong>{' '}
+                        {notification.is_read ? 'Read' : 'Unread'}
+                      </p>
+                      {!notification.is_read && (
+                        <button
+                          onClick={() =>
+                            markNotificationAsRead(notification.id)
+                          }
+                        >
+                          Mark as Read
+                        </button>
+                      )}
+
+                      <p>
+                        <strong>Date:</strong>{' '}
+                        {new Date(
+                          notification.created_at
+                        ).toLocaleString('en-PH')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </main>
+        )}
+
         {/* --- Products Catalog --- */}
         {screen === 'products' && (
           <main className="user-main">
@@ -2221,7 +2633,7 @@ export default function UserApp({ user, onLogout }) {
                     >
                       {orderSubmitting ? 'Submitting Order...' : 'Place Order'}
                     </button>
-                    
+
                     <button
                       type="button"
                       className="btn-delete"
