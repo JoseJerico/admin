@@ -6,7 +6,11 @@ import RoomMeasurementAR from './RoomMeasurementAR';
 
 
 export default function UserApp({ user, onLogout }) {
-  const [screen, setScreen] = useState('home')
+  const [screen, setScreen] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    return params.get('payment') ? 'orders' : 'home';
+  });
   const [cart, setCart] = useState([])
   const [productCart, setProductCart] = useState([])
   const [showProductCheckout, setShowProductCheckout] = useState(false)
@@ -851,6 +855,41 @@ export default function UserApp({ user, onLogout }) {
       fetchMyOrders();
     }
   }, [screen, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const paymentResult = params.get('payment');
+
+    if (!paymentResult) return;
+
+    setScreen('orders');
+
+    if (paymentResult === 'success') {
+      alert('✅ Payment submitted successfully. Verifying payment status...');
+    } else if (paymentResult === 'cancelled') {
+      alert('Payment was cancelled. You may try again.');
+    }
+
+    // Refresh several times because the webhook may arrive slightly later.
+    const refreshTimers = [
+      setTimeout(() => fetchMyOrders(), 500),
+      setTimeout(() => fetchMyOrders(), 2000),
+      setTimeout(() => fetchMyOrders(), 5000)
+    ];
+
+    // Remove payment parameters without reloading the application.
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+
+    return () => {
+      refreshTimers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (screen === 'notifications' && user?.id) {
