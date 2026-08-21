@@ -244,21 +244,25 @@ export default {
         throw existingError;
       }
 
-      if (existingPayment?.checkout_url) {
-        return new Response(
-          JSON.stringify({
-            payment_id: existingPayment.id,
-            checkout_session_id:
-              existingPayment.checkout_session_id,
-            checkout_url: existingPayment.checkout_url,
-          }),
-          {
-            status: 200,
-            headers: corsHeaders,
-          },
-        );
-      }
+      if (existingPayment?.id) {
+  const { error: supersedeError } = await adminClient
+    .from("payments")
+    .update({
+      status: "failed",
+      metadata: {
+        environment: "test",
+        order_id: order.id,
+        reason: "superseded_by_new_checkout",
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", existingPayment.id)
+    .eq("status", "pending");
 
+  if (supersedeError) {
+    throw supersedeError;
+  }
+}
       const internalPaymentId = crypto.randomUUID();
 
       const { error: paymentInsertError } =
