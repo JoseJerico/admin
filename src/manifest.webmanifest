@@ -12,6 +12,19 @@
     "business",
     "productivity"
   ],
+  "screenshots": [
+    {
+      "src": "./public/screenshots/desktop.png",
+      "sizes": "1901x915",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "./public/screenshots/mobile.png",
+      "sizes": "400x862",
+      "type": "image/png"
+    }
+  ],
   "icons": [
     {
       "src": "./public/icons/icon-192.png",
