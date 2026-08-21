@@ -9,7 +9,29 @@ export default function UserApp({ user, onLogout }) {
   const [screen, setScreen] = useState(() => {
     const params = new URLSearchParams(window.location.search);
 
-    return params.get('payment') ? 'orders' : 'home';
+    if (params.get('payment')) {
+      return 'orders';
+    }
+
+    const allowedScreens = [
+      'home',
+      'measure-choice',
+      'services',
+      'products',
+      'orders',
+      'notifications',
+      'history',
+      'preventive',
+      'cart'
+    ];
+
+    const savedScreen = user?.id
+      ? sessionStorage.getItem(`aircon-user-screen:${user.id}`)
+      : null;
+
+    return allowedScreens.includes(savedScreen)
+      ? savedScreen
+      : 'home';
   });
   const [cart, setCart] = useState([])
   const [productCart, setProductCart] = useState([])
@@ -843,6 +865,14 @@ export default function UserApp({ user, onLogout }) {
       );
     }
   }
+  useEffect(() => {
+    if (!user?.id) return;
+
+    sessionStorage.setItem(
+      `aircon-user-screen:${user.id}`,
+      screen
+    );
+  }, [screen, user?.id]);
 
   useEffect(() => {
     fetchServices();
