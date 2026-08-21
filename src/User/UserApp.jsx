@@ -21,6 +21,7 @@ export default function UserApp({ user, onLogout }) {
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [ordersError, setOrdersError] = useState('')
   const [expandedOrderId, setExpandedOrderId] = useState(null)
+  const [payingOrderId, setPayingOrderId] = useState(null)
   const [notifications, setNotifications] = useState([])
   const [notificationsLoading, setNotificationsLoading] = useState(false)
   const [notificationsError, setNotificationsError] = useState('')
@@ -698,6 +699,84 @@ export default function UserApp({ user, onLogout }) {
       setOrdersError(error.message || 'Failed to load orders.');
     } finally {
       setOrdersLoading(false);
+    }
+  }
+
+  async function handlePayOrder(order) {
+    if (!order?.id) {
+      alert('❌ Invalid order.');
+      return;
+    }
+
+    if (order.payment_status === 'paid') {
+      alert('✅ This order is already paid.');
+      return;
+    }
+
+    setPayingOrderId(order.id);
+
+    try {
+      const {
+        data: { session },
+        error: sessionError
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        alert('❌ Your session has expired. Please log in again.');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        'create-paymongo-checkout',
+        {
+          body: {
+            order_id: order.id
+          }
+        }
+      );
+
+      if (error) {
+        let errorMessage = error.message || 'Unable to create checkout.';
+
+        if (error.context instanceof Response) {
+          try {
+            const errorBody = await error.context.json();
+
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+            }
+          } catch {
+            // Use the original function error message.
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      if (!data?.checkout_url) {
+        throw new Error('Checkout URL was not returned.');
+      }
+
+      const checkoutUrl = new URL(data.checkout_url);
+
+      if (
+        checkoutUrl.protocol !== 'https:' ||
+        checkoutUrl.hostname !== 'checkout.paymongo.com'
+      ) {
+        throw new Error('Invalid checkout URL received.');
+      }
+
+      window.location.assign(checkoutUrl.toString());
+
+    } catch (error) {
+      console.error('Payment checkout error:', error);
+
+      alert(
+        '❌ Payment checkout failed: ' +
+        (error.message || 'Please try again.')
+      );
+    } finally {
+      setPayingOrderId(null);
     }
   }
 
@@ -2329,6 +2408,19 @@ export default function UserApp({ user, onLogout }) {
                       <strong>Date:</strong>{' '}
                       {new Date(order.created_at).toLocaleDateString('en-PH')}
                     </p>
+                    {order.payment_status !== 'paid' &&
+                      order.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          className="pay-now-btn"
+                          onClick={() => handlePayOrder(order)}
+                          disabled={payingOrderId === order.id}
+                        >
+                          {payingOrderId === order.id
+                            ? 'Creating Secure Checkout...'
+                            : '💳 Pay Now with PayMongo'}
+                        </button>
+                      )}
                     <button
                       onClick={() =>
                         setExpandedOrderId(

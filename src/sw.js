@@ -1,9 +1,9 @@
 // Service Worker for Aircon Admin PWA
-const CACHE_NAME = 'aircon-admin-v1'
+const CACHE_NAME = 'aircon-admin-v2'
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json',
+  '/manifest.webmanifest',
 ]
 
 // Install event - cache assets
@@ -35,67 +35,73 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - prefer fresh files, use cache only when offline
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return
   }
 
-  // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return
   }
 
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response
-      }
-
-      return fetch(event.request)
+  // Always request the latest app page first
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
         .then((response) => {
-          // Don't cache if not a success response
-          if (!response || response.status !== 200 || response.type === 'error') {
-            return response
-          }
+          if (response && response.status === 200) {
+            const responseToCache = response.clone()
 
-          // Clone the response
-          const responseToCache = response.clone()
-
-          // Cache successful API responses and assets
-          if (
-            event.request.url.includes('/api/') ||
-            event.request.url.endsWith('.js') ||
-            event.request.url.endsWith('.css') ||
-            event.request.url.includes('supabase')
-          ) {
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache)
+              cache.put('/index.html', responseToCache)
             })
           }
 
           return response
         })
         .catch(() => {
-          // Return a cached response or a fallback
-          return caches.match(event.request).then((cachedResponse) => {
-            return (
-              cachedResponse ||
-              new Response('Offline - resource not available', {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: new Headers({
-                  'Content-Type': 'text/plain',
-                }),
-              })
-            )
-          })
+          return caches.match('/index.html')
         })
-    })
+    )
+
+    return
+  }
+
+  // Use network-first for local JS, CSS, images and other assets
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (
+          response &&
+          response.status === 200 &&
+          response.type !== 'error'
+        ) {
+          const responseToCache = response.clone()
+
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache)
+          })
+        }
+
+        return response
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          return (
+            cachedResponse ||
+            new Response('Offline - resource not available', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: {
+                'Content-Type': 'text/plain',
+              },
+            })
+          )
+        })
+      })
   )
 })
-
 // Handle messages from clients
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
