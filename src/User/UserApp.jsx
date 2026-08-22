@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import './UserApp.css'
 import { supabase } from '../supabase'
 import RoomMeasurementAR from './RoomMeasurementAR';
+import ReceiptModal from './ReceiptModal';
 
 
 export default function UserApp({ user, onLogout }) {
@@ -33,8 +34,23 @@ export default function UserApp({ user, onLogout }) {
       ? savedScreen
       : 'home';
   });
-  const [cart, setCart] = useState([])
-  const [productCart, setProductCart] = useState([])
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('user_cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('user_cart', JSON.stringify(cart));
+  }, [cart]);
+  const [productCart, setProductCart] = useState(() => {
+    const savedProductCart = localStorage.getItem('user_product_cart');
+    return savedProductCart ? JSON.parse(savedProductCart) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('user_product_cart', JSON.stringify(productCart));
+  }, [productCart]);
+
   const [showProductCheckout, setShowProductCheckout] = useState(false)
 
   const [orderFullName, setOrderFullName] = useState('')
@@ -43,6 +59,7 @@ export default function UserApp({ user, onLogout }) {
   const [orderAddress, setOrderAddress] = useState('')
   const [orderSubmitting, setOrderSubmitting] = useState(false)
 
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [myOrders, setMyOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [ordersError, setOrdersError] = useState('')
@@ -61,6 +78,9 @@ export default function UserApp({ user, onLogout }) {
   const [services, setServices] = useState([])
   const [products, setProducts] = useState([])
   const [showAR, setShowAR] = useState(false);
+
+  const totalCartCount = cart.length + productCart.length;
+
   const menuItems = [
     { id: 'home', label: 'Dashboard', icon: '🏠', screen: 'home' },
     { id: 'measure-choice', label: 'Measure Room', icon: '📐', screen: 'measure-choice' },
@@ -76,7 +96,12 @@ export default function UserApp({ user, onLogout }) {
     },
     { id: 'history', label: 'Bookings', icon: '📅', screen: 'history' },
     { id: 'preventive', label: 'Maintenance', icon: '🛠️', screen: 'preventive' },
-    { id: 'cart', label: 'Cart', icon: '🛒', screen: 'cart' },
+    {
+      id: 'cart',
+      label: totalCartCount > 0 ? `Cart (${totalCartCount})` : 'Cart',
+      icon: '🛒',
+      screen: 'cart'
+    },
   ];
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -406,11 +431,15 @@ export default function UserApp({ user, onLogout }) {
 
   useEffect(() => {
     const getSession = async () => {
+      // Huwag i-force logout agad kung may ?payment=success sa URL para masalo muna ng handler
+      const params = new URLSearchParams(window.location.search);
+      const hasPayment = params.get('payment');
+
       const { data, error } = await supabase.auth.getSession();
 
-      if (error || !data.session) {
+      if ((error || !data.session) && !hasPayment) {
         console.log("No valid session, logout user");
-        onLogout(); // 🔥 force logout
+        onLogout();
       }
     };
 
@@ -806,6 +835,70 @@ export default function UserApp({ user, onLogout }) {
     }
   }
 
+  const [payingBookingId, setPayingBookingId] = useState(null);
+
+  async function handlePayBooking(booking, isDownpayment = false) {
+    if (!booking?.id) {
+      alert('❌ Invalid booking.');
+      return;
+    }
+
+    if (booking.payment_status === 'paid') {
+      alert('✅ This service booking is already paid.');
+      return;
+    }
+
+    setPayingBookingId(booking.id);
+
+    try {
+      const {
+        data: { session },
+        error: sessionError
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        alert('❌ Your session has expired. Please log in again.');
+        return;
+      }
+
+      const fullAmount = Number(booking.total_service_fee) || 1500;
+      const payAmount = isDownpayment ? 500 : fullAmount;
+
+      const { data, error } = await supabase.functions.invoke(
+        'create-paymongo-checkout',
+        {
+          body: {
+            booking_id: booking.id,
+            amount: payAmount
+          }
+        }
+      );
+
+      if (error) {
+        let errorMessage = error.message || 'Unable to create checkout.';
+        if (error.context instanceof Response) {
+          try {
+            const errBody = await error.context.json();
+            if (errBody?.error) errorMessage = errBody.error;
+          } catch {
+            // fallback
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (!data?.checkout_url) {
+        throw new Error('Checkout URL was not returned.');
+      }
+
+      window.location.assign(data.checkout_url);
+    } catch (error) {
+      console.error('Booking checkout error:', error);
+      alert('❌ Payment checkout failed: ' + (error.message || 'Please try again.'));
+    } finally {
+      setPayingBookingId(null);
+    }
+  }
   async function fetchNotifications() {
     if (!user?.id) return;
 
@@ -891,25 +984,78 @@ export default function UserApp({ user, onLogout }) {
 
     const params = new URLSearchParams(window.location.search);
     const paymentResult = params.get('payment');
+    const paymentScreen = params.get('screen') || 'history';
+    const bookingId = params.get('id');
 
     if (!paymentResult) return;
 
-    setScreen('orders');
+    // 1. Ilipat agad sa tamang screen (history o orders)
+    setScreen(paymentScreen);
 
     if (paymentResult === 'success') {
-      alert('✅ Payment submitted successfully. Verifying payment status...');
+      // 2. Kung ito ay galing sa booking, i-update agad ang database at mag-notify
+      if (bookingId) {
+        const updateBookingPayment = async () => {
+          try {
+            const { data: paymentData } = await supabase
+              .from('payments')
+              .select('amount')
+              .eq('reference_number', `BOOKING-${bookingId}`)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            const paidAmount = paymentData?.amount || 0;
+
+            const { data: updated, error } = await supabase
+              .from('bookings')
+              .update({
+                payment_status: 'paid',
+                amount_paid: paidAmount
+              })
+              .eq('id', bookingId)
+              .select();
+
+            if (!error && updated && updated.length > 0) {
+              const serviceName = updated[0].service || 'Service';
+              const paymentTypeLabel = paidAmount === 500 ? 'Downpayment (₱500)' : `Full Payment (₱${paidAmount})`;
+
+              await supabase.from('notifications').insert({
+                user_id: user.id,
+                title: 'Payment Successful',
+                message: `Your PayMongo test payment for ${serviceName} (${paymentTypeLabel}) was successfully confirmed.`,
+                type: 'payment',
+                is_read: false
+              });
+            }
+          } catch (err) {
+            console.error('Error auto-updating booking payment:', err);
+          } finally {
+            if (typeof fetchBookingHistory === 'function') fetchBookingHistory();
+            if (typeof fetchNotifications === 'function') fetchNotifications();
+            if (typeof fetchMyOrders === 'function') fetchMyOrders();
+          }
+        };
+
+        updateBookingPayment();
+      }
     } else if (paymentResult === 'cancelled') {
       alert('Payment was cancelled. You may try again.');
     }
 
-    // Refresh several times because the webhook may arrive slightly later.
+    // Refresh timers para siguradong makuha ang updated data
     const refreshTimers = [
-      setTimeout(() => fetchMyOrders(), 500),
-      setTimeout(() => fetchMyOrders(), 2000),
-      setTimeout(() => fetchMyOrders(), 5000)
+      setTimeout(() => {
+        if (typeof fetchMyOrders === 'function') fetchMyOrders();
+        if (typeof fetchBookingHistory === 'function') fetchBookingHistory();
+      }, 500),
+      setTimeout(() => {
+        if (typeof fetchMyOrders === 'function') fetchMyOrders();
+        if (typeof fetchBookingHistory === 'function') fetchBookingHistory();
+      }, 2000)
     ];
 
-    // Remove payment parameters without reloading the application.
+    // Alisin ang URL parameters nang walang reload
     window.history.replaceState(
       {},
       document.title,
@@ -920,7 +1066,6 @@ export default function UserApp({ user, onLogout }) {
       refreshTimers.forEach((timer) => clearTimeout(timer));
     };
   }, [user?.id]);
-
   useEffect(() => {
     if (screen === 'notifications' && user?.id) {
       fetchNotifications();
@@ -2294,13 +2439,131 @@ export default function UserApp({ user, onLogout }) {
                         </div>
                       )}
 
-                      <div className="history-actions">
+                      {/* Payment Status & Info Display (Modified para sa Downpayment/Partial) */}
+                      <div style={{ marginTop: '10px', marginBottom: '10px', background: '#f8fafc', padding: '8px', borderRadius: '6px' }}>
+                        <p style={{ margin: '4px 0' }}>
+                          <strong>Total Service Fee:</strong> ₱
+                          {Number(item.total_service_fee || 1500).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p style={{ margin: '4px 0' }}>
+                          <strong>Amount Paid:</strong> ₱
+                          {Number(item.amount_paid || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p style={{ margin: '4px 0' }}>
+                          <strong>Remaining Balance:</strong> ₱
+                          {Math.max(0, Number(item.total_service_fee || 1500) - Number(item.amount_paid || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p style={{ margin: '4px 0' }}>
+                          <strong>Status:</strong>{' '}
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '8px',
+                              fontWeight: '600',
+                              fontSize: '0.8rem',
+                              textTransform: 'capitalize',
+                              backgroundColor: Number(item.amount_paid) > 0 ? (Number(item.amount_paid) >= Number(item.total_service_fee || 1500) ? '#dcfce7' : '#fef3c7') : '#fee2e2',
+                              color: Number(item.amount_paid) > 0 ? (Number(item.amount_paid) >= Number(item.total_service_fee || 1500) ? '#166534' : '#92400e') : '#991b1b'
+                            }}
+                          >
+                            {Number(item.amount_paid) > 0
+                              ? (Number(item.amount_paid) >= Number(item.total_service_fee || 1500) ? 'Fully Paid' : `Paid Downpayment (₱${item.amount_paid})`)
+                              : 'Unpaid'}
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="history-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {/* Pay Buttons kapag Unpaid */}
+                        {item.payment_status !== 'paid' && item.status !== 'cancelled' && item.status !== 'rejected' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handlePayBooking(item, false)}
+                              disabled={payingBookingId === item.id}
+                              style={{
+                                backgroundColor: '#0284c7',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontWeight: '600',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {payingBookingId === item.id
+                                ? 'Connecting...'
+                                : `💳 Pay Full (₱${Number(item.total_service_fee || 1500).toLocaleString('en-PH')})`}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handlePayBooking(item, true)}
+                              disabled={payingBookingId === item.id}
+                              style={{
+                                backgroundColor: '#0f766e',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontWeight: '600',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              💳 Downpayment (₱500)
+                            </button>
+                          </>
+                        )}
+
+                        {/* View / Print Receipt Button kapag may binayad na */}
+                        {(item.payment_status === 'paid' || Number(item.amount_paid) > 0) && (
+                          <button
+                            type="button"
+                            style={{
+                              backgroundColor: '#2563eb',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              fontWeight: '600',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => {
+                              const isPartial = Number(item.amount_paid) < Number(item.total_service_fee || 1500);
+                              const paymentTypeDesc = isPartial
+                                ? `Downpayment for ${item.service} (Balance: ₱${Number(Number(item.total_service_fee || 1500) - Number(item.amount_paid)).toLocaleString('en-PH', { minimumFractionDigits: 2 })})`
+                                : `Full Payment for ${item.service}`;
+
+                              setSelectedReceipt({
+                                id: item.id,
+                                payment_id: item.id,
+                                payment_reference: item.payment_reference || `BOOK-${item.id.substring(0, 8).toUpperCase()}`,
+                                amount: Number(item.amount_paid) || Number(item.total_service_fee) || 1500,
+                                total_amount: Number(item.amount_paid) || Number(item.total_service_fee) || 1500,
+                                payment_method: 'Online Payment (PayMongo)',
+                                created_at: item.created_at,
+                                full_name: item.full_name,
+                                email: item.email,
+                                service: item.service,
+                                description: paymentTypeDesc, // 🔥 Dito natin pinalitan ang description para lumitaw sa resibo
+                                address: item.address,
+                                mobile_number: item.mobile_number
+                              })
+                            }}
+                          >
+                            🧾 View / Print Receipt
+                          </button>
+                        )}
+
                         <button
                           onClick={() =>
                             openBookingForm({
                               id: item.id,
                               name: item.service,
-                              price: 1500,
+                              price: item.total_service_fee || 1500,
                             })
                           }
                         >
@@ -2319,6 +2582,7 @@ export default function UserApp({ user, onLogout }) {
                             <button onClick={() => handleCancel(item.id)}>🗑 Cancel</button>
                           </>
                         )}
+
                       </div>
                     </div>
                   )
@@ -2389,7 +2653,7 @@ export default function UserApp({ user, onLogout }) {
           <main className="user-main">
             <div className="screen-header">
               <h2>📦 My Orders</h2>
-              <p>View your product orders</p>
+              <p>View your product orders and payment receipts</p>
             </div>
 
             {ordersLoading && (
@@ -2410,9 +2674,29 @@ export default function UserApp({ user, onLogout }) {
               <div className="cart-list">
                 {myOrders.map((order) => (
                   <div key={order.id} className="cart-item">
-                    <h3>
-                      Order #{order.id.substring(0, 8).toUpperCase()}
-                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3>
+                        Order #{order.id.substring(0, 8).toUpperCase()}
+                      </h3>
+                      {order.payment_status === 'paid' && (
+                        <button
+                          type="button"
+                          style={{
+                            backgroundColor: '#0284c7',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontWeight: '600',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => setSelectedReceipt(order)}
+                        >
+                          🧾 View / Print Receipt
+                        </button>
+                      )}
+                    </div>
 
                     <p>
                       <strong>Status:</strong>{' '}
@@ -2576,6 +2860,8 @@ export default function UserApp({ user, onLogout }) {
                 ))}
               </div>
             )}
+
+
           </main>
         )}
 
@@ -3016,6 +3302,27 @@ export default function UserApp({ user, onLogout }) {
               <button className="cancel" onClick={() => setShowFeedbackModal(false)}>Cancel</button>
             </div>
           </div>
+        )}
+        {/* Electronic Printable Receipt Modal */}
+        {selectedReceipt && (
+          <ReceiptModal
+            payment={{
+              id: selectedReceipt.payment_id || selectedReceipt.id,
+              payment_reference: selectedReceipt.payment_reference || selectedReceipt.paymongo_payment_id || selectedReceipt.id,
+              amount: selectedReceipt.total_amount || selectedReceipt.amount,
+              payment_method: selectedReceipt.payment_method || 'Online Payment',
+              paid_at: selectedReceipt.created_at,
+              order_id: selectedReceipt.id,
+              customer_name: selectedReceipt.full_name || user?.user_metadata?.full_name || 'Customer',
+              customer_email: selectedReceipt.email || user?.email || ''
+            }}
+            order={{
+              ...selectedReceipt,
+              customer_name: selectedReceipt.full_name || user?.user_metadata?.full_name || 'Customer',
+              customer_email: selectedReceipt.email || user?.email || ''
+            }}
+            onClose={() => setSelectedReceipt(null)}
+          />
         )}
 
 

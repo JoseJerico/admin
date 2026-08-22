@@ -1,59 +1,262 @@
 .admin-payments-container {
-  padding: 20px;
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  font-family: inherit;
 }
 
-.admin-payments-header h2 {
-  margin-bottom: 5px;
+.payments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.admin-payments-header p {
-  color: #666;
+.payments-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
 }
 
-.payment-summary-cards {
+.subtitle {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+.btn-refresh {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+  transition: background 0.2s;
+}
+
+.btn-refresh:hover {
+  background: #f1f5f9;
+}
+
+/* Metrics Grid */
+.metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin: 20px 0;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.payment-card {
-  background: white;
-  padding: 20px;
+.metric-card {
+  background: #ffffff;
+  padding: 18px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  border-left: 4px solid transparent;
 }
 
-.payment-card h3 {
-  font-size: 14px;
-  margin-bottom: 10px;
+.metric-card.revenue { border-left-color: #3b82f6; }
+.metric-card.paid { border-left-color: #22c55e; }
+.metric-card.pending { border-left-color: #f59e0b; }
+.metric-card.failed { border-left-color: #ef4444; }
+
+.metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
 }
 
-.payment-card p {
-  font-size: 28px;
-  font-weight: bold;
+.metric-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 6px;
 }
 
-.payment-table-container {
-  background: white;
-  padding: 20px;
+/* Controls */
+.table-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 250px;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.filter-group {
+  display: flex;
+  gap: 10px;
+}
+
+.select-filter {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.875rem;
+}
+
+/* Table */
+.table-wrapper {
+  background: #ffffff;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  overflow-x: auto;
 }
 
-.payment-table {
+.payments-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
-}
-
-.payment-table th,
-.payment-table td {
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
   text-align: left;
+  font-size: 0.875rem;
 }
 
-.empty-payment {
+.payments-table th {
+  background: #f8fafc;
+  padding: 14px 16px;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.payments-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.amount {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+/* Badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge.paid { background: #dcfce7; color: #15803d; }
+.status-badge.pending { background: #fef3c7; color: #b45309; }
+.status-badge.failed, .status-badge.expired { background: #fee2e2; color: #b91c1c; }
+
+.method-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-view {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.btn-view:hover { background: #0369a1; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #0f172a;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.detail-row .label { color: #64748b; }
+.detail-row .value { color: #0f172a; font-weight: 500; }
+
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  background: #f8fafc;
+}
+
+.btn-close {
+  background: #e2e8f0;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.loading-state, .empty-state {
+  padding: 40px;
   text-align: center;
-  color: #777;
+  color: #64748b;
 }

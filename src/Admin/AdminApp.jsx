@@ -327,35 +327,35 @@ export default function AdminApp({ user, onLogout }) {
     console.log('Updated feedbacks state:', feedbacks);  // Log feedbacks state after it's updated
   }, [feedbacks]);  // This will log the state whenever it changes
   // Example ng fetchFeedbacks function sa Admin Dashboard
-  async function fetchFeedbacks() {
+ async function fetchFeedbacks() {
     try {
       const { data, error } = await supabase
         .from('booking_feedback')
         .select(`
-        id,
-        booking_id,
-        user_id,
-        rating,
-        type,
-        message,
-        created_at,
-        bookings:booking_id (
           id,
-          service,
-          full_name
-        )
-      `)
-        .order('created_at', { ascending: false }); // Get all feedbacks, ordered by creation date
+          booking_id,
+          user_id,
+          rating,
+          type,
+          message,
+          created_at,
+          bookings:booking_id (
+            id,
+            service,
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        return;
+      }
 
-      console.log('Fetched feedbacks:', data); // Log the fetched feedbacks
-      setFeedbacks(data || []);  // Update the feedbacks state with fetched data
-    } catch (err) {
-      console.error('Error fetching feedbacks:', err.message);
+      setFeedbacks(data || []);
+    } catch {
+      setFeedbacks([]);
     }
   }
-
   const handleAssign = async () => {
     if (!selectedTechnician || !selectedBooking) {
       return alert("Please select a technician and a booking.");
