@@ -1,0 +1,59 @@
+.admin-payments-container {
+  padding: 20px;
+}
+
+.admin-payments-header h2 {
+  margin-bottom: 5px;
+}
+
+.admin-payments-header p {
+  color: #666;
+}
+
+.payment-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.payment-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.payment-card h3 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.payment-card p {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.payment-table-container {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.payment-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.payment-table th,
+.payment-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.empty-payment {
+  text-align: center;
+  color: #777;
+}

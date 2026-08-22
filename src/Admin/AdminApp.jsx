@@ -9,27 +9,28 @@ import './AdminApp.css';
 import AccountCreatorModal from './AccountCreatorModal';  // Import the modal
 import Sidebar from './Sidebar.jsx';
 import DashboardCards from './DashboardCards';
+import AdminPayments from './AdminPayments';
 
 
 function PhotoModal({ photoUrl, onClose }) {
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
-        top:0, left:0, right:0, bottom:0,
-        backgroundColor:'rgba(0,0,0,0.8)',
-        display:'flex',
-        justifyContent:'center',
-        alignItems:'center',
-        zIndex:9999
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999
       }}
       onClick={onClose}
     >
-      <img 
-        src={photoUrl} 
-        alt="Booking Photo" 
-        style={{ maxWidth:'90%', maxHeight:'90%', borderRadius:'8px' }}
-        onClick={e=>e.stopPropagation()} // para di ma-close kapag photo mismo ang iclick
+      <img
+        src={photoUrl}
+        alt="Booking Photo"
+        style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: '8px' }}
+        onClick={e => e.stopPropagation()} // para di ma-close kapag photo mismo ang iclick
       />
     </div>
   )
@@ -51,14 +52,14 @@ function AssignTechnicianModal({ booking, technicians, onAssign, onClose, select
           ))}
         </select>
         {selectedTechnician && (
-          <div style={{ marginTop:"10px", padding:"10px", background:"#f1f5f9", borderRadius:"8px" }}>
+          <div style={{ marginTop: "10px", padding: "10px", background: "#f1f5f9", borderRadius: "8px" }}>
             <p>👤 <strong>{selectedTechnician.name}</strong></p>
             <p>📞 {selectedTechnician.contact}</p>
             <p>⚡ {selectedTechnician.speciality}</p>
           </div>
         )}
-        <div style={{ marginTop:"10px" }}>
-          <button onClick={onAssign} style={{ marginRight:"10px" }}>Assign</button>
+        <div style={{ marginTop: "10px" }}>
+          <button onClick={onAssign} style={{ marginRight: "10px" }}>Assign</button>
           <button onClick={onClose}>Cancel</button>
         </div>
       </div>
@@ -88,7 +89,7 @@ function ProfileModal({ user, fullName, roleName, onClose }) {
 
 // Stats Grid
 function StatsGrid({ schedules }) {
-  const statusList = ['pending','approved','assigned','in_progress','completed','rejected','cancelled'];
+  const statusList = ['pending', 'approved', 'assigned', 'in_progress', 'completed', 'rejected', 'cancelled'];
   return (
     <div className="stats-grid">
       <div className="stat-card">
@@ -107,14 +108,14 @@ function StatsGrid({ schedules }) {
 
 // Filters
 function Filters({ filter, setFilter, setCurrentPage }) {
-  const statusList = ['all','pending','approved','assigned','in_progress','completed','rejected','cancelled'];
+  const statusList = ['all', 'pending', 'approved', 'assigned', 'in_progress', 'completed', 'rejected', 'cancelled'];
   return (
     <div className="filter-tabs">
       {statusList.map(status => (
         <button key={status} onClick={() => {
-  setFilter(status);
-  setCurrentPage(1);
-}} className={`tab ${filter===status?'active':''}`}>
+          setFilter(status);
+          setCurrentPage(1);
+        }} className={`tab ${filter === status ? 'active' : ''}`}>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </button>
       ))}
@@ -134,10 +135,10 @@ function StatusLegend() {
     { color: '#4da6ff', label: 'Cancelled / Rejected' }
   ];
   return (
-    <div className="status-legend" style={{ display:'flex', justifyContent:'center', flexWrap:'wrap', margin:'20px 0' }}>
+    <div className="status-legend" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', margin: '20px 0' }}>
       {legend.map(item => (
-        <div key={item.label} className="legend-item" style={{ display:'flex', alignItems:'center', margin:'0 10px' }}>
-          <span style={{ backgroundColor:item.color, width:'20px', height:'20px', display:'inline-block', marginRight:'5px', borderRadius:'4px' }}></span>
+        <div key={item.label} className="legend-item" style={{ display: 'flex', alignItems: 'center', margin: '0 10px' }}>
+          <span style={{ backgroundColor: item.color, width: '20px', height: '20px', display: 'inline-block', marginRight: '5px', borderRadius: '4px' }}></span>
           <span>{item.label}</span>
         </div>
       ))}
@@ -180,56 +181,56 @@ export default function AdminApp({ user, onLogout }) {
   };
 
   async function refresh(page = currentPage) {
-  setLoading(true);
+    setLoading(true);
 
-  const from = (page - 1) * rowsPerPage;
-  const to = from + rowsPerPage - 1;
+    const from = (page - 1) * rowsPerPage;
+    const to = from + rowsPerPage - 1;
 
-  let query = supabase
-    .from('bookings')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false });
+    let query = supabase
+      .from('bookings')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
 
-  if (filter !== 'all') {
-    query = query.eq('status', filter);
+    if (filter !== 'all') {
+      query = query.eq('status', filter);
+    }
+
+    const { data, error, count } = await query.range(from, to);
+
+    if (error) {
+      console.error(error);
+    } else {
+      setSchedules(data || []);
+      setTotalPages(Math.ceil(count / rowsPerPage));
+    }
+
+    setLoading(false);
   }
-
-  const { data, error, count } = await query.range(from, to);
-
-  if (error) {
-    console.error(error);
-  } else {
-    setSchedules(data || []);
-    setTotalPages(Math.ceil(count / rowsPerPage));
-  }
-
-  setLoading(false);
-}
   useEffect(() => {
-  refresh(currentPage);
+    refresh(currentPage);
 
-  const channel = supabase
-    .channel('realtime-bookings')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'bookings' },
-      () => {
-        refresh(currentPage); // ✅ importante
-      }
-    )
-    .subscribe();
+    const channel = supabase
+      .channel('realtime-bookings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          refresh(currentPage); // ✅ importante
+        }
+      )
+      .subscribe();
 
-  return () => supabase.removeChannel(channel);
-}, [currentPage, filter]);
+    return () => supabase.removeChannel(channel);
+  }, [currentPage, filter]);
 
   // Fetch profile
   useEffect(() => {
     if (!user) return;
-    (async ()=>{
+    (async () => {
       const { data, error } = await supabase.from("profiles").select("full_name, role_id").eq("id", user.id).single();
-      if(error){ setFullName("Admin"); setRoleName("Admin"); return; }
+      if (error) { setFullName("Admin"); setRoleName("Admin"); return; }
       setFullName(data.full_name || "Admin");
-      const roleMap = { "7a118e8b-595d-4659-986c-8e1147ce5851":"Admin","1b9afae0-cefb-4ce5-942d-4d70b33a0ac6":"Technician" };
+      const roleMap = { "7a118e8b-595d-4659-986c-8e1147ce5851": "Admin", "1b9afae0-cefb-4ce5-942d-4d70b33a0ac6": "Technician" };
       setRoleName(roleMap[data.role_id] || "Customer");
     })();
   }, [user]);
@@ -238,16 +239,16 @@ export default function AdminApp({ user, onLogout }) {
 
   // Fetch technicians
   useEffect(() => {
-    (async ()=>{
+    (async () => {
       const { data, error } = await supabase.from("technicians").select("id,name,contact,speciality").order("name");
-      if(error) console.error(error);
+      if (error) console.error(error);
       else setTechnicians(data || []);
     })();
   }, []);
 
   // Actions
-  async function approve(id){ await supabase.from('bookings').update({status:'approved'}).eq('id',id); refresh(); }
-  async function reject(id){ await supabase.from('bookings').update({status:'rejected'}).eq('id',id); refresh(); }
+  async function approve(id) { await supabase.from('bookings').update({ status: 'approved' }).eq('id', id); refresh(); }
+  async function reject(id) { await supabase.from('bookings').update({ status: 'rejected' }).eq('id', id); refresh(); }
 
   async function completeBooking(id) {
     if (!window.confirm("Mark this booking as COMPLETED?")) return;
@@ -312,25 +313,25 @@ export default function AdminApp({ user, onLogout }) {
     }
   }
 
-useEffect(() => {
-  fetchFeedbacks();
-
-  const interval = setInterval(() => {
+  useEffect(() => {
     fetchFeedbacks();
-  }, 10000);
 
-  return () => clearInterval(interval);
-}, []); // Empty dependency array, so this runs only once when the component mounts
+    const interval = setInterval(() => {
+      fetchFeedbacks();
+    }, 10000);
 
-useEffect(() => {
-  console.log('Updated feedbacks state:', feedbacks);  // Log feedbacks state after it's updated
-}, [feedbacks]);  // This will log the state whenever it changes
- // Example ng fetchFeedbacks function sa Admin Dashboard
-async function fetchFeedbacks() {
-  try {
-    const { data, error } = await supabase
-      .from('booking_feedback')
-      .select(`
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array, so this runs only once when the component mounts
+
+  useEffect(() => {
+    console.log('Updated feedbacks state:', feedbacks);  // Log feedbacks state after it's updated
+  }, [feedbacks]);  // This will log the state whenever it changes
+  // Example ng fetchFeedbacks function sa Admin Dashboard
+  async function fetchFeedbacks() {
+    try {
+      const { data, error } = await supabase
+        .from('booking_feedback')
+        .select(`
         id,
         booking_id,
         user_id,
@@ -344,54 +345,54 @@ async function fetchFeedbacks() {
           full_name
         )
       `)
-      .order('created_at', { ascending: false }); // Get all feedbacks, ordered by creation date
+        .order('created_at', { ascending: false }); // Get all feedbacks, ordered by creation date
 
-    if (error) throw error;
+      if (error) throw error;
 
-    console.log('Fetched feedbacks:', data); // Log the fetched feedbacks
-    setFeedbacks(data || []);  // Update the feedbacks state with fetched data
-  } catch (err) {
-    console.error('Error fetching feedbacks:', err.message);
-  }
-}
-
- const handleAssign = async () => {
-  if (!selectedTechnician || !selectedBooking) {
-    return alert("Please select a technician and a booking.");
+      console.log('Fetched feedbacks:', data); // Log the fetched feedbacks
+      setFeedbacks(data || []);  // Update the feedbacks state with fetched data
+    } catch (err) {
+      console.error('Error fetching feedbacks:', err.message);
+    }
   }
 
-  console.log("Assigning technician...");
-  console.log("Technician ID:", selectedTechnician.id);
-  console.log("Booking ID:", selectedBooking.id);
+  const handleAssign = async () => {
+    if (!selectedTechnician || !selectedBooking) {
+      return alert("Please select a technician and a booking.");
+    }
 
-  // Kumuha ng technician_speciality mula sa selected technician
-  const technicianSpeciality = selectedTechnician.speciality || 'N/A';  // Default kung walang speciality
+    console.log("Assigning technician...");
+    console.log("Technician ID:", selectedTechnician.id);
+    console.log("Booking ID:", selectedBooking.id);
 
-  // Update the booking in Supabase with the technician details
-  const { data, error } = await supabase
-    .from('bookings')
-    .update({
-      technician_id: selectedTechnician.id,
-      technician_name: selectedTechnician.name,
-      technician_contact: selectedTechnician.contact,
-      technician_speciality: technicianSpeciality,  // Set technician speciality
-      status: "assigned",  // Change status to 'assigned'
-    })
-    .eq('id', selectedBooking.id);  // Link technician to booking by ID
+    // Kumuha ng technician_speciality mula sa selected technician
+    const technicianSpeciality = selectedTechnician.speciality || 'N/A';  // Default kung walang speciality
 
-  if (error) {
-    console.error("Error assigning technician:", error.message);
-    alert("Failed to assign technician: " + error.message);
-    return;
-  }
+    // Update the booking in Supabase with the technician details
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        technician_id: selectedTechnician.id,
+        technician_name: selectedTechnician.name,
+        technician_contact: selectedTechnician.contact,
+        technician_speciality: technicianSpeciality,  // Set technician speciality
+        status: "assigned",  // Change status to 'assigned'
+      })
+      .eq('id', selectedBooking.id);  // Link technician to booking by ID
 
-  console.log("Technician assigned successfully:", data);
-  alert(`Technician ${selectedTechnician.name} assigned!`);
+    if (error) {
+      console.error("Error assigning technician:", error.message);
+      alert("Failed to assign technician: " + error.message);
+      return;
+    }
 
-  setSelectedBooking(null);  // Clear selected booking
-  setSelectedTechnician(null);  // Clear selected technician
-  refresh();  // Refresh the UI
-};
+    console.log("Technician assigned successfully:", data);
+    alert(`Technician ${selectedTechnician.name} assigned!`);
+
+    setSelectedBooking(null);  // Clear selected booking
+    setSelectedTechnician(null);  // Clear selected technician
+    refresh();  // Refresh the UI
+  };
   // FILTERED SCHEDULES & CONFLICT IDS
   const filteredSchedules = useMemo(() => {
     return filter === 'all'
@@ -400,7 +401,7 @@ async function fetchFeedbacks() {
   }, [schedules, filter]);
 
   const conflictIds = useMemo(() => {
-    const active = schedules.filter(b => b.status && !['assigned','cancelled','rejected','completed'].includes(b.status.toLowerCase()));
+    const active = schedules.filter(b => b.status && !['assigned', 'cancelled', 'rejected', 'completed'].includes(b.status.toLowerCase()));
     const map = {};
     active.forEach(b => {
       const key = `${b.date}|${b.time}`;
@@ -410,34 +411,34 @@ async function fetchFeedbacks() {
     return Object.values(map).filter(g => g.length > 1).flat().map(b => b.id);
   }, [schedules]);
 
-function toggleExpand(id) {
-  setExpandedFeedback(expandedFeedback === id ? null : id);
-}
+  function toggleExpand(id) {
+    setExpandedFeedback(expandedFeedback === id ? null : id);
+  }
 
 
-function renderPagination() {
-  if (totalPages <= 1) return null;
+  function renderPagination() {
+    if (totalPages <= 1) return null;
 
-  return (
-    <div className="pagination">
-      <button
-        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-        disabled={currentPage === 1}
-      >
-        ⬅ Previous
-      </button>
+    return (
+      <div className="pagination">
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          ⬅ Previous
+        </button>
 
-      <span>{currentPage} / {totalPages}</span>
+        <span>{currentPage} / {totalPages}</span>
 
-      <button
-        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-        disabled={currentPage === totalPages}
-      >
-        Next ➡
-      </button>
-    </div>
-  );
-}
+        <button
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Next ➡
+        </button>
+      </div>
+    );
+  }
 
   function renderTable(data) {
     return (
@@ -461,7 +462,7 @@ function renderPagination() {
             {data.map(s => {
               let bgColor = 'transparent';
               if (conflictIds.includes(s.id)) bgColor = STATUS_COLORS.conflict;
-              else if (['cancelled','rejected'].includes(s.status?.toLowerCase())) bgColor = STATUS_COLORS.cancelled;
+              else if (['cancelled', 'rejected'].includes(s.status?.toLowerCase())) bgColor = STATUS_COLORS.cancelled;
               else if (s.status?.toLowerCase() === 'pending') bgColor = STATUS_COLORS.pending;
               else if (s.status?.toLowerCase() === 'approved' && !s.technician_id) bgColor = STATUS_COLORS.approved;
               else if (s.status?.toLowerCase() === 'assigned') bgColor = STATUS_COLORS.assigned;
@@ -497,7 +498,7 @@ function renderPagination() {
                       ))}
                     </div>
                   </td>
-                  <td style={{ display: 'flex', gap: '5px', flexWrap:'wrap' }}>
+                  <td style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                     {!isInProgress && !isCompleted && <button onClick={() => setEditingAppointment(s)} className="btn-edit">✏ Edit</button>}
                     {!isInProgress && !isCompleted && !isApproved && <button onClick={() => approve(s.id)} className="btn-approve">✅ Approve</button>}
                     {!isInProgress && !isCompleted && !isApproved && <button onClick={() => reject(s.id)} className="btn-reject">❌ Reject</button>}
@@ -517,7 +518,7 @@ function renderPagination() {
   return (
     <div className="app-layout">
       <Sidebar user={user} onLogout={onLogout} fullName={fullName} roleName={roleName} activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      
+
       <div className="app-main">
         <header className="header">
           <div className="header-content">
@@ -525,13 +526,14 @@ function renderPagination() {
               <h1>
                 {activeMenu === 'dashboard' && '🔧 Dashboard'}
                 {activeMenu === 'bookings' && '📅 Bookings'}
+                {activeMenu === 'payments' && '💳 Payments'}
                 {activeMenu === 'technicians' && '👥 Technicians/Admins'}
                 {activeMenu === 'feedback' && '⭐ Customer Feedback'}
               </h1>
               <p>Welcome back, {fullName || user?.email}</p>
             </div>
             <div className="header-actions">
-              <button className="btn-profile" onClick={()=>setShowProfile(true)}>👤 Profile</button>
+              <button className="btn-profile" onClick={() => setShowProfile(true)}>👤 Profile</button>
             </div>
           </div>
         </header>
@@ -542,13 +544,16 @@ function renderPagination() {
               <DashboardCards schedules={schedules} />
             </>
           )}
+          {activeMenu === 'payments' && (
+            <AdminPayments />
+          )}
 
           {activeMenu === 'technicians' && (
             <>
               <div className="admin-technician-account">
                 <h2>Staff Account Management</h2>
                 <p>Create staff accounts here for team access. Click below to open the role form.</p>
-                <button 
+                <button
                   className="open-account-creator-btn"
                   onClick={() => setShowAccountCreator(true)}
                 >
@@ -572,111 +577,111 @@ function renderPagination() {
 
           {activeMenu === 'feedback' && (
             <div className="feedback-section">
-  <button
-    type="button"
-    className="feedback-dropdown-header"
-    onClick={() => setShowFeedbackDropdown(prev => !prev)}
-  >
-    <span>Feedbacks from Customers ({feedbacks.length})</span>
-    <span>{showFeedbackDropdown ? "▲ Hide" : "▼ Show"}</span>
-  </button>
-
-  {showFeedbackDropdown && (
-    <div className="feedback-list">
-      {feedbacks.length > 0 ? (
-        feedbacks.map((feedback) => {
-          const isOpen = expandedFeedback === feedback.id;
-
-          return (
-            <div key={feedback.id} className="feedback-item">
               <button
                 type="button"
-                className="feedback-summary"
-                onClick={() => toggleExpand(feedback.id)}
+                className="feedback-dropdown-header"
+                onClick={() => setShowFeedbackDropdown(prev => !prev)}
               >
-                <div>
-                  <p><strong>Customer:</strong> {feedback.bookings?.full_name || "N/A"}</p>
-                  <p><strong>Service:</strong> {feedback.bookings?.service || "N/A"}</p>
-                  <p><strong>Rating:</strong> {feedback.rating} ⭐</p>
-                </div>
-
-                <span className="feedback-arrow">
-                  {isOpen ? "▲" : "▼"}
-                </span>
+                <span>Feedbacks from Customers ({feedbacks.length})</span>
+                <span>{showFeedbackDropdown ? "▲ Hide" : "▼ Show"}</span>
               </button>
 
-              {isOpen && (
-                <div className="feedback-details">
-                  <p><strong>Message:</strong> {feedback.message || "No message"}</p>
-                  <p>
-                    <strong>Date:</strong>{" "}
-                    {feedback.created_at
-                      ? new Date(feedback.created_at).toLocaleString()
-                      : "N/A"}
-                  </p>
+              {showFeedbackDropdown && (
+                <div className="feedback-list">
+                  {feedbacks.length > 0 ? (
+                    feedbacks.map((feedback) => {
+                      const isOpen = expandedFeedback === feedback.id;
+
+                      return (
+                        <div key={feedback.id} className="feedback-item">
+                          <button
+                            type="button"
+                            className="feedback-summary"
+                            onClick={() => toggleExpand(feedback.id)}
+                          >
+                            <div>
+                              <p><strong>Customer:</strong> {feedback.bookings?.full_name || "N/A"}</p>
+                              <p><strong>Service:</strong> {feedback.bookings?.service || "N/A"}</p>
+                              <p><strong>Rating:</strong> {feedback.rating} ⭐</p>
+                            </div>
+
+                            <span className="feedback-arrow">
+                              {isOpen ? "▲" : "▼"}
+                            </span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="feedback-details">
+                              <p><strong>Message:</strong> {feedback.message || "No message"}</p>
+                              <p>
+                                <strong>Date:</strong>{" "}
+                                {feedback.created_at
+                                  ? new Date(feedback.created_at).toLocaleString()
+                                  : "N/A"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="no-feedback">No feedback available.</p>
+                  )}
                 </div>
               )}
             </div>
-          );
-        })
-      ) : (
-        <p className="no-feedback">No feedback available.</p>
-      )}
-    </div>
-  )}
-        </div>
           )}
 
-      {selectedBooking &&
-        <AssignTechnicianModal
-          booking={selectedBooking}
-          technicians={technicians}
-          onAssign={handleAssign}
-          onClose={()=>{setSelectedBooking(null); setSelectedTechnician(null);}}
-          selectedTechnician={selectedTechnician}
-          setSelectedTechnician={setSelectedTechnician}
-        />
-      }
+          {selectedBooking &&
+            <AssignTechnicianModal
+              booking={selectedBooking}
+              technicians={technicians}
+              onAssign={handleAssign}
+              onClose={() => { setSelectedBooking(null); setSelectedTechnician(null); }}
+              selectedTechnician={selectedTechnician}
+              setSelectedTechnician={setSelectedTechnician}
+            />
+          }
 
-      {showProfile &&
-        <ProfileModal
-          user={user}
-          fullName={fullName}
-          roleName={roleName}
-          onClose={()=>setShowProfile(false)}
-        />
-      }
+          {showProfile &&
+            <ProfileModal
+              user={user}
+              fullName={fullName}
+              roleName={roleName}
+              onClose={() => setShowProfile(false)}
+            />
+          }
 
-      {editingAppointment &&
-  <EditAppointment
-    appointment={editingAppointment}
-    schedules={schedules || []}
-    onClose={() => setEditingAppointment(null)}
-    onSave={async (updatedData) => {
-      const { error } = await supabase
-        .from('bookings')
-        .update(updatedData)
-        .eq('id', editingAppointment.id);
+          {editingAppointment &&
+            <EditAppointment
+              appointment={editingAppointment}
+              schedules={schedules || []}
+              onClose={() => setEditingAppointment(null)}
+              onSave={async (updatedData) => {
+                const { error } = await supabase
+                  .from('bookings')
+                  .update(updatedData)
+                  .eq('id', editingAppointment.id);
 
-      if (error) {
-        console.error('Update error:', error);
-        alert('❌ Failed to update booking');
-        return;
-      }
+                if (error) {
+                  console.error('Update error:', error);
+                  alert('❌ Failed to update booking');
+                  return;
+                }
 
-      alert('✅ Booking updated successfully');
-      setEditingAppointment(null);
-      refresh();
-    }}
-  />
-}
+                alert('✅ Booking updated successfully');
+                setEditingAppointment(null);
+                refresh();
+              }}
+            />
+          }
 
-      {selectedPhoto &&
-        <PhotoModal
-          photoUrl={selectedPhoto}
-          onClose={() => setSelectedPhoto(null)}
-        />
-      }
+          {selectedPhoto &&
+            <PhotoModal
+              photoUrl={selectedPhoto}
+              onClose={() => setSelectedPhoto(null)}
+            />
+          }
         </div>
       </div>
     </div>
