@@ -837,7 +837,7 @@ export default function UserApp({ user, onLogout }) {
 
   const [payingBookingId, setPayingBookingId] = useState(null);
 
-  async function handlePayBooking(booking, isDownpayment = false) {
+  async function handlePayBooking(booking) {
     if (!booking?.id) {
       alert('❌ Invalid booking.');
       return;
@@ -861,8 +861,8 @@ export default function UserApp({ user, onLogout }) {
         return;
       }
 
-      const fullAmount = Number(booking.total_service_fee) || 1500;
-      const payAmount = isDownpayment ? 500 : fullAmount;
+      // Laging full amount na ang gagamitin katulad ng sa order
+      const payAmount = Number(booking.total_service_fee) || 1500;
 
       const { data, error } = await supabase.functions.invoke(
         'create-paymongo-checkout',
@@ -1039,8 +1039,9 @@ export default function UserApp({ user, onLogout }) {
 
         updateBookingPayment();
       }
-    } else if (paymentResult === 'cancelled') {
-      alert('Payment was cancelled. You may try again.');
+  } else if (paymentResult === 'cancelled') {
+      // ✅ Ginawa na nating silent log para hindi na lumabas yung nakaka-istorbong alert pop-up
+      console.log('Payment was cancelled by user.');
     }
 
     // Refresh timers para siguradong makuha ang updated data
@@ -2473,48 +2474,28 @@ export default function UserApp({ user, onLogout }) {
                         </p>
                       </div>
 
-                      <div className="history-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {/* Pay Buttons kapag Unpaid */}
+                     <div className="history-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {/* Pay Button kapag Unpaid (Full Payment na lang katulad ng sa Order) */}
                         {item.payment_status !== 'paid' && item.status !== 'cancelled' && item.status !== 'rejected' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handlePayBooking(item, false)}
-                              disabled={payingBookingId === item.id}
-                              style={{
-                                backgroundColor: '#0284c7',
-                                color: '#ffffff',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontWeight: '600',
-                                fontSize: '0.85rem',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {payingBookingId === item.id
-                                ? 'Connecting...'
-                                : `💳 Pay Full (₱${Number(item.total_service_fee || 1500).toLocaleString('en-PH')})`}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handlePayBooking(item, true)}
-                              disabled={payingBookingId === item.id}
-                              style={{
-                                backgroundColor: '#0f766e',
-                                color: '#ffffff',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontWeight: '600',
-                                fontSize: '0.85rem',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              💳 Downpayment (₱500)
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            onClick={() => handlePayBooking(item)}
+                            disabled={payingBookingId === item.id}
+                            style={{
+                              backgroundColor: '#0284c7',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              fontWeight: '600',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {payingBookingId === item.id
+                              ? 'Connecting...'
+                              : `💳 Pay Now (₱${Number(item.total_service_fee || 1500).toLocaleString('en-PH')})`}
+                          </button>
                         )}
 
                         {/* View / Print Receipt Button kapag may binayad na */}
@@ -2532,11 +2513,6 @@ export default function UserApp({ user, onLogout }) {
                               cursor: 'pointer'
                             }}
                             onClick={() => {
-                              const isPartial = Number(item.amount_paid) < Number(item.total_service_fee || 1500);
-                              const paymentTypeDesc = isPartial
-                                ? `Downpayment for ${item.service} (Balance: ₱${Number(Number(item.total_service_fee || 1500) - Number(item.amount_paid)).toLocaleString('en-PH', { minimumFractionDigits: 2 })})`
-                                : `Full Payment for ${item.service}`;
-
                               setSelectedReceipt({
                                 id: item.id,
                                 payment_id: item.id,
@@ -2548,7 +2524,7 @@ export default function UserApp({ user, onLogout }) {
                                 full_name: item.full_name,
                                 email: item.email,
                                 service: item.service,
-                                description: paymentTypeDesc, // 🔥 Dito natin pinalitan ang description para lumitaw sa resibo
+                                description: `Full Payment for ${item.service}`,
                                 address: item.address,
                                 mobile_number: item.mobile_number
                               })

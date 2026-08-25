@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
-import './AdminPayments.css';
+import React, { useState, useEffect } from "react";
+import { supabase } from "../supabase";
+import ReceiptModal from "../User/ReceiptModal";
+import "./AdminPayments.css";
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [methodFilter, setMethodFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [methodFilter, setMethodFilter] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -16,236 +18,458 @@ export default function AdminPayments() {
 
   const fetchPayments = async () => {
     setLoading(true);
+    try {
+      const [{ data: rawPayments, error: pErr }, { data: ordersData }, { data: bookingsData }, { data: profilesData }] = await Promise.all([
+        supabase.from("payments").select("*").order("created_at", { ascending: false }),
+        supabase.from("orders").select("*"),
+        supabase.from("bookings").select("*"),
+        supabase.from("profiles").select("*")
+      ]);
 
-    // 1. Fetch payments data
-    const { data: paymentsData } = await supabase
-      .from('payments')
-      .select('*')
-      .order('created_at', { ascending: false });
+      if (pErr) throw pErr;
 
-    const rawPayments = Array.isArray(paymentsData) ? paymentsData : [];
+      const orderMap = new Map((ordersData || []).map((o) => [o.id, o]));
+      const bookingMap = new Map((bookingsData || []).map((b) => [b.id, b]));
+      const profileMap = new Map((profilesData || []).map((p) => [p.id || p.user_id, p]));
 
-    // 2. Fetch profiles data
-    let profilesMap = {};
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('*');
+      // 1. Process regular payments/orders mula sa payments table
+      const processedPayments = (rawPayments || []).map((p) => {
+        let refStr = (p.paymongo_reference || p.reference_number || "").trim();
+        let relatedData = null;
 
-    if (Array.isArray(profilesData)) {
-      profilesMap = profilesData.reduce((acc, profile) => {
-        if (profile && profile.id) {
-          acc[profile.id] = profile;
+        if (refStr.startsWith("ORDER-")) {
+          const orderId = refStr.replace("ORDER-", "").trim();
+          relatedData = orderMap.get(orderId);
+        } else if (refStr.startsWith("BOOKING-")) {
+          const bookingId = refStr.replace("BOOKING-", "").trim();
+          relatedData = bookingMap.get(bookingId);
         }
-        return acc;
-      }, {});
+
+        if (!relatedData) {
+          if (p.booking_id) relatedData = bookingMap.get(p.booking_id);
+          if (!relatedData && p.order_id) relatedData = orderMap.get(p.order_id);
+        }
+
+        const userProfile = p.user_id ? profileMap.get(p.user_id) : (relatedData?.user_id ? profileMap.get(relatedData.user_id) : null);
+
+        const customerName =
+          relatedData?.customer_name ||
+          relatedData?.full_name ||
+          relatedData?.name ||
+          p.customer_name ||
+          p.full_name ||
+          userProfile?.full_name ||
+          userProfile?.name ||
+          "Customer";
+
+        const customerEmail =
+          relatedData?.customer_email ||
+          relatedData?.email ||
+          p.customer_email ||
+          p.email ||
+          userProfile?.email ||
+          "customer@gmail.com";
+
+        const contactNumber =
+          relatedData?.contact_number ||
+          relatedData?.phone_number ||
+          relatedData?.phone ||
+          p.contact_number ||
+          p.phone_number ||
+          userProfile?.phone_number ||
+          userProfile?.contact_number ||
+          "09087615843";
+
+        const address =
+          relatedData?.address ||
+          p.address ||
+          userProfile?.address ||
+          "General Mariano Alvarez, Cavite";
+
+        const statusStr = String(p.status || relatedData?.payment_status || "").toLowerCase();
+        let finalAmt = Number(p.amount || 0);
+
+        if (statusStr === "pending" || statusStr === "failed" || statusStr === "cancelled" || statusStr === "unpaid") {
+          finalAmt = 0;
+        }
+
+        return {
+          ...p,
+          amount: finalAmt,
+          status: statusStr.includes("paid") || statusStr.includes("success") ? "paid" : (statusStr || "pending"),
+          resolved_name: customerName,
+          resolved_email: customerEmail,
+          resolved_phone: contactNumber,
+          resolved_address: address,
+          related_data: relatedData,
+          user_profile: userProfile
+        };
+      });
+
+      // 2. Process bookings virtual payments (FIXED: Tama na ang pagbasa ng amount para sa paid at pending)
+      const existingIds = new Set(processedPayments.map((p) => p.booking_id || p.paymongo_reference));
+
+      const bookingVirtualPayments = [];
+      (bookingsData || []).forEach((b) => {
+        const statusStr = String(b.payment_status || "").toLowerCase();
+        const amtPaid = Number(b.amount_paid || 0);
+
+        if (!existingIds.has(b.id) && !existingIds.has(`BOOKING-${b.id}`)) {
+          const userProfile = b.user_id ? profileMap.get(b.user_id) : null;
+          const custName = b.customer_name || b.full_name || b.name || userProfile?.full_name || userProfile?.name || "Customer";
+          const custEmail = b.customer_email || b.email || userProfile?.email || "customer@gmail.com";
+          const custPhone = b.contact_number || b.phone_number || b.phone || userProfile?.phone_number || "09087615843";
+          const custAddress = b.address || userProfile?.address || "General Mariano Alvarez, Cavite";
+
+          let displayStatus = "PENDING";
+          let recordStatus = "pending";
+          let finalAmount = 0;
+
+          if (statusStr.includes("paid")) {
+            displayStatus = "PAID";
+            recordStatus = "paid";
+            finalAmount = amtPaid > 0 ? amtPaid : Number(b.total_service_fee || 1500);
+          } else if (statusStr.includes("downpayment") || amtPaid > 0) {
+            displayStatus = "PAID (DOWNPAYMENT)";
+            recordStatus = "paid";
+            finalAmount = amtPaid; // Dito papasok ang downpayment (halimbawa 500)
+          } else {
+            // Strictly PENDING = ₱0.00 amount
+            displayStatus = "PENDING";
+            recordStatus = "pending";
+            finalAmount = 0;
+          }
+
+          bookingVirtualPayments.push({
+            id: `booking-pay-${b.id}`,
+            booking_id: b.id,
+            paymongo_reference: `BOOKING-${b.id}`,
+            amount: finalAmount, 
+            payment_channel: b.payment_method || "ONLINE PAYMENT",
+            status: recordStatus,
+            sub_status_label: displayStatus,
+            created_at: b.created_at || new Date().toISOString(),
+            resolved_name: custName,
+            resolved_email: custEmail,
+            resolved_phone: custPhone,
+            resolved_address: custAddress,
+            related_data: b,
+            user_profile: userProfile
+          });
+        }
+      });
+
+      const combined = [...processedPayments, ...bookingVirtualPayments].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+
+      setPayments(combined);
+    } catch (err) {
+      console.error("Error fetching payments:", err);
+    } finally {
+      setLoading(false);
     }
-
-    // 3. Match profiles to payment records
-    const mergedPayments = rawPayments.map(p => {
-      const userProfile = profilesMap[p.user_id] || {};
-      
-      const resolvedName = 
-        userProfile.full_name || 
-        userProfile.fullname ||
-        userProfile.name ||
-        (userProfile.first_name ? `${userProfile.first_name} ${userProfile.last_name || ''}`.trim() : null) ||
-        userProfile.username ||
-        p.customer_name ||
-        null;
-
-      const resolvedEmail = 
-        userProfile.email || 
-        p.customer_email || 
-        null;
-
-      return {
-        ...p,
-        customer_name: resolvedName,
-        customer_email: resolvedEmail,
-      };
-    });
-
-    setPayments(mergedPayments);
-    setLoading(false);
   };
 
-  const totalRevenue = payments
-    .filter(p => (p.status || '').toLowerCase() === 'paid')
+  const filteredPayments = payments.filter((item) => {
+    const refCode = item.paymongo_reference || item.reference_number || item.id || "";
+    const name = item.resolved_name || "";
+    const email = item.resolved_email || "";
+
+    const matchesSearch =
+      refCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" || (item.status && item.status.toLowerCase() === statusFilter.toLowerCase());
+
+    const matchesMethod =
+      methodFilter === "all" ||
+      (item.payment_channel && item.payment_channel.toLowerCase() === methodFilter.toLowerCase()) ||
+      (item.payment_method && item.payment_method.toLowerCase() === methodFilter.toLowerCase());
+
+    return matchesSearch && matchesStatus && matchesMethod;
+  });
+
+  const handleExportCSV = () => {
+    if (filteredPayments.length === 0) {
+      alert("No data to export!");
+      return;
+    }
+
+    const headers = ["Date & Time", "Reference ID", "Customer Name", "Customer Email", "Amount", "Payment Method", "Status"];
+    const rows = filteredPayments.map((p) => [
+      `"${new Date(p.created_at).toLocaleString()}"`,
+      `"${p.paymongo_reference || p.reference_number || p.id}"`,
+      `"${p.resolved_name}"`,
+      `"${p.resolved_email}"`,
+      p.amount || 0,
+      `"${p.payment_channel || p.payment_method || "ONLINE PAYMENT"}"`,
+      `"${p.sub_status_label || p.status?.toUpperCase() || "PENDING"}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `admin_payments_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const totalVerifiedRevenue = payments
+    .filter((p) => p.status?.toLowerCase() === "paid")
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
-  const paidCount = payments.filter(p => (p.status || '').toLowerCase() === 'paid').length;
-  const pendingCount = payments.filter(p => (p.status || '').toLowerCase() === 'pending').length;
-  const failedCount = payments.filter(p => ['failed', 'expired'].includes((p.status || '').toLowerCase())).length;
-
-  const filteredPayments = payments.filter(payment => {
-    const status = (payment.status || '').toUpperCase();
-    const method = (payment.payment_method || '').toUpperCase();
-    const ref = (payment.payment_reference || payment.paymongo_payment_id || '').toLowerCase();
-    const customer = (payment.customer_name || payment.customer_email || payment.user_id || '').toLowerCase();
-    const query = searchTerm.toLowerCase();
-
-    const matchesStatus = statusFilter === 'ALL' || status === statusFilter;
-    const matchesMethod = methodFilter === 'ALL' || method === methodFilter;
-    const matchesSearch = ref.includes(query) || customer.includes(query);
-
-    return matchesStatus && matchesMethod && matchesSearch;
-  });
+  const successfulCount = payments.filter((p) => p.status?.toLowerCase() === "paid").length;
+  const pendingCount = payments.filter((p) => p.status?.toLowerCase() === "pending").length;
+  const failedCount = payments.filter((p) => ["failed", "expired", "cancelled"].includes(p.status?.toLowerCase())).length;
 
   return (
     <div className="admin-payments-container">
-      <div className="payments-header">
-        <div>
-          <h2>Payment & Transaction Management</h2>
-          <p className="subtitle">Audit, monitor, and verify online customer transactions</p>
+      <div className="payments-metrics-grid">
+        <div className="metric-card revenue-card">
+          <span className="metric-title">TOTAL VERIFIED REVENUE</span>
+          <h2>₱{totalVerifiedRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}</h2>
         </div>
-        <button onClick={fetchPayments} className="btn-refresh">
-          🔄 Refresh Data
-        </button>
-      </div>
-
-      <div className="metrics-grid">
-        <div className="metric-card revenue">
-          <span className="metric-label">Total Verified Revenue</span>
-          <span className="metric-value">₱{totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+        <div className="metric-card success-card">
+          <span className="metric-title">SUCCESSFUL TRANSACTIONS</span>
+          <h2>{successfulCount}</h2>
         </div>
-        <div className="metric-card paid">
-          <span className="metric-label">Successful Transactions</span>
-          <span className="metric-value">{paidCount}</span>
+        <div className="metric-card pending-card">
+          <span className="metric-title">PENDING VERIFICATIONS</span>
+          <h2>{pendingCount}</h2>
         </div>
-        <div className="metric-card pending">
-          <span className="metric-label">Pending Verifications</span>
-          <span className="metric-value">{pendingCount}</span>
-        </div>
-        <div className="metric-card failed">
-          <span className="metric-label">Failed / Expired</span>
-          <span className="metric-value">{failedCount}</span>
+        <div className="metric-card failed-card">
+          <span className="metric-title">FAILED / EXPIRED</span>
+          <h2>{failedCount}</h2>
         </div>
       </div>
 
-      <div className="table-controls">
+      <div className="payments-controls" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
         <input
           type="text"
-          placeholder="Search by Reference Code or Customer..."
+          placeholder="Search by Reference, Customer Name, or Email..."
+          className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
+          style={{ flex: "1", minWidth: "250px" }}
         />
-
-        <div className="filter-group">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select-filter">
-            <option value="ALL">All Statuses</option>
-            <option value="PAID">Paid</option>
-            <option value="PENDING">Pending</option>
-            <option value="FAILED">Failed</option>
+        <div className="filter-group" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All Statuses</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
           </select>
 
-          <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)} className="select-filter">
-            <option value="ALL">All Methods</option>
-            <option value="GCASH">GCash</option>
-            <option value="CARD">Card</option>
-            <option value="QRPH">QRPh</option>
+          <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)}>
+            <option value="all">All Methods</option>
+            <option value="gcash">GCash</option>
+            <option value="qrph">QRPH</option>
+            <option value="card">Card</option>
+            <option value="paymaya">Maya</option>
           </select>
+
+          <button
+            onClick={handleExportCSV}
+            style={{
+              backgroundColor: "#10b981",
+              color: "#fff",
+              padding: "10px 16px",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+          >
+            📥 Export CSV
+          </button>
         </div>
       </div>
 
-      <div className="table-wrapper">
-        {loading ? (
-          <div className="loading-state">Loading payment records...</div>
-        ) : filteredPayments.length === 0 ? (
-          <div className="empty-state">No payment records found matching your filters.</div>
-        ) : (
-          <table className="payments-table">
-            <thead>
+      <div className="table-responsive">
+        <table className="payments-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Reference / ID</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
               <tr>
-                <th>Date & Time</th>
-                <th>Reference / ID</th>
-                <th>Customer</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Action</th>
+                <td colSpan="7" className="text-center">Loading transactions...</td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.map((p) => (
-                <tr key={p.id}>
-                  <td>{new Date(p.created_at || p.paid_at).toLocaleString()}</td>
-                  <td className="font-mono">{p.payment_reference || p.paymongo_payment_id || p.id.slice(0, 8)}</td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: '#0f172a' }}>
-                      {p.customer_name || `User ${p.user_id?.slice(0, 8) || 'N/A'}`}
-                    </div>
-                    {p.customer_email && (
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        {p.customer_email}
-                      </div>
-                    )}
-                  </td>
-                  <td className="amount">₱{Number(p.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-                  <td><span className={`method-badge ${p.payment_method?.toLowerCase()}`}>{p.payment_method || 'N/A'}</span></td>
-                  <td><span className={`status-badge ${p.status?.toLowerCase()}`}>{p.status}</span></td>
-                  <td>
-                    <button onClick={() => setSelectedPayment(p)} className="btn-view">
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ) : filteredPayments.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="text-center">No transactions found.</td>
+              </tr>
+            ) : (
+              filteredPayments.map((p) => {
+                const methodBadge = p.payment_channel || p.payment_method || "ONLINE PAYMENT";
+                const refDisplay = p.paymongo_reference || p.reference_number || p.id?.substring(0, 8);
+                const statusDisplay = p.sub_status_label || (p.status ? p.status.toUpperCase() : "PENDING");
+
+                return (
+                  <tr key={p.id}>
+                    <td>{new Date(p.created_at).toLocaleString()}</td>
+                    <td className="ref-cell">{refDisplay}</td>
+                    <td className="customer-cell">{p.resolved_name}</td>
+                    <td className="amount-cell">₱{Number(p.amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                    <td>
+                      <span className="channel-badge">{methodBadge}</span>
+                    </td>
+                    <td>
+                      <span className={`status-badge status-${p.status?.toLowerCase()}`}>
+                        {statusDisplay}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="btn-view-details"
+                        onClick={() => setSelectedPayment(p)}
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {selectedPayment && (
+      {/* Audit Modal */}
+      {selectedPayment && !showReceipt && (
         <div className="modal-overlay" onClick={() => setSelectedPayment(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Transaction Audit Details</h3>
-              <button className="close-btn" onClick={() => setSelectedPayment(null)}>&times;</button>
+              <h3>Transaction & Balance Audit</h3>
+              <button className="btn-close" onClick={() => setSelectedPayment(null)}>×</button>
             </div>
-            <div className="modal-body">
-              <div className="detail-row">
-                <span className="label">Internal Payment ID:</span>
-                <span className="value font-mono">{selectedPayment.id}</span>
+            <div className="modal-body audit-details">
+              <div className="audit-row">
+                <span>Internal Reference ID:</span>
+                <code>{selectedPayment.id}</code>
               </div>
-              <div className="detail-row">
-                <span className="label">PayMongo Reference:</span>
-                <span className="value font-mono">{selectedPayment.payment_reference || 'N/A'}</span>
+              <div className="audit-row">
+                <span>PayMongo / Ref:</span>
+                <span>{selectedPayment.paymongo_reference || selectedPayment.reference_number || "N/A"}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Payment Intent ID:</span>
-                <span className="value font-mono">{selectedPayment.payment_intent_id || 'N/A'}</span>
+              <div className="audit-row">
+                <span>Customer Name:</span>
+                <strong>{selectedPayment.resolved_name}</strong>
               </div>
-              <div className="detail-row">
-                <span className="label">Customer Name:</span>
-                <span className="value">{selectedPayment.customer_name || 'N/A'}</span>
+              <div className="audit-row">
+                <span>Customer Email:</span>
+                <span>{selectedPayment.resolved_email}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Customer Email:</span>
-                <span className="value">{selectedPayment.customer_email || 'N/A'}</span>
+              <div className="audit-row">
+                <span>Contact Number:</span>
+                <span>{selectedPayment.resolved_phone}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Total Amount:</span>
-                <span className="value font-bold">₱{Number(selectedPayment.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+              <div className="audit-row">
+                <span>Address:</span>
+                <span>{selectedPayment.resolved_address}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Payment Channel:</span>
-                <span className="value">{selectedPayment.payment_method?.toUpperCase()}</span>
+
+              {/* Booking Specific Balance Details */}
+              {selectedPayment.related_data?.total_service_fee ? (
+                <>
+                  <div className="audit-row" style={{ borderTop: "1px dashed #cbd5e1", marginTop: "8px", paddingTop: "8px" }}>
+                    <span>Total Service Fee:</span>
+                    <strong>₱{Number(selectedPayment.related_data.total_service_fee || 1500).toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div className="audit-row">
+                    <span>Amount Paid:</span>
+                    <span style={{ color: "#2563eb", fontWeight: "600" }}>₱{Number(selectedPayment.amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="audit-row">
+                    <span>Remaining Balance:</span>
+                    <span style={{ color: (Number(selectedPayment.related_data.total_service_fee || 1500) - Number(selectedPayment.amount || 0)) > 0 ? "#dc2626" : "#16a34a", fontWeight: "700" }}>
+                      ₱{(Math.max(0, Number(selectedPayment.related_data.total_service_fee || 1500) - Number(selectedPayment.amount || 0))).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="audit-row">
+                  <span>Total Amount Paid:</span>
+                  <strong>₱{Number(selectedPayment.amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong>
+                </div>
+              )}
+
+              <div className="audit-row">
+                <span>Payment Channel:</span>
+                <span>{selectedPayment.payment_channel || selectedPayment.payment_method || "ONLINE PAYMENT"}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Transaction Status:</span>
-                <span className={`status-badge ${selectedPayment.status?.toLowerCase()}`}>{selectedPayment.status}</span>
+              <div className="audit-row">
+                <span>Payment & Balance Status:</span>
+                <span className={`status-badge status-${selectedPayment.status?.toLowerCase()}`}>
+                  {selectedPayment.related_data?.total_service_fee && (Number(selectedPayment.related_data.total_service_fee || 1500) - Number(selectedPayment.amount || 0) > 0)
+                    ? (Number(selectedPayment.amount || 0) > 0 ? "DOWNPAYMENT ONLY (UNPAID BALANCE)" : "PENDING (UNPAID)")
+                    : (selectedPayment.sub_status_label || selectedPayment.status?.toUpperCase() || "PAID")}
+                </span>
               </div>
-              <div className="detail-row">
-                <span className="label">Timestamp:</span>
-                <span className="value">{new Date(selectedPayment.created_at).toLocaleString()}</span>
+              <div className="audit-row">
+                <span>Timestamp:</span>
+                <span>{new Date(selectedPayment.created_at).toLocaleString()}</span>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-close" onClick={() => setSelectedPayment(null)}>Close</button>
+              {selectedPayment.status?.toLowerCase() === "paid" && (
+                <button
+                  className="btn-primary"
+                  style={{ marginRight: "10px", backgroundColor: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: "600" }}
+                  onClick={() => setShowReceipt(true)}
+                >
+                  🖨️ View Official Receipt
+                </button>
+              )}
+              <button className="btn-secondary" onClick={() => setSelectedPayment(null)}>
+                Close
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Official Printable Receipt Modal */}
+      {showReceipt && selectedPayment && (
+        <ReceiptModal
+          payment={{
+            ...selectedPayment,
+            customer_name: selectedPayment.resolved_name,
+            customer_email: selectedPayment.resolved_email,
+            reference_number: selectedPayment.paymongo_reference || selectedPayment.reference_number || selectedPayment.id,
+          }}
+          booking={{
+            id: selectedPayment.related_data?.id || selectedPayment.booking_id || selectedPayment.id,
+            service_type: selectedPayment.related_data?.service_type || "Air Conditioning Unit / Service Order",
+            ac_type: selectedPayment.related_data?.ac_type || "Standard Unit",
+            preferred_date: selectedPayment.related_data?.preferred_date || new Date(selectedPayment.created_at).toLocaleDateString(),
+            preferred_time: selectedPayment.related_data?.preferred_time || "Standard Schedule",
+            address: selectedPayment.resolved_address,
+            contact_number: selectedPayment.resolved_phone,
+            customer_name: selectedPayment.resolved_name,
+            customer_email: selectedPayment.resolved_email,
+            full_name: selectedPayment.resolved_name,
+            name: selectedPayment.resolved_name,
+          }}
+          onClose={() => setShowReceipt(false)}
+        />
       )}
     </div>
   );
