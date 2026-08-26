@@ -408,7 +408,7 @@ export default function UserApp({ user, onLogout }) {
         .from("profiles")
         .select("full_name, role_id")
         .eq("id", user.id)
-        .single();
+        .single(); // 👈 ANDITO ANG SALARIN!
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -420,7 +420,7 @@ export default function UserApp({ user, onLogout }) {
           .from("roles")
           .select("name") // ✅ tama na
           .eq("id", data.role_id)
-          .single();
+          .single(); // 👈 AT DITO RIN!
 
         setRoleName(roleData?.name || "Customer");
       }
@@ -1536,7 +1536,7 @@ export default function UserApp({ user, onLogout }) {
     }
   }
 
-  async function submitAllBookings() {
+async function submitAllBookings() {
     if (cart.length === 0) {
       alert("Cart is empty");
       return;
@@ -1578,6 +1578,7 @@ export default function UserApp({ user, onLogout }) {
           mobile_number: item.bookingDetails.mobileNumber,
           address: item.bookingDetails.address,
           service: item.serviceName,
+          total_service_fee: Number(item.price) || 1500, // ✅ Idinagdag para masave ang totoong presyo ng service
           room_area: parseFloat(item.roomMeasurements?.area) || null,
           recommended_hp: item.recommendedProduct,
           date: item.bookingDetails.date,
@@ -1603,11 +1604,21 @@ export default function UserApp({ user, onLogout }) {
         return;
       }
 
+      // ✅ Idinagdag natin ito para magka-notification kapag nag-book
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Booking Submitted',
+        message: 'Your service booking has been submitted and is waiting for confirmation.',
+        type: 'booking',
+        is_read: false
+      });
+
       console.log("Inserted bookings:", data);
       alert("✅ Bookings submitted to admin!");
 
       setCart([]);
       await fetchBookingHistory(); // refresh history para lumabas agad
+      await fetchNotifications();  // refresh notifications para lumabas ang badge count
       setScreen('history');        // switch screen to show history
 
     } catch (err) {
@@ -1615,7 +1626,6 @@ export default function UserApp({ user, onLogout }) {
       alert("❌ Unexpected error occurred");
     }
   }
-
   return (
     <div className="user-app">
       {/* Button para buksan ang sidebar sa mobile */}

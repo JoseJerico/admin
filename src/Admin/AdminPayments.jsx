@@ -7,7 +7,6 @@ export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -32,8 +31,14 @@ export default function AdminPayments() {
       const bookingMap = new Map((bookingsData || []).map((b) => [b.id, b]));
       const profileMap = new Map((profilesData || []).map((p) => [p.id || p.user_id, p]));
 
-      // 1. Process regular payments/orders mula sa payments table
-      const processedPayments = (rawPayments || []).map((p) => {
+      // 1. Process regular payments - STRICTLY sasalain na dapat totoo ngang paid at hindi failed/pending
+      const processedPayments = (rawPayments || []).filter((p) => {
+        const statusStr = String(p.status || "").toLowerCase();
+        // Siguraduhing kasama ang paid/success AT HINDI kasama ang failed/pending/expired
+        const isPaid = statusStr.includes("paid") || statusStr.includes("success");
+        const isNotFailed = !statusStr.includes("failed") && !statusStr.includes("pending") && !statusStr.includes("expired");
+        return isPaid && isNotFailed;
+      }).map((p) => {
         let refStr = (p.paymongo_reference || p.reference_number || "").trim();
         let relatedData = null;
 
@@ -86,17 +91,13 @@ export default function AdminPayments() {
           userProfile?.address ||
           "General Mariano Alvarez, Cavite";
 
-        const statusStr = String(p.status || relatedData?.payment_status || "").toLowerCase();
-        let finalAmt = Number(p.amount || 0);
-
-        if (statusStr === "pending" || statusStr === "failed" || statusStr === "cancelled" || statusStr === "unpaid") {
-          finalAmt = 0;
-        }
+        let finalAmt = Number(p.amount || relatedData?.total_service_fee || relatedData?.total_amount || 0);
 
         return {
           ...p,
           amount: finalAmt,
-          status: statusStr.includes("paid") || statusStr.includes("success") ? "paid" : (statusStr || "pending"),
+          status: "paid",
+          sub_status_label: "PAID",
           resolved_name: customerName,
           resolved_email: customerEmail,
           resolved_phone: contactNumber,
@@ -106,7 +107,7 @@ export default function AdminPayments() {
         };
       });
 
-      // 2. Process bookings virtual payments (FIXED: Tama na ang pagbasa ng amount para sa paid at pending)
+      // 2. Process bookings virtual payments (Para sa mga bookings na may paid status talaga)
       const existingIds = new Set(processedPayments.map((p) => p.booking_id || p.paymongo_reference));
 
       const bookingVirtualPayments = [];
@@ -114,40 +115,23 @@ export default function AdminPayments() {
         const statusStr = String(b.payment_status || "").toLowerCase();
         const amtPaid = Number(b.amount_paid || 0);
 
-        if (!existingIds.has(b.id) && !existingIds.has(`BOOKING-${b.id}`)) {
+        const isActuallyPaid = statusStr === "paid" && amtPaid > 0;
+
+        if (isActuallyPaid && !existingIds.has(b.id) && !existingIds.has(`BOOKING-${b.id}`)) {
           const userProfile = b.user_id ? profileMap.get(b.user_id) : null;
           const custName = b.customer_name || b.full_name || b.name || userProfile?.full_name || userProfile?.name || "Customer";
           const custEmail = b.customer_email || b.email || userProfile?.email || "customer@gmail.com";
           const custPhone = b.contact_number || b.phone_number || b.phone || userProfile?.phone_number || "09087615843";
           const custAddress = b.address || userProfile?.address || "General Mariano Alvarez, Cavite";
 
-          let displayStatus = "PENDING";
-          let recordStatus = "pending";
-          let finalAmount = 0;
-
-          if (statusStr.includes("paid")) {
-            displayStatus = "PAID";
-            recordStatus = "paid";
-            finalAmount = amtPaid > 0 ? amtPaid : Number(b.total_service_fee || 1500);
-          } else if (statusStr.includes("downpayment") || amtPaid > 0) {
-            displayStatus = "PAID (DOWNPAYMENT)";
-            recordStatus = "paid";
-            finalAmount = amtPaid; // Dito papasok ang downpayment (halimbawa 500)
-          } else {
-            // Strictly PENDING = ₱0.00 amount
-            displayStatus = "PENDING";
-            recordStatus = "pending";
-            finalAmount = 0;
-          }
-
           bookingVirtualPayments.push({
             id: `booking-pay-${b.id}`,
             booking_id: b.id,
             paymongo_reference: `BOOKING-${b.id}`,
-            amount: finalAmount, 
+            amount: amtPaid, 
             payment_channel: b.payment_method || "ONLINE PAYMENT",
-            status: recordStatus,
-            sub_status_label: displayStatus,
+            status: "paid",
+            sub_status_label: "PAID",
             created_at: b.created_at || new Date().toISOString(),
             resolved_name: custName,
             resolved_email: custEmail,
@@ -181,15 +165,12 @@ export default function AdminPayments() {
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || (item.status && item.status.toLowerCase() === statusFilter.toLowerCase());
-
     const matchesMethod =
       methodFilter === "all" ||
       (item.payment_channel && item.payment_channel.toLowerCase() === methodFilter.toLowerCase()) ||
       (item.payment_method && item.payment_method.toLowerCase() === methodFilter.toLowerCase());
 
-    return matchesSearch && matchesStatus && matchesMethod;
+    return matchesSearch && matchesMethod;
   });
 
   const handleExportCSV = () => {
@@ -206,45 +187,32 @@ export default function AdminPayments() {
       `"${p.resolved_email}"`,
       p.amount || 0,
       `"${p.payment_channel || p.payment_method || "ONLINE PAYMENT"}"`,
-      `"${p.sub_status_label || p.status?.toUpperCase() || "PENDING"}"`
+      `"PAID"`
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `admin_payments_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `online_payments_report_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const totalVerifiedRevenue = payments
-    .filter((p) => p.status?.toLowerCase() === "paid")
-    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-  const successfulCount = payments.filter((p) => p.status?.toLowerCase() === "paid").length;
-  const pendingCount = payments.filter((p) => p.status?.toLowerCase() === "pending").length;
-  const failedCount = payments.filter((p) => ["failed", "expired", "cancelled"].includes(p.status?.toLowerCase())).length;
+  const totalVerifiedRevenue = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const successfulCount = payments.length;
 
   return (
     <div className="admin-payments-container">
-      <div className="payments-metrics-grid">
+      <div className="payments-metrics-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         <div className="metric-card revenue-card">
           <span className="metric-title">TOTAL VERIFIED REVENUE</span>
           <h2>₱{totalVerifiedRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}</h2>
         </div>
         <div className="metric-card success-card">
-          <span className="metric-title">SUCCESSFUL TRANSACTIONS</span>
+          <span className="metric-title">SUCCESSFUL ONLINE PAYMENTS</span>
           <h2>{successfulCount}</h2>
-        </div>
-        <div className="metric-card pending-card">
-          <span className="metric-title">PENDING VERIFICATIONS</span>
-          <h2>{pendingCount}</h2>
-        </div>
-        <div className="metric-card failed-card">
-          <span className="metric-title">FAILED / EXPIRED</span>
-          <h2>{failedCount}</h2>
         </div>
       </div>
 
@@ -258,13 +226,6 @@ export default function AdminPayments() {
           style={{ flex: "1", minWidth: "250px" }}
         />
         <div className="filter-group" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">All Statuses</option>
-            <option value="paid">Paid</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-          </select>
-
           <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)}>
             <option value="all">All Methods</option>
             <option value="gcash">GCash</option>
@@ -310,17 +271,16 @@ export default function AdminPayments() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" className="text-center">Loading transactions...</td>
+                <td colSpan="7" className="text-center">Loading online payments...</td>
               </tr>
             ) : filteredPayments.length === 0 ? (
               <tr>
-                <td colSpan="7" className="text-center">No transactions found.</td>
+                <td colSpan="7" className="text-center">No successful online payments found.</td>
               </tr>
             ) : (
               filteredPayments.map((p) => {
                 const methodBadge = p.payment_channel || p.payment_method || "ONLINE PAYMENT";
                 const refDisplay = p.paymongo_reference || p.reference_number || p.id?.substring(0, 8);
-                const statusDisplay = p.sub_status_label || (p.status ? p.status.toUpperCase() : "PENDING");
 
                 return (
                   <tr key={p.id}>
@@ -332,9 +292,7 @@ export default function AdminPayments() {
                       <span className="channel-badge">{methodBadge}</span>
                     </td>
                     <td>
-                      <span className={`status-badge status-${p.status?.toLowerCase()}`}>
-                        {statusDisplay}
-                      </span>
+                      <span className="status-badge status-paid">PAID</span>
                     </td>
                     <td>
                       <button
@@ -386,7 +344,6 @@ export default function AdminPayments() {
                 <span>{selectedPayment.resolved_address}</span>
               </div>
 
-              {/* Booking Specific Balance Details */}
               {selectedPayment.related_data?.total_service_fee ? (
                 <>
                   <div className="audit-row" style={{ borderTop: "1px dashed #cbd5e1", marginTop: "8px", paddingTop: "8px" }}>
@@ -416,12 +373,8 @@ export default function AdminPayments() {
                 <span>{selectedPayment.payment_channel || selectedPayment.payment_method || "ONLINE PAYMENT"}</span>
               </div>
               <div className="audit-row">
-                <span>Payment & Balance Status:</span>
-                <span className={`status-badge status-${selectedPayment.status?.toLowerCase()}`}>
-                  {selectedPayment.related_data?.total_service_fee && (Number(selectedPayment.related_data.total_service_fee || 1500) - Number(selectedPayment.amount || 0) > 0)
-                    ? (Number(selectedPayment.amount || 0) > 0 ? "DOWNPAYMENT ONLY (UNPAID BALANCE)" : "PENDING (UNPAID)")
-                    : (selectedPayment.sub_status_label || selectedPayment.status?.toUpperCase() || "PAID")}
-                </span>
+                <span>Payment Status:</span>
+                <span className="status-badge status-paid">PAID</span>
               </div>
               <div className="audit-row">
                 <span>Timestamp:</span>
@@ -429,15 +382,13 @@ export default function AdminPayments() {
               </div>
             </div>
             <div className="modal-footer">
-              {selectedPayment.status?.toLowerCase() === "paid" && (
-                <button
-                  className="btn-primary"
-                  style={{ marginRight: "10px", backgroundColor: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: "600" }}
-                  onClick={() => setShowReceipt(true)}
-                >
-                  🖨️ View Official Receipt
-                </button>
-              )}
+              <button
+                className="btn-primary"
+                style={{ marginRight: "10px", backgroundColor: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: "600" }}
+                onClick={() => setShowReceipt(true)}
+              >
+                🖨️ View Official Receipt
+              </button>
               <button className="btn-secondary" onClick={() => setSelectedPayment(null)}>
                 Close
               </button>

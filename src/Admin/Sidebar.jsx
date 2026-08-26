@@ -5,12 +5,12 @@ export default function Sidebar({ user, onLogout, fullName, roleName, activeMenu
   const [collapsed, setCollapsed] = useState(false);
 
   const menuItems = [
-  { icon: '📊', label: 'Dashboard', id: 'dashboard' },
-  { icon: '📅', label: 'Bookings', id: 'bookings' },
-  { icon: '💳', label: 'Payments', id: 'payments' },
-  { icon: '👥', label: 'Technicians/Admins', id: 'technicians' },
-  { icon: '⭐', label: 'Feedback', id: 'feedback' },
-];
+    { icon: '📊', label: 'Dashboard', id: 'dashboard' },
+    { icon: '📅', label: 'Bookings', id: 'bookings' },
+    { icon: '💳', label: 'Online Payments', id: 'payments' }, // 👈 Dito ko pinalitan
+    { icon: '👥', label: 'Technicians/Admins', id: 'technicians' },
+    { icon: '⭐', label: 'Feedback', id: 'feedback' },
+  ];
 
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
