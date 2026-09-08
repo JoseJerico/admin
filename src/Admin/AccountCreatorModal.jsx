@@ -18,7 +18,10 @@ export default function AccountCreatorModal({ onClose }) {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Registration function
-  async function handleRegister() {
+  async function handleRegister(e) {
+    e.preventDefault();
+    setErrorMessage("");
+
     if (!email || !password || !firstName || !lastName || !middleInitial || !address || !mobileNumber || !age || !gender || !role) {
       alert("All fields are required! Please fill in all the fields.");
       return;
@@ -55,6 +58,8 @@ export default function AccountCreatorModal({ onClose }) {
       return;
     }
 
+    setIsRegistering(true);
+
     // Normalize role to lowercase to match the database
     const normalizedRole = role.toLowerCase();  // Ensure role is lowercase
 
@@ -62,12 +67,14 @@ export default function AccountCreatorModal({ onClose }) {
     if (error) {
       console.error("SignUp Error:", error);
       setErrorMessage(error.message);
+      setIsRegistering(false);
       return;
     }
 
     const user = data.user;
     if (!user) {
       setErrorMessage("Signup failed. Please try again.");
+      setIsRegistering(false);
       return;
     }
 
@@ -87,6 +94,7 @@ export default function AccountCreatorModal({ onClose }) {
       if (roleError || !roleData) {
         console.error("Role lookup failed:", roleError || "No role data found");
         setErrorMessage("Error fetching role. Please try again.");
+        setIsRegistering(false);
         return;
       }
 
@@ -101,6 +109,7 @@ export default function AccountCreatorModal({ onClose }) {
       if (profileError) {
         console.error("Error inserting profile data:", profileError);
         setErrorMessage("Error saving profile data. Please try again.");
+        setIsRegistering(false);
         return;
       }
 
@@ -124,7 +133,26 @@ export default function AccountCreatorModal({ onClose }) {
       if (userDetailsError) {
         console.error("Error inserting user details:", userDetailsError);
         setErrorMessage("Error saving user details. Please try again.");
+        setIsRegistering(false);
         return;
+      }
+
+      // KUNG TECHNICIAN ANG GINAWA, DAPAT DIN MA-INSERT SA TECHNICIANS TABLE
+      if (normalizedRole === 'technician') {
+        const { error: techError } = await supabase.from("technicians").insert({
+          id: user.id,
+          user_id: user.id,
+          name: `${firstName} ${middleInitial} ${lastName}`.trim(),
+          contact: mobileNumber,
+          email: email,
+          speciality: 'Repair', // Pwede mong baguhin o lagyan ng option kung kailangan
+          role: normalizedRole,
+          role_id: roleData.id,
+        });
+
+        if (techError) {
+          console.error("Error inserting technician data:", techError);
+        }
       }
 
       alert(`Account created successfully! Philippine Time: ${phTime.toLocaleString()}`);
@@ -142,8 +170,10 @@ export default function AccountCreatorModal({ onClose }) {
       <div className="account-creator-modal" onClick={(e) => e.stopPropagation()}>
         <h2>Create Account</h2>
 
+        {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+
         {/* Registration Form */}
-        <form onSubmit={(e) => e.preventDefault()}>
+        <form onSubmit={handleRegister}>
           <div>
             <label>Email</label>
             <input 
@@ -255,7 +285,9 @@ export default function AccountCreatorModal({ onClose }) {
           </div>
 
           {/* Submit Button */}
-          <button type="submit" onClick={handleRegister}>Create Account</button>
+          <button type="submit" disabled={isRegistering}>
+            {isRegistering ? "Creating..." : "Create Account"}
+          </button>
         </form>
 
         <button onClick={onClose} className="btn-close">Close</button>

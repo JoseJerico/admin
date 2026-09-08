@@ -58,10 +58,31 @@ export default function UserApp({ user, onLogout }) {
   const [orderMobile, setOrderMobile] = useState('')
   const [orderAddress, setOrderAddress] = useState('')
   const [orderSubmitting, setOrderSubmitting] = useState(false)
+  const [orderFulfillment, setOrderFulfillment] = useState('delivery')
 
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [myOrders, setMyOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
+  // --- DASHBOARD ORDERS SUMMARY LOGIC ---
+  const countOrderStatus = (status) => {
+    return myOrders.filter(
+      o => o.status?.trim().toLowerCase() === status.toLowerCase()
+    ).length;
+  };
+
+  const countFulfillment = (type) => {
+    return myOrders.filter(
+      o => o.fulfillment_type?.trim().toLowerCase() === type.toLowerCase()
+    ).length;
+  };
+
+  const totalOrders = myOrders.length;
+  const orderPending = countOrderStatus('pending');
+  const orderApproved = countOrderStatus('approved');
+  const orderForDelivery = countOrderStatus('for_delivery');
+  const orderReadyPickup = countOrderStatus('ready_for_pickup');
+  const orderRejected = countOrderStatus('rejected');
+  const orderCompleted = countOrderStatus('completed');
   const [ordersError, setOrdersError] = useState('')
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [payingOrderId, setPayingOrderId] = useState(null)
@@ -967,10 +988,11 @@ export default function UserApp({ user, onLogout }) {
     );
   }, [screen, user?.id]);
 
-  useEffect(() => {
+ useEffect(() => {
     fetchServices();
     fetchProducts();
     fetchNotifications();
+    fetchMyOrders(); // ✅ Panghuling dagdag sa Step 1 para laging updated ang orders
   }, []);
 
   useEffect(() => {
@@ -1501,6 +1523,14 @@ export default function UserApp({ user, onLogout }) {
         return;
       }
 
+      // ✅ IDINAGDAG NATIN ITO PARA MA-UPDATE ANG FULFILLMENT TYPE (Delivery o Pickup)
+      if (data) {
+        await supabase
+          .from('orders')
+          .update({ fulfillment_type: orderFulfillment })
+          .eq('id', data);
+      }
+
       const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
@@ -1524,6 +1554,7 @@ export default function UserApp({ user, onLogout }) {
       setOrderFullName('');
       setOrderMobile('');
       setOrderAddress('');
+      setOrderFulfillment('delivery'); // I-reset pabalik sa default
 
       await fetchProducts();
       await fetchNotifications();
@@ -1626,7 +1657,7 @@ async function submitAllBookings() {
       alert("❌ Unexpected error occurred");
     }
   }
-  return (
+ return (
     <div className="user-app">
       {/* Button para buksan ang sidebar sa mobile */}
       <button className="toggle-sidebar-btn" onClick={toggleSidebar}>
@@ -1702,20 +1733,12 @@ async function submitAllBookings() {
         )}
 
         {/* --- Home Screen --- */}
-        {screen === 'home' && (
+       {screen === 'home' && (
           <main className="user-main home-screen dashboard-page">
             <div className="dashboard-topbar">
               <div className="dashboard-title-group">
                 <p className="page-label">Customer Dashboard</p>
                 <h2>Welcome back, {fullName || 'AirCon Hub'}</h2>
-              </div>
-              <div className="dashboard-top-actions">
-                <button className="btn-compact" onClick={() => setScreen('history')}>
-                  📖 Bookings
-                </button>
-                <button className="btn-compact" onClick={() => setScreen('cart')}>
-                  🛒 Cart {cart.length > 0 && <span className="cart-badge mini">{cart.length}</span>}
-                </button>
               </div>
             </div>
 
@@ -1725,6 +1748,11 @@ async function submitAllBookings() {
                   <h2>Smart Cooling Solutions</h2>
                   <p>Professional AC installation, maintenance & repair services</p>
                 </div>
+              </div>
+
+              {/* 📅 BOOKINGS SUMMARY HEADER */}
+              <div style={{ marginBottom: '15px' }}>
+                <h3 style={{ color: '#1e293b' }}>📅 My Bookings Summary</h3>
               </div>
 
               <div className="dashboard-summary">
@@ -1806,6 +1834,75 @@ async function submitAllBookings() {
                 </div>
               </div>
 
+              {/* 📦 PRODUCT ORDERS SUMMARY DASHBOARD */}
+              <div style={{ marginTop: '30px', marginBottom: '20px' }}>
+                <h3 style={{ marginBottom: '15px', color: '#1e293b' }}>📦 My Product Orders Summary</h3>
+                <div className="dashboard-summary">
+                  <div
+                    className="card total"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{totalOrders}</h3>
+                    <p>Total Orders</p>
+                  </div>
+
+                  <div
+                    className="card pending"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{orderPending}</h3>
+                    <p>Pending</p>
+                  </div>
+
+                  <div
+                    className="card confirmed"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{orderApproved}</h3>
+                    <p>Approved</p>
+                  </div>
+
+                  <div
+                    className="card assigned"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{orderForDelivery}</h3>
+                    <p>For Delivery</p>
+                  </div>
+
+                  <div
+                    className="card assigned"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{orderReadyPickup}</h3>
+                    <p>Self Pick-up</p>
+                  </div>
+
+                  <div
+                    className="card rejected"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{orderRejected}</h3>
+                    <p>Rejected</p>
+                  </div>
+
+                  <div
+                    className="card completed"
+                    onClick={() => setScreen('orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <h3>{orderCompleted}</h3>
+                    <p>Completed</p>
+                  </div>
+                </div>
+              </div>
+
               <button
                 className="maintenance-card"
                 onClick={() => setScreen('preventive')}
@@ -1842,6 +1939,7 @@ async function submitAllBookings() {
             </section>
           </main>
         )}
+      
 
         {/* --- Measure Choice --- */}
         {screen === 'measure-choice' && (
@@ -3058,6 +3156,20 @@ async function submitAllBookings() {
                       value={orderAddress}
                       onChange={(e) => setOrderAddress(e.target.value)}
                     />
+
+                    {/* ✅ DITO MO ILAGAY ANG FULFILLMENT OPTION */}
+                    <div style={{ marginTop: '10px', marginBottom: '15px' }}>
+                      <label style={{ fontWeight: 'bold', fontSize: '14px' }}>Fulfillment Option:</label>
+                      <select
+                        value={orderFulfillment}
+                        onChange={(e) => setOrderFulfillment(e.target.value)}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }}
+                      >
+                        <option value="delivery">Delivery to Address</option>
+                        <option value="pickup">Self Pick-up</option>
+                      </select>
+                    </div>
+
                     <button
                       type="button"
                       className="btn-submit"

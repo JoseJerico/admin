@@ -150,6 +150,7 @@ function StatusLegend() {
 export default function AdminApp({ user, onLogout }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [adminOrders, setAdminOrders] = useState([]);
   const [filter, setFilter] = useState('all');
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [technicians, setTechnicians] = useState([]);
@@ -179,6 +180,61 @@ export default function AdminApp({ user, onLogout }) {
     completed: '#10b981',
     conflict: '#ff9999'
   };
+
+ async function fetchAdminOrders() {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching admin orders:', error);
+    } else {
+      setAdminOrders(data || []);
+    }
+  }
+
+  async function updateOrderStatus(orderId, newStatus) {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+
+    if (error) {
+      alert('❌ Failed to update order status: ' + error.message);
+    } else {
+      alert(`✅ Order status updated to "${newStatus}"!`);
+      fetchAdminOrders();
+    }
+  }
+
+  // ✅ 1. I-fetch agad pagka-load ng AdminApp para may laman agad
+  useEffect(() => {
+    fetchAdminOrders();
+  }, []);
+
+  // ✅ 2. I-fetch ulit o i-trigger kapag lumipat sa 'orders' menu
+  useEffect(() => {
+    if (activeMenu === 'orders') {
+      fetchAdminOrders();
+    }
+  }, [activeMenu]);
+
+  // ✅ 3. Realtime listener para kusang lumitaw ang bagong order nang walang refresh
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-orders')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          fetchAdminOrders();
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, []);
 
   async function refresh(page = currentPage) {
     setLoading(true);
@@ -526,6 +582,7 @@ export default function AdminApp({ user, onLogout }) {
               <h1>
                 {activeMenu === 'dashboard' && '🔧 Dashboard'}
                 {activeMenu === 'bookings' && '📅 Bookings'}
+                {activeMenu === 'orders' && '📦 Product Orders'}
                 {activeMenu === 'payments' && '💳 Payments'}
                 {activeMenu === 'technicians' && '👥 Technicians/Admins'}
                 {activeMenu === 'feedback' && '⭐ Customer Feedback'}
@@ -546,6 +603,72 @@ export default function AdminApp({ user, onLogout }) {
           )}
           {activeMenu === 'payments' && (
             <AdminPayments />
+          )}
+
+          {activeMenu === 'orders' && (
+            <div className="schedules-container">
+              <h2>📦 Customer Product Orders</h2>
+              <table className="schedules-table" style={{ marginTop: '20px' }}>
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer Name</th>
+                    <th>Contact / Address</th>
+                    <th>Total Amount</th>
+                    <th>Payment</th>
+                    <th>Fulfillment</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center' }}>No product orders found.</td>
+                    </tr>
+                  ) : (
+                    adminOrders.map((ord) => (
+                      <tr key={ord.id}>
+                        <td>#{ord.id.substring(0, 8).toUpperCase()}</td>
+                        <td>{ord.full_name}</td>
+                        <td>
+                          {ord.mobile_number}<br />
+                          <small>{ord.address}</small>
+                        </td>
+                        <td>₱{Number(ord.total_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                        <td>
+                          <span style={{ color: ord.payment_status === 'paid' ? 'green' : 'red', fontWeight: 'bold' }}>
+                            {ord.payment_status}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ textTransform: 'uppercase', fontSize: '0.85rem', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>
+                            {ord.fulfillment_type || 'delivery'}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
+                            {ord.status || 'pending'}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                            <button onClick={() => updateOrderStatus(ord.id, 'approved')} className="btn-approve">✅ Approve</button>
+                            <button onClick={() => updateOrderStatus(ord.id, 'rejected')} className="btn-reject">❌ Reject</button>
+                            {ord.fulfillment_type === 'pickup' ? (
+                              <button onClick={() => updateOrderStatus(ord.id, 'ready_for_pickup')} style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer' }}>📦 Ready for Pickup</button>
+                            ) : (
+                              <button onClick={() => updateOrderStatus(ord.id, 'for_delivery')} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer' }}>🚚 For Delivery</button>
+                            )}
+                            <button onClick={() => updateOrderStatus(ord.id, 'completed')} className="btn-complete">✔ Complete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {activeMenu === 'technicians' && (

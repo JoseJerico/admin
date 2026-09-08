@@ -4,10 +4,11 @@ import './Sidebar.css';
 export default function Sidebar({ user, onLogout, fullName, roleName, activeMenu, setActiveMenu }) {
   const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
+ const menuItems = [
     { icon: '📊', label: 'Dashboard', id: 'dashboard' },
     { icon: '📅', label: 'Bookings', id: 'bookings' },
-    { icon: '💳', label: 'Online Payments', id: 'payments' }, // 👈 Dito ko pinalitan
+    { icon: '📦', label: 'Product Orders', id: 'orders' }, // ✅ Dito natin idinagdag ang Orders
+    { icon: '💳', label: 'Online Payments', id: 'payments' },
     { icon: '👥', label: 'Technicians/Admins', id: 'technicians' },
     { icon: '⭐', label: 'Feedback', id: 'feedback' },
   ];
