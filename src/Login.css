@@ -1,4 +1,4 @@
-/* Login Container */
+/* Login Container - Naka-center nang maayos sa buong screen */
 .login-container {
   display: flex;
   align-items: center;
@@ -8,57 +8,40 @@
   padding: 16px;
   position: relative;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 /* General Login Box */
 .login-box {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
   width: 100%;
-  max-width: 400px; /* Shrink the login box width */
+  max-width: 440px;
   overflow: hidden;
-  padding: 16px 16px; /* Reduced padding to make the box shorter */
-  margin-top: 250px; 
-  
+  box-sizing: border-box;
 }
 
 /* Login Header */
 .login-header {
   background: linear-gradient(135deg, #073ca5 0%, #3224f8 100%);
   color: white;
-  padding: 40px 24px;
+  padding: 36px 24px;
   text-align: center;
   width: 100%;
   position: relative;
-  top: 0;
-  left: 0;
-  border-radius: 16px 16px 0 0;
-}
-
-/* Stretched Background */
-.login-header::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #073ca5 0%, #3224f8 100%);
-  z-index: -1;
-  border-radius: 16px 16px 0 0;
+  box-sizing: border-box;
 }
 
 .login-icon {
   font-size: 48px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .login-header h1 {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
-  margin: 0;
-  margin-bottom: 8px;
+  margin: 0 0 6px 0;
 }
 
 .login-header p {
@@ -69,11 +52,11 @@
 
 /* Login Form */
 .login-form {
-  padding: 20px 16px;
+  padding: 24px 24px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
@@ -92,6 +75,13 @@
   border-radius: 8px;
   transition: all 0.3s ease;
   font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 /* Error Message */
@@ -108,7 +98,7 @@
 /* Login Button */
 .btn-login {
   width: 100%;
-  padding: 12px 24px;
+  padding: 14px 24px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -136,25 +126,27 @@
 /* Back Button */
 .btn-back-role {
   position: absolute;
-  top: 50px;  /* Itaas ng konti ang top spacing */
+  top: 16px;
   left: 16px;
   z-index: 9999;
-  background: rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
   color: white;
   cursor: pointer;
   font-weight: bold;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
 }
 
 .btn-back-role:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.4);
 }
+
 /* Login Footer */
 .login-footer {
   padding: 0 24px 24px;
-  border-top: 1px solid #e5e7eb;
   text-align: center;
 }
 
@@ -164,35 +156,63 @@
   margin: 0;
 }
 
-/* Responsive */
+/* Responsive Adjustments para sa Mobile (CP) */
 @media (max-width: 480px) {
+  .login-container {
+    padding: 8px;
+    align-items: flex-start; /* Nagsisimula sa taas para hindi maputol sa maliit na screen */
+  }
+
   .login-box {
-    padding: 20px;
-    width: 100%;
     max-width: 100%;
+    margin: 12px auto;
     border-radius: 12px;
   }
 
+  .login-header {
+    padding: 22px 16px; /* Pinaikli ang padding para hindi matangkad sa cp */
+  }
+
+  .login-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+
   .login-header h1 {
-    font-size: 24px;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .login-header p {
+    font-size: 12px;
+  }
+
+  .login-form {
+    padding: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
   }
 
   .form-group input {
     padding: 10px 12px;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px; /* 16px para hindi mag-zoom in automatically ang iOS Safari */
   }
 
   .btn-login {
-    padding: 10px 20px;
-    font-size: 16px;
+    padding: 12px 16px;
+    font-size: 15px;
   }
-}
-/* Mobile and Desktop Adjustments */
-@media (max-width: 480px) {
+
+  .login-footer {
+    padding: 0 16px 16px;
+  }
+
   .btn-back-role {
-    padding: 10px 20px;
-    font-size: 16px; /* Adjust for better visibility */
-    left: 10px; /* Ensure it doesn't overlap other elements */
     top: 10px;
+    left: 10px;
+    padding: 5px 10px;
+    font-size: 12px;
   }
 }
