@@ -38,7 +38,8 @@ export default function Login({ onLogin }) {
           <p>Service Management System</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
+        {/* Idinagdag ang autoComplete="off" dito sa form */}
+        <form onSubmit={handleSubmit} className="login-form" autoComplete="off">
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
             <input
@@ -48,6 +49,7 @@ export default function Login({ onLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
+              autoComplete="off" /* Idinagdag para i-off ang autofill ng email */
             />
           </div>
 
@@ -60,6 +62,7 @@ export default function Login({ onLogin }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
+              autoComplete="new-password" /* Idinagdag para pigilan ang browser na i-save ang password */
             />
           </div>
 
