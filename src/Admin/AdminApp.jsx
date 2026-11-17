@@ -467,6 +467,16 @@ export default function AdminApp({ user, onLogout }) {
     return Object.values(map).filter(g => g.length > 1).flat().map(b => b.id);
   }, [schedules]);
 
+  // --- ADMIN DASHBOARD ORDERS SUMMARY COUNTERS ---
+  const totalAdminOrders = adminOrders.length;
+  const adminOrderPending = adminOrders.filter(o => o.status?.toLowerCase() === 'pending').length;
+  const adminOrderApproved = adminOrders.filter(o => o.status?.toLowerCase() === 'approved').length;
+  const adminOrderForDelivery = adminOrders.filter(o => o.status?.toLowerCase() === 'for_delivery').length;
+  const adminOrderReadyPickup = adminOrders.filter(o => o.status?.toLowerCase() === 'ready_for_pickup').length;
+  const adminOrderCompleted = adminOrders.filter(o => o.status?.toLowerCase() === 'completed').length;
+  const adminOrderCancelled = adminOrders.filter(o => o.status?.toLowerCase() === 'cancelled').length;
+  const adminOrderRejected = adminOrders.filter(o => o.status?.toLowerCase() === 'rejected').length;
+
   function toggleExpand(id) {
     setExpandedFeedback(expandedFeedback === id ? null : id);
   }
@@ -595,11 +605,50 @@ export default function AdminApp({ user, onLogout }) {
           </div>
         </header>
 
-        <div className="app-content">
+     <div className="app-content">
           {activeMenu === 'dashboard' && (
-            <>
+            <div className="schedules-container" style={{ padding: '20px' }}>
               <DashboardCards schedules={schedules} />
-            </>
+
+              {/* 📦 PRODUCT ORDERS SUMMARY SA ADMIN DASHBOARD */}
+              <div style={{ marginTop: '40px', marginBottom: '20px' }}>
+                <h3 style={{ marginBottom: '15px', color: '#1e293b' }}>📦 Product Orders Summary</h3>
+                
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+                  
+                  <div className="stat-card" onClick={() => setActiveMenu('orders')} style={{ cursor: 'pointer' }}>
+                    <div className="stat-value">{totalAdminOrders}</div>
+                    <div className="stat-label">Total Orders</div>
+                  </div>
+
+                  <div className="stat-card pending" onClick={() => setActiveMenu('orders')} style={{ cursor: 'pointer' }}>
+                    <div className="stat-value">{adminOrderPending}</div>
+                    <div className="stat-label">Pending Orders</div>
+                  </div>
+
+                  <div className="stat-card approved" onClick={() => setActiveMenu('orders')} style={{ cursor: 'pointer' }}>
+                    <div className="stat-value">{adminOrderApproved}</div>
+                    <div className="stat-label">Approved</div>
+                  </div>
+
+                  <div className="stat-card assigned" onClick={() => setActiveMenu('orders')} style={{ cursor: 'pointer' }}>
+                    <div className="stat-value">{adminOrderForDelivery}</div>
+                    <div className="stat-label">For Delivery</div>
+                  </div>
+
+                  <div className="stat-card completed" onClick={() => setActiveMenu('orders')} style={{ cursor: 'pointer' }}>
+                    <div className="stat-value">{adminOrderCompleted}</div>
+                    <div className="stat-label">Completed</div>
+                  </div>
+
+                  <div className="stat-card rejected" onClick={() => setActiveMenu('orders')} style={{ cursor: 'pointer' }}>
+                    <div className="stat-value">{adminOrderRejected}</div>
+                    <div className="stat-label">Rejected</div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
           )}
           {activeMenu === 'payments' && (
             <AdminPayments />

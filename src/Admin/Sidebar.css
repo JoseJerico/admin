@@ -253,3 +253,80 @@
     justify-content: center;
   }
 }
+/* =========================
+   MOBILE HAMBURGER & OVERLAY
+========================= */
+.mobile-hamburger-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10002;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+}
+
+/* Responsive Styles para sa Phone */
+@media (max-width: 768px) {
+  .mobile-hamburger-btn {
+    display: flex;
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 9999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Ayusin ang margin ng main content sa mobile para hindi matakpan */
+  .app-main {
+    margin-left: 0 !important;
+  }
+}
+
+/* Siguraduhing lumilitaw ang mga text labels kahit sa mobile view */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px !important; /* Panatilihin ang lapad ng sidebar para magkasya ang text */
+  }
+
+  .sidebar .nav-label,
+  .sidebar .logo-text,
+  .sidebar .user-details span,
+  .sidebar .btn-logout-sidebar span:not(:first-child) {
+    display: inline-block !important; /* Ipakita ang mga text */
+  }
+}

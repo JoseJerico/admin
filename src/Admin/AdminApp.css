@@ -1385,3 +1385,30 @@ button {
   font-weight: 600;
 }
 
+@media (max-width: 768px) {
+  /* Ayusin ang padding sa mobile para hindi sumagad sa gilid */
+  .app-content {
+    padding: 12px !important;
+  }
+
+  /* I-center o gawing scrollable ang status legend sa mobile */
+  .status-legend {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Siguraduhing may horizontal scroll ang table kapag mahaba */
+  .schedules-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    padding: 10px !important;
+  }
+
+  .schedules-table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 600px; /* Para pilitin magka-scroll kung maliit ang screen */
+  }
+}
