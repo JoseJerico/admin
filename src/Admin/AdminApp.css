@@ -1412,3 +1412,40 @@ button {
     min-width: 600px; /* Para pilitin magka-scroll kung maliit ang screen */
   }
 }
+@media (max-width: 768px) {
+  /* Siguraduhing sakop ang buong screen width at walang lumalagpas */
+  .app-main {
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .app-content {
+    padding: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Gawing scrollable ang table container nang may tamang shadow at touch scrolling */
+  .schedules-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  .schedules-table {
+    width: 100% !important;
+    min-width: 700px !important; /* Pilitin mag-expand para lumitaw ang scrollbar */
+  }
+
+  /* Ayusin din ang filter tabs at legend para hindi maipit */
+  .filter-tabs, .status-legend {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+    padding-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
