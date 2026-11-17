@@ -1664,6 +1664,11 @@ async function submitAllBookings() {
         <span className="hamburger-icon">☰</span> {/* Hamburger Icon */}
       </button>
 
+     {/* ✅ BACKDROP OVERLAY PARA MAG-CLOSE KAPAG PININDOT SA LABAS */}
+     {isSidebarOpen && (
+       <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+     )}
+
       <aside className={`user-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-brand">
           <div className="brand-mark">❄</div>
@@ -2678,9 +2683,7 @@ async function submitAllBookings() {
               <button onClick={loadMore}>Load More</button>
             )}
 
-            <button onClick={() => setScreen('home')} className="btn-back">
-              ← Back
-            </button>
+           
           </main>
         )}
 

@@ -3417,3 +3417,345 @@
     margin-right: 0;
   }
 }
+
+@media (max-width: 768px) {
+  .dashboard-summary {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns para pantay sa phone */
+    gap: 12px !important;
+    margin: 10px 0 !important;
+  }
+
+  .dashboard-summary .card {
+    padding: 16px 12px !important;
+    min-height: 100px !important;
+  }
+
+  .dashboard-summary .card h3 {
+    font-size: 1.6rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .services-grid, 
+  .products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 items per row sa mobile */
+    gap: 12px !important;
+    padding: 0 4px !important;
+  }
+
+  .service-card, 
+  .product-card {
+    padding: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-form {
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .booking-form .form-grid {
+    grid-template-columns: 1fr !important; /* Isang column na lang sa mobile */
+    gap: 14px !important;
+  }
+
+  .manual-form {
+    padding: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .manual-form .form-group input,
+  .manual-form .form-group select,
+  .manual-form .unit-dropdown,
+  .booking-form input,
+  .booking-form textarea,
+  .booking-form select {
+    padding: 14px !important;
+    font-size: 15px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .history-item {
+    padding: 18px 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .history-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .history-actions button,
+  .history-item button,
+  .pay-now-btn {
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+}
+
+/* =========================================
+   MOBILE RESPONSIVE FIXES PARA SA USER APP
+   ========================================= */
+
+@media screen and (max-width: 768px) {
+  /* 1. Gawing slide-out drawer ang sidebar sa user side kapag naka-open */
+  .user-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    left: auto !important;
+    width: 80% !important;
+    max-width: 300px !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    background: #ffffff !important;
+    transform: translateX(105%) !important;
+    transition: transform 0.3s ease-in-out !important;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .user-sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  .user-sidebar.closed {
+    transform: translateX(105%) !important;
+  }
+
+  /* 2. Siguraduhing naka-stack (tuwid pababa) ang dashboard summary cards */
+  .dashboard-summary {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    margin: 10px 0 !important;
+  }
+
+  .dashboard-summary .card {
+    padding: 16px 12px !important;
+    min-height: 100px !important;
+  }
+
+  /* 3. Services at Products catalog grid gawing 2 columns */
+  .services-grid, 
+  .products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    padding: 0 4px !important;
+  }
+
+  .service-card, 
+  .product-card {
+    padding: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. Ayusin ang mga form input fields para hindi lumagpas sa screen */
+  .booking-form,
+  .manual-form,
+  .checkout-form {
+    padding: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .booking-form .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .manual-form .form-group input,
+  .manual-form .form-group select,
+  .manual-form .unit-dropdown,
+  .booking-form input,
+  .booking-form textarea,
+  .booking-form select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 15px !important;
+  }
+
+  /* 5. Ayusin ang history buttons para hindi magpatong-patong */
+  .history-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .history-actions button,
+  .history-item button,
+  .pay-now-btn {
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+}
+
+/* =========================================
+   MOBILE RESPONSIVE FIXES & SIDEBAR OVERLAY
+   ========================================= */
+
+@media screen and (max-width: 768px) {
+  /* 1. Slide-out drawer para sa user sidebar */
+  .user-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    left: auto !important;
+    width: 80% !important;
+    max-width: 300px !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    background: #ffffff !important;
+    transform: translateX(105%) !important;
+    transition: transform 0.3s ease-in-out !important;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.2) !important;
+    padding-bottom: 40px !important;
+    overflow-y: auto !important;
+  }
+
+  .user-sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  .user-sidebar.closed {
+    transform: translateX(105%) !important;
+  }
+
+  /* 2. Madilim na background sa likod kapag bukas ang menu */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9998;
+  }
+
+  /* 3. Dashboard summary cards (2 columns sa mobile) */
+  .dashboard-summary {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    margin: 10px 0 !important;
+  }
+
+  .dashboard-summary .card {
+    padding: 16px 12px !important;
+    min-height: 100px !important;
+  }
+
+  /* 4. Services at Products catalog grid */
+  .services-grid, 
+  .products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    padding: 0 4px !important;
+  }
+
+  .service-card, 
+  .product-card {
+    padding: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 5. Forms at inputs */
+  .booking-form,
+  .manual-form,
+  .checkout-form {
+    padding: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .booking-form .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .manual-form .form-group input,
+  .manual-form .form-group select,
+  .manual-form .unit-dropdown,
+  .booking-form input,
+  .booking-form textarea,
+  .booking-form select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 15px !important;
+  }
+
+  /* 6. History actions */
+  .history-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .history-actions button,
+  .history-item button,
+  .pay-now-btn {
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  /* 1. Siguraduhing sakto ang buong app sa lapad ng phone screen at walang lumalampas */
+  html, body, .user-app, .user-view, .user-main {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Ayusin ang padding sa mga pangunahing container para hindi sumagad sa kanan */
+  .dashboard-page, 
+  .dashboard-content, 
+  .user-main, 
+  .dashboard-hero,
+  .dashboard-topbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 3. I-center at pantayin ang mga summary cards at action buttons */
+  .dashboard-summary {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 10px 0 !important;
+  }
+
+  .dashboard-summary .card,
+  .action-card,
+  .service-card,
+  .product-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  /* Kung ang isang card sa dulo ay nag-iisa, sakupin nito ang buong lapad para nakagitna */
+  .dashboard-summary .card:last-child:nth-child(odd) {
+    grid-column: span 2 !important;
+  }
+}
